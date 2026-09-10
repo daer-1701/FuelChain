@@ -1,0 +1,12 @@
+{
+  "name": "@fuelchain/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo:narrative": "node src/demo-narrative.js",
+    "build": "echo \"@fuelchain/scripts: no build\"",
+    "lint": "echo \"@fuelchain/scripts: lint stub\"",
+    "typecheck": "echo \"@fuelchain/scripts: typecheck stub\""
+  }
+}

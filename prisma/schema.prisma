@@ -1,0 +1,559 @@
+// FuelChain Bolivia — Prisma schema (PHASE 2)
+// Operational source of truth. Blockchain stores hashes only.
+// DEMO data must be labeled in application layer — not presented as official.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum ActorRole {
+  ADMIN
+  IMPORTER
+  TRANSPORTER
+  DEPOT_OPERATOR
+  LAB
+  AUDITOR
+}
+
+enum BatchStatus {
+  DRAFT
+  AUTHORIZED
+  IN_TRANSIT
+  AT_BORDER
+  CUSTOMS
+  RECEIVED
+  SAMPLING
+  LAB_ANALYSIS
+  CERTIFIED
+  STORED
+  DISTRIBUTING
+  DELIVERED
+  COMPLETED
+  AUDIT_REQUIRED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TransportType {
+  TRUCK
+  RAIL
+  WATER
+  PIPELINE
+  OTHER
+}
+
+enum TransportStatus {
+  PLANNED
+  IN_TRANSIT
+  ARRIVED
+  CANCELLED
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum AuthorizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum CustodyEventType {
+  CREATED
+  LOADED
+  INSPECTED
+  IN_TRANSIT
+  ENTERED_COUNTRY
+  CUSTOMS
+  RECEIVED
+  SAMPLED
+  LAB_ANALYSIS
+  CERTIFIED
+  STORED
+  DISPATCHED
+  DELIVERED
+}
+
+enum DocumentType {
+  CERTIFICATE_OF_ORIGIN
+  QUALITY_CERTIFICATE
+  CUSTOMS_DOCUMENT
+  TRANSPORT_DOCUMENT
+  LAB_RESULT
+  INSPECTION_REPORT
+  OTHER
+}
+
+enum CertificateStatus {
+  PENDING
+  VALID
+  EXPIRED
+  REVOKED
+  DEMO
+}
+
+enum LabResultStatus {
+  PENDING
+  PASS
+  FAIL
+  INCONCLUSIVE
+  DEMO
+}
+
+enum TankStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  OFFLINE
+}
+
+enum MeasurementSource {
+  ESP32
+  SIMULATOR
+  MANUAL
+}
+
+enum AnomalyType {
+  VOLUME_DISCREPANCY
+  DOCUMENTATION
+  TRANSIT_ANOMALY
+  MEASUREMENT_ANOMALY
+  MISSING_EVENTS
+  ROUTE_CHANGE
+  OTHER
+}
+
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AnomalyStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+enum AuditCaseStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  FALSE_POSITIVE
+  CLOSED
+}
+
+enum QualityStatus {
+  PENDING
+  IN_PROGRESS
+  CERTIFIED
+  REJECTED
+  DEMO
+}
+
+// ─── Actors ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String
+  role      ActorRole
+  walletAddress String?
+  isDemo    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  uploadedDocuments Document[]       @relation("DocumentUploader")
+  custodyEvents     CustodyEvent[]   @relation("CustodyActor")
+  customsEvents     CustomsEvent[]   @relation("CustomsActor")
+  auditNotes        AuditNote[]
+  assignedAudits    AuditCase[]      @relation("AuditAssignee")
+
+  @@map("users")
+}
+
+// ─── Core: FuelBatch ─────────────────────────────────────────────────────────
+
+model FuelBatch {
+  id                   String      @id @default(cuid())
+  batchCode            String      @unique // FC-BO-2026-000184
+  product              String
+  declaredVolumeLiters Decimal     @db.Decimal(18, 3)
+  originCountry        String
+  destination          String
+  supplier             String
+  importer             String
+  status               BatchStatus @default(DRAFT)
+  riskScore            Int         @default(0)
+  riskLevel            RiskLevel   @default(LOW)
+  qualityStatus        QualityStatus @default(PENDING)
+  currentLocation      String?
+  isDemo               Boolean     @default(true)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  authorizations   ImportAuthorization[]
+  transports       Transport[]
+  customsEvents    CustomsEvent[]
+  custodyEvents    CustodyEvent[]
+  documents        Document[]
+  qualityCertificates QualityCertificate[]
+  samplingEvents   SamplingEvent[]
+  labAnalyses      LabAnalysis[]
+  measurements     Measurement[]
+  anomalies        Anomaly[]
+  auditCases       AuditCase[]
+  blockchainAnchors BlockchainAnchor[]
+
+  @@index([status])
+  @@index([riskLevel])
+  @@index([product])
+  @@index([originCountry])
+  @@index([createdAt])
+  @@map("fuel_batches")
+}
+
+model ImportAuthorization {
+  id                String               @id @default(cuid())
+  batchId           String
+  authorizationType String
+  referenceNumber   String
+  issuer            String
+  status            AuthorizationStatus  @default(PENDING)
+  issuedAt          DateTime?
+  expiresAt         DateTime?
+  documentId        String?
+  isDemo            Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  batch    FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@index([batchId])
+  @@map("import_authorizations")
+}
+
+// ─── Transport ───────────────────────────────────────────────────────────────
+
+model Vehicle {
+  id             String        @id @default(cuid())
+  identifier     String        @unique
+  plate          String?
+  carrier        String
+  capacityLiters Decimal?      @db.Decimal(18, 3)
+  status         VehicleStatus @default(ACTIVE)
+  isDemo         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  transports Transport[]
+
+  @@map("vehicles")
+}
+
+model Transport {
+  id           String          @id @default(cuid())
+  batchId      String
+  vehicleId    String?
+  transportType TransportType
+  carrier      String
+  vehicleRef   String?         // plate / wagon / vessel id when no Vehicle row
+  origin       String
+  destination  String
+  departureAt  DateTime?
+  arrivalAt    DateTime?
+  status       TransportStatus @default(PLANNED)
+  isDemo       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  batch   FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  vehicle Vehicle?  @relation(fields: [vehicleId], references: [id])
+
+  @@index([batchId])
+  @@map("transports")
+}
+
+// ─── Customs & Custody ───────────────────────────────────────────────────────
+
+model CustomsEvent {
+  id              String   @id @default(cuid())
+  batchId         String
+  eventType       String
+  location        String
+  declaredVolume  Decimal? @db.Decimal(18, 3)
+  measuredVolume  Decimal? @db.Decimal(18, 3)
+  actorId         String?
+  documentId      String?
+  timestamp       DateTime @default(now())
+  isDemo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  batch    FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  actor    User?     @relation("CustomsActor", fields: [actorId], references: [id])
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@index([batchId])
+  @@map("customs_events")
+}
+
+model CustodyEvent {
+  id              String           @id @default(cuid())
+  batchId         String
+  eventType       CustodyEventType
+  actorId         String?
+  location        String?
+  declaredVolume  Decimal?         @db.Decimal(18, 3)
+  measuredVolume  Decimal?         @db.Decimal(18, 3)
+  timestamp       DateTime         @default(now())
+  evidenceHash    String?
+  transactionHash String?
+  metadata        Json?
+  isDemo          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+
+  batch FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  actor User?     @relation("CustodyActor", fields: [actorId], references: [id])
+
+  @@index([batchId, timestamp])
+  @@index([eventType])
+  @@map("custody_events")
+}
+
+// ─── Documents ───────────────────────────────────────────────────────────────
+
+model Document {
+  id               String       @id @default(cuid())
+  batchId          String
+  name             String
+  type             DocumentType
+  storageUrl       String
+  sha256Hash       String
+  uploadedById     String?
+  blockchainTxHash String?
+  isDemo           Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  batch           FuelBatch             @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  uploadedBy      User?                 @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  authorizations  ImportAuthorization[]
+  customsEvents   CustomsEvent[]
+  qualityCertificates QualityCertificate[]
+
+  @@index([batchId])
+  @@index([sha256Hash])
+  @@map("documents")
+}
+
+// ─── Quality ─────────────────────────────────────────────────────────────────
+
+model QualityCertificate {
+  id                String            @id @default(cuid())
+  batchId           String
+  certificateType   String
+  issuer            String
+  certificateNumber String
+  issueDate         DateTime
+  status            CertificateStatus @default(PENDING)
+  documentId        String?
+  hash              String?
+  isDemo            Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  batch    FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@index([batchId])
+  @@map("quality_certificates")
+}
+
+model SamplingEvent {
+  id         String   @id @default(cuid())
+  batchId    String
+  location   String
+  sampleCode String
+  takenBy    String
+  timestamp  DateTime @default(now())
+  metadata   Json?
+  isDemo     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  batch        FuelBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  labAnalyses  LabAnalysis[]
+
+  @@unique([sampleCode])
+  @@index([batchId])
+  @@map("sampling_events")
+}
+
+model LabAnalysis {
+  id           String          @id @default(cuid())
+  batchId      String
+  sampleId     String
+  laboratory   String
+  analysisDate DateTime
+  /// Flexible DEMO structure: [{ parameter, value, unit, reference }]
+  parameters   Json
+  result       String?
+  status       LabResultStatus @default(PENDING)
+  isDemo       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  batch  FuelBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sample SamplingEvent @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([sampleId])
+  @@map("lab_analyses")
+}
+
+// ─── IoT / Storage ───────────────────────────────────────────────────────────
+
+model StorageTank {
+  id             String     @id @default(cuid())
+  name           String
+  capacityLiters Decimal    @db.Decimal(18, 3)
+  location       String
+  status         TankStatus @default(AVAILABLE)
+  isDemo         Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  measurements Measurement[]
+
+  @@map("storage_tanks")
+}
+
+model Measurement {
+  id           String            @id @default(cuid())
+  batchId      String?
+  tankId       String
+  deviceId     String
+  volumeLiters Decimal           @db.Decimal(18, 3)
+  temperature  Decimal?          @db.Decimal(8, 2)
+  latitude     Decimal?          @db.Decimal(10, 7)
+  longitude    Decimal?          @db.Decimal(10, 7)
+  timestamp    DateTime          @default(now())
+  source       MeasurementSource
+  isDemo       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+
+  batch FuelBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  tank  StorageTank @relation(fields: [tankId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([tankId, timestamp])
+  @@index([deviceId])
+  @@map("measurements")
+}
+
+// ─── Anomalies & Audit ───────────────────────────────────────────────────────
+
+model Anomaly {
+  id          String          @id @default(cuid())
+  batchId     String
+  type        AnomalyType
+  severity    AnomalySeverity @default(MEDIUM)
+  expected    String?
+  actual      String?
+  difference  String?
+  riskImpact  Int             @default(0)
+  status      AnomalyStatus   @default(OPEN)
+  explanation String?
+  isDemo      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  batch      FuelBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  auditCases AuditCase[]
+
+  @@index([batchId])
+  @@index([status])
+  @@index([severity])
+  @@map("anomalies")
+}
+
+model AuditCase {
+  id               String          @id @default(cuid())
+  batchId          String
+  anomalyId        String?
+  title            String
+  riskScore        Int             @default(0)
+  status           AuditCaseStatus @default(OPEN)
+  assigneeId       String?
+  aiExplanation    String?
+  blockchainTxHash String?
+  isDemo           Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  batch    FuelBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  anomaly  Anomaly?   @relation(fields: [anomalyId], references: [id])
+  assignee User?      @relation("AuditAssignee", fields: [assigneeId], references: [id])
+  notes    AuditNote[]
+
+  @@index([batchId])
+  @@index([status])
+  @@map("audit_cases")
+}
+
+model AuditNote {
+  id          String   @id @default(cuid())
+  auditCaseId String
+  authorId    String?
+  body        String
+  isDemo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  auditCase AuditCase @relation(fields: [auditCaseId], references: [id], onDelete: Cascade)
+  author    User?     @relation(fields: [authorId], references: [id])
+
+  @@index([auditCaseId])
+  @@map("audit_notes")
+}
+
+// ─── Blockchain anchors (off-chain index of on-chain proofs) ──────────────────
+
+model BlockchainAnchor {
+  id              String   @id @default(cuid())
+  batchId         String
+  eventKind       String
+  eventId         String?
+  dataHash        String
+  transactionHash String?
+  blockNumber     BigInt?
+  chainId         Int?
+  actorWallet     String?
+  timestamp       DateTime @default(now())
+  isDemo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  batch FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([transactionHash])
+  @@index([dataHash])
+  @@map("blockchain_anchors")
+}

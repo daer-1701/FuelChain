@@ -1,0 +1,36 @@
+{
+  "name": "fuelchain-bolivia",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FuelChain Bolivia — trazabilidad, reconciliación y auditoría de combustible importado",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @fuelchain/api exec node ./node_modules/prisma/build/index.js generate --schema=../../prisma/schema.prisma",
+    "db:migrate": "pnpm --filter @fuelchain/api exec node ./node_modules/prisma/build/index.js migrate deploy --schema=../../prisma/schema.prisma",
+    "db:migrate:dev": "pnpm --filter @fuelchain/api exec node ./node_modules/prisma/build/index.js migrate dev --schema=../../prisma/schema.prisma",
+    "db:studio": "pnpm --filter @fuelchain/api exec node ./node_modules/prisma/build/index.js studio --schema=../../prisma/schema.prisma",
+    "db:seed": "pnpm --filter @fuelchain/api run prisma:seed",
+    "simulate:iot": "pnpm --filter @fuelchain/iot-simulator start",
+    "contracts:compile": "pnpm --filter @fuelchain/contracts compile",
+    "contracts:test": "pnpm --filter @fuelchain/contracts test",
+    "contracts:node": "pnpm --filter @fuelchain/contracts run node",
+    "contracts:deploy": "pnpm --filter @fuelchain/contracts run deploy"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "prisma": "6.16.2",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@prisma/client": "6.16.2"
+  }
+}

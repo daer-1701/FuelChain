@@ -1,0 +1,16 @@
+---
+description: Usar siempre pnpm; nunca npm ni npx
+alwaysApply: true
+---
+
+# Gestor de paquetes: pnpm
+
+- **Nunca** uses `npm` ni `npx`.
+- Usa **siempre** `pnpm` para instalar, ejecutar scripts y gestionar dependencias.
+- Equivalencias:
+  - `npm install` → `pnpm install`
+  - `npm install <pkg>` → `pnpm add <pkg>`
+  - `npm uninstall <pkg>` → `pnpm remove <pkg>`
+  - `npm run <script>` → `pnpm <script>` o `pnpm run <script>`
+  - `npx <cmd>` → `pnpm dlx <cmd>` o `pnpm exec <cmd>`
+- Si un README o script menciona npm, adapta los comandos a pnpm al ejecutarlos.

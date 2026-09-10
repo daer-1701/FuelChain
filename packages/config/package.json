@@ -1,0 +1,11 @@
+{
+  "name": "@fuelchain/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["tsconfig.base.json"],
+  "scripts": {
+    "build": "echo \"@fuelchain/config: no build\"",
+    "lint": "echo \"@fuelchain/config: lint stub\"",
+    "typecheck": "echo \"@fuelchain/config: typecheck stub\""
+  }
+}

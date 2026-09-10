@@ -1,0 +1,16 @@
+{
+  "name": "@fuelchain/iot-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "build": "echo \"@fuelchain/iot-simulator: no build\"",
+    "lint": "echo \"@fuelchain/iot-simulator: lint stub\"",
+    "typecheck": "echo \"@fuelchain/iot-simulator: typecheck stub\""
+  },
+  "dependencies": {
+    "mqtt": "^5.10.4"
+  }
+}

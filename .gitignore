@@ -1,0 +1,58 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# build
+dist
+build
+.next
+out
+coverage
+.turbo
+*.tsbuildinfo
+
+# hardhat
+contracts/artifacts
+contracts/cache
+contracts/typechain-types
+contracts/coverage
+contracts/coverage.json
+
+# prisma
+prisma/*.db
+prisma/*.db-journal
+
+# uploads / local storage (DEMO)
+storage
+uploads
+tmp
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# wallets / keys — never commit
+*.pem
+*.key
+wallets/
+mnemonic.txt
+
+# local agent / OS noise
+agent-transcripts/
+*.pcf
+*.pkt
+.cursor/projects/

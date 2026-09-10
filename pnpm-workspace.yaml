@@ -1,0 +1,27 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "contracts"
+  - "iot/simulator"
+  - "scripts"
+
+# Allow tooling (Prisma CLI) to add packages at workspace root when needed
+ignoreWorkspaceRootCheck: true
+
+# pnpm 12: explicit lifecycle script allowlist
+allowBuilds:
+  "@nestjs/core": true
+  "@parcel/watcher": true
+  "@prisma/client": true
+  "@prisma/engines": true
+  esbuild: true
+  keccak: true
+  msgpackr-extract: true
+  prisma: true
+  secp256k1: true
+  sharp: true
+  unrs-resolver: true
+  "@nomicfoundation/solidity-analyzer": true
+  "@nomicfoundation/solidity-analyzer-win32-x64-msvc": true
+  bufferutil: true
+  utf-8-validate: true

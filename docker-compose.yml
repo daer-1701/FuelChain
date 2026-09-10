@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fuelchain-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fuelchain
+      POSTGRES_PASSWORD: fuelchain
+      POSTGRES_DB: fuelchain
+    ports:
+      - "5432:5432"
+    volumes:
+      - fuelchain_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fuelchain -d fuelchain"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: fuelchain-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - fuelchain_mosquitto_data:/mosquitto/data
+      - fuelchain_mosquitto_log:/mosquitto/log
+
+volumes:
+  fuelchain_pg_data:
+  fuelchain_mosquitto_data:
+  fuelchain_mosquitto_log:

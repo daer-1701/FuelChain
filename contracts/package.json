@@ -1,0 +1,22 @@
+{
+  "name": "@fuelchain/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "build": "pnpm compile",
+    "lint": "echo \"@fuelchain/contracts: lint stub\"",
+    "typecheck": "echo \"@fuelchain/contracts: typecheck stub\""
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "hardhat": "^2.22.19",
+    "typescript": "^5.8.2",
+    "ts-node": "^10.9.2"
+  }
+}
