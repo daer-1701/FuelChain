@@ -1,6 +1,6 @@
 /**
- * Blockchain client helpers stub (PHASE 1).
- * Real ABI / viem wiring lands in PHASE 11–12.
+ * Optional helpers for blockchain messaging.
+ * Live anchoring runs in apps/api via viem + contracts/FuelChain.sol.
  */
 
 export const CHAIN_PURPOSE =

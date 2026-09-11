@@ -24,10 +24,11 @@ import {
   MeasurementSource,
   ActorRole,
   TankStatus,
+  StationAvailability,
 } from '@prisma/client';
-import { createHash } from 'crypto';
-import { readFileSync } from 'fs';
+import { createHash, randomBytes, scryptSync } from 'crypto';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
 
 function loadEnvFiles() {
   for (const p of [resolve(__dirname, '.env'), resolve(__dirname, '../.env')]) {
@@ -60,6 +61,238 @@ function hoursAgo(h: number): Date {
   return new Date(Date.now() - h * 60 * 60 * 1000);
 }
 
+/** DEMO password — same algorithm as AuthService (scrypt salt:hash). */
+function demoPasswordHash(password = 'demo123'): string {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(password, salt, 32).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+/**
+ * Estaciones DEMO del valle de Cochabamba.
+ * Nombres/direcciones inspirados en listados públicos ANH (registro histórico);
+ * coordenadas aproximadas; inventario 100% DEMO — no es feed oficial ANH Abastecimiento.
+ */
+async function seedCochabambaStations() {
+  const defs = [
+    {
+      code: 'ST-CBB-01',
+      name: 'EESS Cala Cala (DEMO)',
+      municipality: 'Cercado',
+      address: 'Av. América — zona Cala Cala (DEMO)',
+      latitude: -17.3742,
+      longitude: -66.1475,
+      availability: StationAvailability.FULL,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-CALA-01',
+      capacity: 45000,
+      fillLiters: 39200,
+      waterDetected: false,
+      temp: 21.2,
+    },
+    {
+      code: 'ST-CBB-02',
+      name: 'Surtidor Virgen de Guadalupe (DEMO)',
+      municipality: 'Quillacollo',
+      address: 'Av. Albina Patiño — Quillacollo (DEMO)',
+      latitude: -17.3978,
+      longitude: -66.2789,
+      availability: StationAvailability.MEDIUM,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-QLLO-VG',
+      capacity: 40000,
+      fillLiters: 17500,
+      waterDetected: false,
+      temp: 22.0,
+    },
+    {
+      code: 'ST-CBB-03',
+      name: 'Trans Sacaba (DEMO)',
+      municipality: 'Sacaba',
+      address: 'Calle Ayacucho — Sacaba (DEMO)',
+      latitude: -17.4041,
+      longitude: -66.0418,
+      availability: StationAvailability.LOW,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-SAC-01',
+      capacity: 38000,
+      fillLiters: 5100,
+      waterDetected: false,
+      temp: 23.1,
+    },
+    {
+      code: 'ST-CBB-04',
+      name: 'Señor de Santiago / Mayorazgo (DEMO)',
+      municipality: 'Cercado',
+      address: 'Av. Melchor Pérez de Olguín (DEMO)',
+      latitude: -17.3668,
+      longitude: -66.1742,
+      availability: StationAvailability.MEDIUM,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-MAY-01',
+      capacity: 35000,
+      fillLiters: 16200,
+      waterDetected: false,
+      temp: 21.8,
+    },
+    {
+      code: 'ST-CBB-05',
+      name: 'El Viajero / Vinto (DEMO)',
+      municipality: 'Vinto',
+      address: 'Av. Albina Patiño esq. Rosas — Vinto (DEMO)',
+      latitude: -17.3935,
+      longitude: -66.3178,
+      availability: StationAvailability.EMPTY,
+      products: ['Diésel Oil'],
+      tankName: 'TANK-VIN-01',
+      capacity: 28000,
+      fillLiters: 600,
+      waterDetected: false,
+      temp: 22.6,
+    },
+    {
+      code: 'ST-CBB-06',
+      name: 'Surtidor Nissan / Av. Petrolera (DEMO)',
+      municipality: 'Cercado',
+      address: 'Av. Petrolera Km 1 (DEMO)',
+      latitude: -17.4285,
+      longitude: -66.1648,
+      availability: StationAvailability.FULL,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-PET-01',
+      capacity: 42000,
+      fillLiters: 35100,
+      waterDetected: false,
+      temp: 24.0,
+    },
+    {
+      code: 'ST-CBB-07',
+      name: 'Pana Gas / Blanco Galindo (DEMO)',
+      municipality: 'Quillacollo',
+      address: 'Av. Blanco Galindo Km 12,5 (DEMO)',
+      latitude: -17.3862,
+      longitude: -66.2685,
+      availability: StationAvailability.MEDIUM,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-BG-01',
+      capacity: 40000,
+      fillLiters: 19800,
+      waterDetected: false,
+      temp: 22.3,
+    },
+    {
+      code: 'ST-CBB-08',
+      name: 'Gasolinera Rioja (DEMO)',
+      municipality: 'Cercado',
+      address: 'Av. Petrolera Km 4,5 (DEMO)',
+      latitude: -17.4412,
+      longitude: -66.1525,
+      availability: StationAvailability.LOW,
+      products: ['Gasolina Especial'],
+      tankName: 'TANK-RIO-01',
+      capacity: 30000,
+      fillLiters: 3800,
+      waterDetected: true,
+      temp: 23.4,
+    },
+    {
+      code: 'ST-CBB-09',
+      name: 'Iquircollo (DEMO)',
+      municipality: 'Quillacollo',
+      address: 'Av. Blanco Galindo Km 11 1/2 (DEMO)',
+      latitude: -17.3895,
+      longitude: -66.2552,
+      availability: StationAvailability.FULL,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-IQ-01',
+      capacity: 36000,
+      fillLiters: 30100,
+      waterDetected: false,
+      temp: 21.9,
+    },
+    {
+      code: 'ST-CBB-10',
+      name: 'Estación Ayacucho Centro (DEMO)',
+      municipality: 'Cercado',
+      address: 'Av. Ayacucho zona central norte (DEMO)',
+      latitude: -17.3858,
+      longitude: -66.1562,
+      availability: StationAvailability.UNKNOWN,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tankName: 'TANK-AYA-01',
+      capacity: 32000,
+      fillLiters: null as number | null,
+      waterDetected: false,
+      temp: null as number | null,
+    },
+  ];
+
+  const created = [];
+  for (const d of defs) {
+    const station = await prisma.station.create({
+      data: {
+        code: d.code,
+        name: d.name,
+        city: 'Cochabamba',
+        municipality: d.municipality,
+        address: d.address,
+        latitude: d.latitude,
+        longitude: d.longitude,
+        publicVisible: true,
+        availability: d.availability,
+        products: d.products,
+        lastInventoryAt: d.fillLiters != null ? hoursAgo(2) : null,
+        isDemo: true,
+      },
+    });
+
+    const tank = await prisma.storageTank.create({
+      data: {
+        name: d.tankName,
+        capacityLiters: d.capacity,
+        location: `${d.name} — Cochabamba (DEMO)`,
+        stationId: station.id,
+        status:
+          d.availability === StationAvailability.EMPTY
+            ? TankStatus.AVAILABLE
+            : TankStatus.IN_USE,
+        isDemo: true,
+      },
+    });
+
+    if (d.fillLiters != null) {
+      await prisma.measurement.create({
+        data: {
+          tankId: tank.id,
+          deviceId: `SIM-CBBA-${d.code}`,
+          volumeLiters: d.fillLiters,
+          temperature: d.temp ?? undefined,
+          waterDetected: d.waterDetected,
+          density: 0.745 + Math.random() * 0.02,
+          source: MeasurementSource.SIMULATOR,
+          timestamp: hoursAgo(2),
+          isDemo: true,
+        },
+      });
+    }
+
+    created.push(station);
+  }
+
+  await prisma.storageTank.create({
+    data: {
+      name: 'CIS-CBB-07',
+      capacityLiters: 30000,
+      location: 'Cisterna en ruta valle Cochabamba (DEMO)',
+      cisternCode: 'CIS-CBB-07',
+      status: TankStatus.IN_USE,
+      isDemo: true,
+    },
+  });
+
+  return created;
+}
+
 async function resetDemo() {
   // Cascades from FuelBatch cover most relations; clear independents first where needed
   await prisma.auditNote.deleteMany();
@@ -73,11 +306,14 @@ async function resetDemo() {
   await prisma.importAuthorization.deleteMany();
   await prisma.customsEvent.deleteMany();
   await prisma.custodyEvent.deleteMany();
+  await prisma.custodyBaton.deleteMany();
+  await prisma.offlineSyncEvent.deleteMany();
   await prisma.transport.deleteMany();
   await prisma.document.deleteMany();
   await prisma.fuelBatch.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.storageTank.deleteMany();
+  await prisma.station.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -85,11 +321,14 @@ async function main() {
   console.log('[DEMO] Seeding FuelChain Bolivia…');
   await resetDemo();
 
+  const pw = demoPasswordHash('demo123');
+
   const auditor = await prisma.user.create({
     data: {
-      email: 'auditor.demo@fuelchain.bo',
+      email: 'auditor@fuelchain.bo',
       name: 'Auditor DEMO',
       role: ActorRole.AUDITOR,
+      passwordHash: pw,
       walletAddress: '0xDEMOauditor00000000000000000000000001',
       isDemo: true,
     },
@@ -97,36 +336,81 @@ async function main() {
 
   const importer = await prisma.user.create({
     data: {
-      email: 'importer.demo@fuelchain.bo',
-      name: 'Importador DEMO',
+      email: 'importador@fuelchain.bo',
+      name: 'Importador DEMO CBBA',
       role: ActorRole.IMPORTER,
+      passwordHash: demoPasswordHash('demo123'),
       isDemo: true,
     },
   });
 
   const transporter = await prisma.user.create({
     data: {
-      email: 'transporter.demo@fuelchain.bo',
-      name: 'Transportista DEMO',
+      email: 'chofer@fuelchain.bo',
+      name: 'Chofer cisterna DEMO',
       role: ActorRole.TRANSPORTER,
+      passwordHash: demoPasswordHash('demo123'),
       isDemo: true,
     },
   });
 
   const depot = await prisma.user.create({
     data: {
-      email: 'depot.demo@fuelchain.bo',
+      email: 'deposito@fuelchain.bo',
       name: 'Operador Depósito DEMO',
       role: ActorRole.DEPOT_OPERATOR,
+      passwordHash: demoPasswordHash('demo123'),
       isDemo: true,
     },
   });
 
   const labUser = await prisma.user.create({
     data: {
-      email: 'lab.demo@fuelchain.bo',
+      email: 'lab@fuelchain.bo',
       name: 'Laboratorio DEMO',
       role: ActorRole.LAB,
+      passwordHash: demoPasswordHash('demo123'),
+      isDemo: true,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'estacion@fuelchain.bo',
+      name: 'Encargado EESS Cala Cala',
+      role: ActorRole.STATION_STAFF,
+      passwordHash: demoPasswordHash('demo123'),
+      isDemo: true,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'anh@fuelchain.bo',
+      name: 'Verificador ANH (read-only DEMO)',
+      role: ActorRole.VERIFIER,
+      passwordHash: demoPasswordHash('demo123'),
+      isDemo: true,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: 'ciudadano@fuelchain.bo',
+      name: 'Ciudadano mapa CBBA',
+      role: ActorRole.VERIFIER,
+      passwordHash: demoPasswordHash('demo123'),
+      isDemo: true,
+    },
+  });
+
+  // legacy aliases used in older docs
+  await prisma.user.create({
+    data: {
+      email: 'auditor.demo@fuelchain.bo',
+      name: 'Auditor DEMO (alias)',
+      role: ActorRole.AUDITOR,
+      passwordHash: demoPasswordHash('demo123'),
       isDemo: true,
     },
   });
@@ -150,6 +434,11 @@ async function main() {
       isDemo: true,
     },
   });
+
+  const cbbaStations = await seedCochabambaStations();
+  console.log(
+    `[DEMO] Cochabamba stations: ${cbbaStations.map((s) => s.code).join(', ')}`,
+  );
 
   // ─── Batch 1: LOW / CERTIFIED / COMPLETED ──────────────────────────────────
   const batch1 = await prisma.fuelBatch.create({
@@ -182,21 +471,22 @@ async function main() {
     completed: true,
   });
 
-  // ─── Batch 2: MEDIUM / IN_TRANSIT ──────────────────────────────────────────
+  // ─── Batch 2: MEDIUM / IN_TRANSIT — corredor Arica → Cochabamba ────────────
   const batch2 = await prisma.fuelBatch.create({
     data: {
       batchCode: 'FC-BO-2026-000182',
       product: 'Diésel Oil',
       declaredVolumeLiters: 150000,
-      originCountry: 'Perú',
+      originCountry: 'Chile (vía Arica / Sica Sica)',
       destination: 'Cochabamba, Bolivia',
-      supplier: 'Proveedor DEMO PE',
+      supplier: 'Cargamento marítimo DEMO',
       importer: 'Importador DEMO BO',
       status: BatchStatus.IN_TRANSIT,
       riskScore: 48,
       riskLevel: RiskLevel.MEDIUM,
       qualityStatus: QualityStatus.PENDING,
-      currentLocation: 'En tránsito — corredor DEMO Desaguadero',
+      currentLocation:
+        'En tránsito DEMO — post Terminal Terrestre Arica → cisternas a CBBA',
       isDemo: true,
     },
   });
@@ -207,21 +497,21 @@ async function main() {
     actors: { importer: importer.id, transporter: transporter.id },
   });
 
-  // ─── Batch 3: HIGH / AUDIT_REQUIRED — narrative discrepancy ────────────────
+  // ─── Batch 3: HIGH / AUDIT_REQUIRED — gasolina vía hub Chile (narrativa) ───
   const batch3 = await prisma.fuelBatch.create({
     data: {
       batchCode: 'FC-BO-2026-000184',
       product: 'Gasolina Especial',
       declaredVolumeLiters: 100000,
-      originCountry: 'Argentina',
+      originCountry: 'Chile (vía Arica / Sica Sica)',
       destination: 'Santa Cruz, Bolivia',
-      supplier: 'Proveedor DEMO AR',
+      supplier: 'Cargamento marítimo DEMO',
       importer: 'Importador DEMO BO',
       status: BatchStatus.AUDIT_REQUIRED,
       riskScore: 82,
       riskLevel: RiskLevel.HIGH,
       qualityStatus: QualityStatus.CERTIFIED,
-      currentLocation: 'Depósito DEMO — Santa Cruz',
+      currentLocation: 'Depósito DEMO — Santa Cruz (post importación Arica)',
       isDemo: true,
     },
   });
@@ -246,6 +536,8 @@ async function main() {
   console.log('  - FC-BO-2026-000181  LOW / COMPLETED');
   console.log('  - FC-BO-2026-000182  MEDIUM / IN_TRANSIT');
   console.log('  - FC-BO-2026-000184  HIGH / AUDIT_REQUIRED (discrepancy narrative)');
+  console.log('  - 10 estaciones CBBA + cisterna CIS-CBB-07');
+  console.log('  - Login DEMO password: demo123 (chofer@ / estacion@ / ciudadano@ / anh@ …)');
   console.log('  Tank: TANK-001 | Measurement source: SIMULATOR (ESP32 deferred)');
 }
 
@@ -446,7 +738,7 @@ async function seedInTransit(
       vehicleId: opts.vehicleId,
       transportType: TransportType.TRUCK,
       carrier: 'Transportes DEMO SRL',
-      origin: 'Perú (DEMO)',
+      origin: 'Terminal Terrestre Arica / Sica Sica (DEMO)',
       destination: 'Cochabamba, Bolivia (DEMO)',
       departureAt: hoursAgo(24),
       status: TransportStatus.IN_TRANSIT,
@@ -455,10 +747,29 @@ async function seedInTransit(
   });
 
   for (const e of [
-    { eventType: 'CREATED' as const, hours: 48, actorId: opts.actors.importer, location: 'Perú (DEMO)' },
-    { eventType: 'LOADED' as const, hours: 36, actorId: opts.actors.transporter, location: 'Carga DEMO' },
-    { eventType: 'INSPECTED' as const, hours: 34, location: 'Inspección DEMO' },
-    { eventType: 'IN_TRANSIT' as const, hours: 24, actorId: opts.actors.transporter, location: 'Corredor DEMO' },
+    {
+      eventType: 'CREATED' as const,
+      hours: 72,
+      actorId: opts.actors.importer,
+      location: 'Programación importación DEMO (buque → Arica)',
+    },
+    {
+      eventType: 'LOADED' as const,
+      hours: 48,
+      actorId: opts.actors.transporter,
+      location: 'Descarga buque Terminal Marítima Sica Sica (DEMO)',
+    },
+    {
+      eventType: 'INSPECTED' as const,
+      hours: 40,
+      location: 'Terminal Terrestre Arica — tanques (DEMO)',
+    },
+    {
+      eventType: 'IN_TRANSIT' as const,
+      hours: 24,
+      actorId: opts.actors.transporter,
+      location: 'Cisterna DEMO en ruta Arica → Bolivia → CBBA',
+    },
   ]) {
     await prisma.custodyEvent.create({
       data: {
@@ -469,7 +780,11 @@ async function seedInTransit(
         declaredVolume: opts.declared,
         timestamp: hoursAgo(e.hours),
         evidenceHash: demoHash(`${batchId}:${e.eventType}`),
-        metadata: { label: 'DEMO' },
+        metadata: {
+          label: 'DEMO',
+          corridor: 'ARICA_SICA_SICA',
+          note: 'Abstracción FuelChain sobre hub reportado YPFB en Arica',
+        },
         isDemo: true,
       },
     });
@@ -516,7 +831,7 @@ async function seedHighRiskAudit(
       transportType: TransportType.TRUCK,
       carrier: 'Transportes DEMO SRL',
       vehicleRef: 'DEMO-1234',
-      origin: 'Argentina (DEMO)',
+      origin: 'Terminal Terrestre Arica / Sica Sica (DEMO)',
       destination: 'Santa Cruz, Bolivia (DEMO)',
       departureAt: hoursAgo(160),
       arrivalAt: hoursAgo(100),
@@ -533,17 +848,65 @@ async function seedHighRiskAudit(
     declared?: number;
     measured?: number;
   }> = [
-    { eventType: 'CREATED', hours: 200, actorId: opts.actors.importer, location: 'Argentina (DEMO)', declared: opts.declared },
-    { eventType: 'LOADED', hours: 180, actorId: opts.actors.transporter, location: 'Carga DEMO', declared: opts.declared },
-    { eventType: 'INSPECTED', hours: 178, location: 'Inspección DEMO', declared: opts.declared },
-    { eventType: 'IN_TRANSIT', hours: 160, actorId: opts.actors.transporter, location: 'Ruta DEMO', declared: opts.declared },
-    { eventType: 'ENTERED_COUNTRY', hours: 120, location: 'Frontera DEMO Yacuiba', declared: opts.declared, measured: opts.received },
-    { eventType: 'CUSTOMS', hours: 118, location: 'Aduana DEMO', declared: opts.declared, measured: opts.received },
-    { eventType: 'RECEIVED', hours: 100, actorId: opts.actors.depot, location: 'Recepción depósito DEMO', declared: opts.declared, measured: opts.received },
+    {
+      eventType: 'CREATED',
+      hours: 200,
+      actorId: opts.actors.importer,
+      location: 'Programación buque → Sica Sica Arica (DEMO)',
+      declared: opts.declared,
+    },
+    {
+      eventType: 'LOADED',
+      hours: 180,
+      actorId: opts.actors.transporter,
+      location: 'Descarga marítima Sica Sica (DEMO)',
+      declared: opts.declared,
+    },
+    {
+      eventType: 'INSPECTED',
+      hours: 178,
+      location: 'Terminal Terrestre Arica (DEMO)',
+      declared: opts.declared,
+    },
+    {
+      eventType: 'IN_TRANSIT',
+      hours: 160,
+      actorId: opts.actors.transporter,
+      location: 'Cisternas Arica → Bolivia (DEMO)',
+      declared: opts.declared,
+    },
+    {
+      eventType: 'ENTERED_COUNTRY',
+      hours: 120,
+      location: 'Ingreso frontera DEMO (corredor Chile–Bolivia)',
+      declared: opts.declared,
+      measured: opts.received,
+    },
+    {
+      eventType: 'CUSTOMS',
+      hours: 118,
+      location: 'Aduana / documentación DIM DEMO',
+      declared: opts.declared,
+      measured: opts.received,
+    },
+    {
+      eventType: 'RECEIVED',
+      hours: 100,
+      actorId: opts.actors.depot,
+      location: 'Recepción depósito DEMO Santa Cruz',
+      declared: opts.declared,
+      measured: opts.received,
+    },
     { eventType: 'SAMPLED', hours: 90, actorId: opts.actors.lab, location: 'Muestreo DEMO' },
     { eventType: 'LAB_ANALYSIS', hours: 80, actorId: opts.actors.lab, location: 'Lab DEMO' },
     { eventType: 'CERTIFIED', hours: 70, actorId: opts.actors.lab, location: 'Lab DEMO' },
-    { eventType: 'STORED', hours: 60, actorId: opts.actors.depot, location: 'TANK-001 DEMO', measured: opts.stored },
+    {
+      eventType: 'STORED',
+      hours: 60,
+      actorId: opts.actors.depot,
+      location: 'TANK-001 DEMO',
+      measured: opts.stored,
+    },
   ];
 
   for (const e of steps) {

@@ -12,13 +12,15 @@ import {
   ListBatchesQueryDto,
   UpdateBatchDto,
 } from './dto/batch.dto';
+import { buildQuantityReconciliation } from './reconciliation';
 
 @Injectable()
 export class BatchesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateBatchDto) {
-    const batchCode = dto.batchCode?.trim() || (await generateBatchCode(this.prisma));
+    const batchCode =
+      dto.batchCode?.trim() || (await generateBatchCode(this.prisma));
 
     const existing = await this.prisma.fuelBatch.findUnique({
       where: { batchCode },
@@ -120,7 +122,10 @@ export class BatchesService {
       where: { id: batch.id },
       include: {
         authorizations: { orderBy: { createdAt: 'desc' } },
-        transports: { orderBy: { createdAt: 'desc' }, include: { vehicle: true } },
+        transports: {
+          orderBy: { createdAt: 'desc' },
+          include: { vehicle: true },
+        },
         customsEvents: { orderBy: { timestamp: 'asc' } },
         custodyEvents: { orderBy: { timestamp: 'asc' } },
         documents: { orderBy: { createdAt: 'desc' } },
@@ -135,6 +140,12 @@ export class BatchesService {
         auditCases: { orderBy: { createdAt: 'desc' } },
         blockchainAnchors: { orderBy: { timestamp: 'desc' } },
       },
+    });
+
+    const quantity = buildQuantityReconciliation({
+      declaredVolumeLiters: full.declaredVolumeLiters,
+      custodyEvents: full.custodyEvents,
+      measurements: full.measurements,
     });
 
     return serialize({
@@ -161,10 +172,7 @@ export class BatchesService {
         sampling: full.samplingEvents,
         labAnalyses: full.labAnalyses,
       },
-      quantity: {
-        declared: full.declaredVolumeLiters,
-        note: 'Received/Stored/Distributed computed in PHASE 9 (Reconciliation)',
-      },
+      quantity,
       custody: full.custodyEvents,
       authorizations: full.authorizations,
       transports: full.transports,
@@ -186,14 +194,18 @@ export class BatchesService {
         ...(dto.declaredVolumeLiters !== undefined && {
           declaredVolumeLiters: new Prisma.Decimal(dto.declaredVolumeLiters),
         }),
-        ...(dto.originCountry !== undefined && { originCountry: dto.originCountry }),
+        ...(dto.originCountry !== undefined && {
+          originCountry: dto.originCountry,
+        }),
         ...(dto.destination !== undefined && { destination: dto.destination }),
         ...(dto.supplier !== undefined && { supplier: dto.supplier }),
         ...(dto.importer !== undefined && { importer: dto.importer }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.riskLevel !== undefined && { riskLevel: dto.riskLevel }),
         ...(dto.riskScore !== undefined && { riskScore: dto.riskScore }),
-        ...(dto.qualityStatus !== undefined && { qualityStatus: dto.qualityStatus }),
+        ...(dto.qualityStatus !== undefined && {
+          qualityStatus: dto.qualityStatus,
+        }),
         ...(dto.currentLocation !== undefined && {
           currentLocation: dto.currentLocation,
         }),
@@ -208,7 +220,6 @@ export class BatchesService {
     return { deleted: true, id: batch.id, batchCode: batch.batchCode };
   }
 
-  /** Resolve by cuid id or batchCode */
   async findBatchOrThrow(idOrCode: string) {
     const batch = await this.prisma.fuelBatch.findFirst({
       where: {

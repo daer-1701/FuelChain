@@ -91,17 +91,48 @@ FuelChain modela `QualityCertificate`, `SamplingEvent`, `LabAnalysis` como **`FU
 
 ## Cadena logística física
 
-No existe una única ruta física obligatoria. Modalidades posibles (operativas / de industria):
+Bolivia **no tiene puerto soberano**. La importación marítima de carburantes se apoya en terminales de terceros países. El hub más citado por YPFB por volumen/costo es **Arica (Chile) — Terminal Marítima Sica Sica**.
 
-| Modalidad | En FuelChain | Etiqueta |
-|-----------|--------------|----------|
-| Cisterna / camión | `TransportType.TRUCK` | `DEMO / ASSUMPTION` (uso en demo) |
-| Ferrocarril | `RAIL` | `DEMO / ASSUMPTION` |
-| Fluvial | `WATER` | `DEMO / ASSUMPTION` |
-| Ducto | `PIPELINE` | `DEMO / ASSUMPTION` |
-| Otros | `OTHER` | `DEMO / ASSUMPTION` |
+Detalle ampliado (infraestructura, boyas, ducto, cisternas, riesgos):  
+→ **`docs/importacion-chile-arica.md`**
 
-Almacenamiento, despacho y distribución a estaciones = modelados como eventos de custodia FuelChain (`FUELCHAIN ABSTRACTION`), no como réplica de un sistema YPFB específico.
+### Corredor principal reportado (Chile)
+
+```text
+Buque tanque
+  → Terminal Marítima Sica Sica (Arica, CL) — YPFB Transporte
+  → Ducto submarino → Terminal Terrestre Arica (tanques)
+  → Camiones cisterna
+  → Plantas / depósitos YPFB en Bolivia
+  → Estaciones de servicio (EESS)
+```
+
+| Tramo | Modalidad | Etiqueta |
+|-------|-----------|----------|
+| Alta mar → Arica | Buque | `REPORTADO` |
+| Boyas → tanques Arica | Ducto submarino (concesión) | `OFFICIAL / VERIFIED` (ficha portuaria) + `REPORTADO` (operador YPFB) |
+| Arica → Bolivia | Cisterna / camión | `REPORTADO` (modo dominante carburantes listos) |
+| Planta → EESS | Cisterna | `REPORTADO` |
+| Alternativa oleoducto OSSA-2 | Ducto (crudo / logística histórica) | `REPORTADO` — no asumir que reemplaza cisternas de gasolina/diésel en todo el flujo |
+
+### Otros puntos de entrega reportados por YPFB
+
+Chile (Iquique, Mejillones), Argentina (Campana, Zárate), Paraguay (San Antonio), Perú (Lima, Pisco, Mollendo).  
+Arica suele presentarse como **principal**; el resto diversifica riesgo.
+
+### En el modelo FuelChain
+
+| Modalidad | Enum | Uso DEMO |
+|-----------|------|----------|
+| Cisterna / camión | `TransportType.TRUCK` | Tramo Arica→Bolivia / planta→EESS |
+| Fluvial / marítimo | `WATER` | Tramo buque (metadata) |
+| Ferrocarril | `RAIL` | Opcional |
+| Ducto | `PIPELINE` | Opcional (no default DEMO) |
+| Otros | `OTHER` | — |
+
+Almacenamiento, despacho y distribución a estaciones = eventos de custodia (`FUELCHAIN ABSTRACTION`), no réplica de un sistema YPFB/B-SISA.
+
+**Documentación fronteriza:** retrasos por papeles (p. ej. DIM citado en prensa) se modelan como anomalías `DOCUMENTATION`, nunca como “contrabando automático”.
 
 ---
 
@@ -151,5 +182,6 @@ Almacenamiento, despacho y distribución a estaciones = modelados como eventos d
 - Cobertura CNC / prensa sobre RM 128/2026 y VUCE  
 - Energiabolivia / La Razón — formulario VUCE (jul, cobertura 2026)  
 - Documentos ANH / Gaceta (PDF y gacetaoficialdebolivia.gob.bo) referenciando Ley 3058, D.S. 28419, 5218, 5271  
+- **Cadena Chile:** DIRECTEMAR (Terminal Sica Sica), comunicados YPFB / PortalPortuario / BNamericas sobre Arica, concesión marítima, cisternas — ver `docs/importacion-chile-arica.md`
 
 *Actualizar este archivo cuando se incorpore el texto íntegro de cada norma.*

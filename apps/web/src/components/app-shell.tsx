@@ -1,24 +1,44 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { AuthProvider } from '@/components/auth-provider';
+import { AuthGate } from '@/components/auth-gate';
+import { useAuth } from '@/components/auth-provider';
 
 const nav = [
   { href: '/', label: 'Resumen' },
   { href: '/batches', label: 'Lotes' },
+  { href: '/mapa', label: 'Cochabamba' },
+  { href: '/simular', label: 'Simular' },
+  { href: '/verify', label: 'QR custodia' },
   { href: '/anomalies', label: 'Discrepancias' },
   { href: '/audits', label: 'Auditorías' },
   { href: '/blockchain', label: 'Evidencia' },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function ShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+  const isLogin = pathname === '/login';
+  const isPublicMap =
+    pathname === '/mapa' || pathname.startsWith('/cochabamba');
+  const showOperatorNav = Boolean(user) && !isLogin;
+  const showPublicNav = !user && isPublicMap;
 
+  function handleLogout() {
+    logout();
+    router.replace('/login');
+  }
   return (
     <div className="min-h-screen">
       <header className="border-b-2 border-[var(--ink)] bg-[var(--paper)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-5 py-5 md:px-8 md:py-6">
-          <Link href="/" className="group block min-w-0">
+          <Link
+            href={user ? '/' : isPublicMap ? '/mapa' : '/login'}
+            className="group block min-w-0"
+          >
             <span className="font-display text-[clamp(2.4rem,6vw,3.75rem)] font-black leading-[0.9] tracking-tight text-[var(--ink)]">
               FuelChain
             </span>
@@ -28,41 +48,96 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <span className="fc-stamp text-[var(--mute)]">Datos demo</span>
-            <p className="max-w-[16rem] text-sm leading-snug text-[var(--mute)] sm:text-right">
-              Cada litro. Cada movimiento. Cada evidencia.
-            </p>
+            {user ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="text-[var(--mute)]">
+                  {user.name} · {user.role}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="border border-[var(--ink)] px-2 py-1 text-xs font-semibold"
+                >
+                  Salir
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="max-w-[14rem] text-sm leading-snug text-[var(--mute)] sm:text-right">
+                  Cada litro. Cada movimiento. Cada evidencia.
+                </p>
+                {isPublicMap && (
+                  <Link
+                    href="/login"
+                    className="border-2 border-[var(--ink)] px-3 py-1.5 text-xs font-semibold"
+                  >
+                    Acceso operadores
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        <nav
-          className="mx-auto flex max-w-6xl gap-0 overflow-x-auto border-t border-[var(--rail)]/40 px-2 md:px-5"
-          aria-label="Principal"
-        >
-          {nav.map((item) => {
-            const active =
-              item.href === '/'
-                ? pathname === '/'
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${
-                  active
-                    ? 'text-[var(--ink)] after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:bg-[var(--diesel)]'
-                    : 'text-[var(--mute)] hover:text-[var(--ink)]'
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {showOperatorNav && (
+          <nav
+            className="mx-auto flex max-w-6xl gap-0 overflow-x-auto border-t border-[var(--rail)]/40 px-2 md:px-5"
+            aria-label="Principal"
+          >
+            {nav.map((item) => {
+              const active =
+                item.href === '/'
+                  ? pathname === '/'
+                  : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${
+                    active
+                      ? 'text-[var(--ink)] after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:bg-[var(--diesel)]'
+                      : 'text-[var(--mute)] hover:text-[var(--ink)]'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+        {showPublicNav && (
+          <nav
+            className="mx-auto flex max-w-6xl gap-0 overflow-x-auto border-t border-[var(--rail)]/40 px-2 md:px-5"
+            aria-label="Público"
+          >
+            <Link
+              href="/mapa"
+              aria-current="page"
+              className="relative whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--ink)] after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:bg-[var(--diesel)]"
+            >
+              Surtidores Cochabamba
+            </Link>
+            <Link
+              href="/login"
+              className="relative whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--mute)] hover:text-[var(--ink)]"
+            >
+              Login operadores
+            </Link>
+          </nav>
+        )}
       </header>
 
       <main className="fc-reveal mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10">
-        {children}
+        <AuthGate>{children}</AuthGate>
       </main>
     </div>
+  );
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <ShellInner>{children}</ShellInner>
+    </AuthProvider>
   );
 }

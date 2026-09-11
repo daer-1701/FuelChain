@@ -1,6 +1,7 @@
 /**
- * FuelChain IoT measurement simulator (PHASE 1 stub).
+ * FuelChain IoT measurement simulator.
  * Publishes DEMO payloads to MQTT — no physical ESP32 required.
+ * Requires: docker compose --profile iot up -d mosquitto
  *
  * Topic: fuelchain/tanks/{tankId}/measurements
  */

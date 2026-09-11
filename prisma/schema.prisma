@@ -20,6 +20,8 @@ enum ActorRole {
   DEPOT_OPERATOR
   LAB
   AUDITOR
+  STATION_STAFF
+  VERIFIER
 }
 
 enum BatchStatus {
@@ -123,6 +125,27 @@ enum TankStatus {
   OFFLINE
 }
 
+enum StationAvailability {
+  FULL
+  MEDIUM
+  LOW
+  EMPTY
+  UNKNOWN
+}
+
+enum BatonStatus {
+  ACTIVE
+  CONSUMED
+  EXPIRED
+  REVOKED
+}
+
+enum OfflineSyncStatus {
+  PENDING
+  APPLIED
+  REJECTED
+}
+
 enum MeasurementSource {
   ESP32
   SIMULATOR
@@ -172,14 +195,15 @@ enum QualityStatus {
 // ─── Actors ──────────────────────────────────────────────────────────────────
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String
-  role      ActorRole
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  role          ActorRole
+  passwordHash  String?
   walletAddress String?
-  isDemo    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  isDemo        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   uploadedDocuments Document[]       @relation("DocumentUploader")
   custodyEvents     CustodyEvent[]   @relation("CustodyActor")
@@ -222,6 +246,7 @@ model FuelBatch {
   anomalies        Anomaly[]
   auditCases       AuditCase[]
   blockchainAnchors BlockchainAnchor[]
+  custodyBatons    CustodyBaton[]
 
   @@index([status])
   @@index([riskLevel])
@@ -431,34 +456,66 @@ model LabAnalysis {
 
 // ─── IoT / Storage ───────────────────────────────────────────────────────────
 
+model Station {
+  id              String              @id @default(cuid())
+  code            String              @unique
+  name            String
+  city            String              @default("Cochabamba")
+  municipality    String?
+  address         String?
+  latitude        Decimal             @db.Decimal(10, 7)
+  longitude       Decimal             @db.Decimal(10, 7)
+  publicVisible   Boolean             @default(true)
+  availability    StationAvailability @default(UNKNOWN)
+  products        String[]            @default([])
+  lastInventoryAt DateTime?
+  isDemo          Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  tanks   StorageTank[]
+  batons  CustodyBaton[]
+
+  @@index([city, publicVisible])
+  @@index([availability])
+  @@map("stations")
+}
+
 model StorageTank {
   id             String     @id @default(cuid())
   name           String
   capacityLiters Decimal    @db.Decimal(18, 3)
   location       String
+  stationId      String?
+  cisternCode    String?
   status         TankStatus @default(AVAILABLE)
   isDemo         Boolean    @default(true)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
+  station      Station?      @relation(fields: [stationId], references: [id], onDelete: SetNull)
   measurements Measurement[]
 
+  @@index([stationId])
+  @@index([cisternCode])
   @@map("storage_tanks")
 }
 
 model Measurement {
-  id           String            @id @default(cuid())
-  batchId      String?
-  tankId       String
-  deviceId     String
-  volumeLiters Decimal           @db.Decimal(18, 3)
-  temperature  Decimal?          @db.Decimal(8, 2)
-  latitude     Decimal?          @db.Decimal(10, 7)
-  longitude    Decimal?          @db.Decimal(10, 7)
-  timestamp    DateTime          @default(now())
-  source       MeasurementSource
-  isDemo       Boolean           @default(true)
-  createdAt    DateTime          @default(now())
+  id            String            @id @default(cuid())
+  batchId       String?
+  tankId        String
+  deviceId      String
+  volumeLiters  Decimal           @db.Decimal(18, 3)
+  temperature   Decimal?          @db.Decimal(8, 2)
+  density       Decimal?          @db.Decimal(10, 4)
+  waterDetected Boolean           @default(false)
+  latitude      Decimal?          @db.Decimal(10, 7)
+  longitude     Decimal?          @db.Decimal(10, 7)
+  timestamp     DateTime          @default(now())
+  source        MeasurementSource
+  isDemo        Boolean           @default(true)
+  createdAt     DateTime          @default(now())
 
   batch FuelBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
   tank  StorageTank @relation(fields: [tankId], references: [id], onDelete: Cascade)
@@ -467,6 +524,58 @@ model Measurement {
   @@index([tankId, timestamp])
   @@index([deviceId])
   @@map("measurements")
+}
+
+model CustodyBaton {
+  id             String      @id @default(cuid())
+  tokenId        String      @unique
+  batchId        String
+  vehicleId      String?
+  stationId      String?
+  cisternCode    String?
+  eventType      String
+  volumeLiters   Decimal     @db.Decimal(18, 3)
+  payloadJson    Json
+  payloadHash    String
+  previousHash   String?
+  signature      String
+  status         BatonStatus @default(ACTIVE)
+  issuedByRole   String
+  consumedByRole String?
+  issuedAt       DateTime    @default(now())
+  consumedAt     DateTime?
+  expiresAt      DateTime?
+  isDemo         Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+
+  batch   FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  station Station?  @relation(fields: [stationId], references: [id], onDelete: SetNull)
+
+  @@index([batchId, status])
+  @@index([tokenId])
+  @@map("custody_batons")
+}
+
+model OfflineSyncEvent {
+  id            String            @id @default(cuid())
+  clientEventId String            @unique
+  batonTokenId  String?
+  batchId       String?
+  stationId     String?
+  actorRole     String
+  eventType     String
+  payload       Json
+  payloadHash   String
+  capturedAt    DateTime
+  syncedAt      DateTime          @default(now())
+  status        OfflineSyncStatus @default(PENDING)
+  rejectReason  String?
+  isDemo        Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+
+  @@index([status, syncedAt])
+  @@index([batchId])
+  @@map("offline_sync_events")
 }
 
 // ─── Anomalies & Audit ───────────────────────────────────────────────────────

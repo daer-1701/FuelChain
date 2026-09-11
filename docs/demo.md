@@ -9,12 +9,14 @@
 
 ### 1a. App + base de datos
 
-En terminales, desde `D:\Buildathon`:
-
 ```powershell
 docker compose up -d postgres
 pnpm db:seed
 
+# Un comando (abre ventanas API / Web / Hardhat)
+pnpm demo:up
+
+# O manual:
 pnpm --filter @fuelchain/api dev
 pnpm --filter @fuelchain/web dev
 ```
@@ -29,7 +31,7 @@ Si la web muestra error de API: confirma que Nest está en `:3001` y que `NEXT_P
 
 ### 1b. Blockchain local (para demo en vivo)
 
-Necesitas **una terminal extra** con el nodo Hardhat, y luego un deploy:
+Incluido si usas `pnpm demo:up`. Si arrancas a mano:
 
 ```powershell
 # Terminal A — deja corriendo
@@ -96,17 +98,10 @@ Al hacer clic en un código `FC-BO-…` entras al **pasaporte digital del lote**
 ### Paso C — Pasaporte del lote 184 (2–3 min)
 1. Entra a `FC-BO-2026-000184`.
 2. Explica el **header**: producto, volumen, score de riesgo.
-3. Baja a **Cadena de custodia**: cada evento es un eslabón (creación → tránsito → frontera → recepción → lab → almacenamiento).
-4. Señala **Discrepancias**: diferencia deliberada del demo:
-
-```text
-Declarado   100,000 L
-Recepción    99,900 L
-Almacén      98,700 L
-Simulador    98,650 L   (source = SIMULATOR; ESP32 físico está diferido)
-```
-
-5. Frase clave: *“No decimos ‘robo’. Decimos ANOMALY / DISCREPANCY: puede ser medición, calibración, temperatura, documentación u otros factores. Es una señal para el auditor.”*
+3. Baja a **Reconciliación de volumen**: escalera Declarado → Recepción → Almacén → Simulador.
+4. Señala la **brecha total** y las discrepancias (señal, no sentencia).
+5. Revisa documentos, calidad, mediciones y anclas indexadas.
+6. Frase clave: *“No decimos ‘robo’. Decimos ANOMALY / DISCREPANCY.”*
 
 ### Paso D — Auditoría (1 min)
 1. **Auditorías** → abre el caso del lote 184.

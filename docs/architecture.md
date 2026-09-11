@@ -1,16 +1,33 @@
-# FuelChain Bolivia — Arquitectura (PHASE 0)
+# FuelChain Bolivia — Arquitectura
 
-**Versión:** 0.8  
-**Fecha:** 2026-09-10  
-**Estado:** PHASE 0–6 hechas · ESP32 diferido · API ampliada + Dashboard web  
-**Gestor de paquetes:** `pnpm` exclusivamente (regla del proyecto; no `npm` / `npx`)  
+**Versión:** 1.0  
+**Fecha:** 2026-09-11  
+**Estado:** Demo operativa — monorepo, API, web, seed, reconciliación de volumen, anclado Hardhat en vivo. ESP32 diferido.  
+**Gestor de paquetes:** `pnpm` exclusivamente (no `npm` / `npx`)  
 **Tagline:** *Cada litro. Cada movimiento. Cada evidencia.*
 
 ---
 
-## 1. Análisis del repositorio actual
+## 1. Resumen del estado actual
 
-### 1.1 Inventario
+El repositorio **ya no es greenfield**. Incluye:
+
+| Área | Estado |
+|------|--------|
+| `apps/web` + `apps/api` | Operativos |
+| Prisma + Postgres + seed DEMO | Operativo |
+| Pasaporte + reconciliación de volúmenes | Operativo |
+| Blockchain live (Hardhat + viem) | Operativo (local DEMO) |
+| IoT ESP32 | Diferido (seed usa `SIMULATOR`) |
+| Auth / IPFS / testnet pública | Fuera de scope demo |
+
+> Las secciones históricas siguientes conservan el diseño original de PHASE 0; ante conflicto, manda el estado de la tabla de arriba y `docs/demo.md`.
+
+---
+
+## 1b. Análisis del repositorio (histórico PHASE 0)
+
+### 1.1 Inventario (al inicio del proyecto)
 
 | Ítem | Hallazgo |
 |------|----------|

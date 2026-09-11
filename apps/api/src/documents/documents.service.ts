@@ -37,23 +37,33 @@ export class DocumentsService {
     return serialize(row);
   }
 
-  /** Compare provided hash vs stored (full verify flow lands in PHASE 13). */
+  /** Compare provided hash vs stored sha256; report linked on-chain tx if present. */
   async verify(batchIdOrCode: string, documentId: string, providedHash: string) {
     const batch = await this.batches.findBatchOrThrow(batchIdOrCode);
     const doc = await this.prisma.document.findFirstOrThrow({
       where: { id: documentId, batchId: batch.id },
     });
     const matches = doc.sha256Hash.toLowerCase() === providedHash.toLowerCase();
+
+    const linkedAnchor = doc.blockchainTxHash
+      ? await this.prisma.blockchainAnchor.findFirst({
+          where: { transactionHash: doc.blockchainTxHash },
+        })
+      : null;
+
     return {
       label: 'DEMO',
       documentId: doc.id,
       status: matches ? 'DOCUMENT VERIFIED' : 'DOCUMENT MODIFIED / HASH MISMATCH',
       detail: matches
-        ? 'Hash matches stored record (blockchain anchor check in PHASE 12–13)'
-        : 'Provided hash does not match stored sha256Hash',
+        ? linkedAnchor
+          ? 'Hash coincide con el registro y hay ancla blockchain indexada.'
+          : 'Hash coincide con el registro almacenado (índice off-chain).'
+        : 'El hash provisto no coincide con sha256Hash almacenado.',
       storedHash: doc.sha256Hash,
       providedHash: providedHash.toLowerCase(),
       blockchainTxHash: doc.blockchainTxHash,
+      anchorIndexed: Boolean(linkedAnchor),
     };
   }
 }

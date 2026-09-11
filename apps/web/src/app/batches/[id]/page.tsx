@@ -30,7 +30,42 @@ type Passport = {
     declaredVolume: string | null;
   }>;
   anomalies: Array<{ type: string; severity: string; difference: string | null }>;
-  quantity: { declared: string | number; note: string };
+  quantity: {
+    declared: number;
+    received: number | null;
+    stored: number | null;
+    sensor: number | null;
+    sensorSource: string | null;
+    totalGapLiters: number;
+    note: string;
+    steps: Array<{ key: string; label: string; liters: number | null }>;
+    deltas: Array<{ from: string; to: string; differenceLiters: number }>;
+  };
+  documents: Array<{
+    id: string;
+    name: string;
+    type: string;
+    sha256Hash: string;
+    blockchainTxHash: string | null;
+  }>;
+  quality: {
+    certificates: Array<{ id: string; certificateNumber: string; status: string }>;
+    labAnalyses: Array<{ id: string; status: string; laboratory: string }>;
+  };
+  iot: Array<{
+    id: string;
+    volumeLiters: string | number;
+    source: string;
+    timestamp: string;
+  }>;
+  blockchain: Array<{
+    id: string;
+    eventKind: string;
+    dataHash: string;
+    transactionHash: string | null;
+    blockNumber: string | null;
+    timestamp: string;
+  }>;
 };
 
 export default async function BatchDetailPage({
@@ -64,6 +99,7 @@ export default async function BatchDetailPage({
   }
 
   const idn = passport.identification;
+  const q = passport.quantity;
 
   return (
     <div className="space-y-10">
@@ -117,14 +153,60 @@ export default async function BatchDetailPage({
         ))}
       </section>
 
-      <section className="border-y-2 border-[var(--ink)] py-5">
-        <h2 className="font-display text-xl font-bold">Cantidad</h2>
-        <p className="font-display mt-2 text-3xl font-black tabular-nums">
-          {formatVolume(passport.quantity.declared)}
-        </p>
-        <p className="mt-2 max-w-xl text-sm text-[var(--mute)]">
-          {passport.quantity.note}
-        </p>
+      <section className="fc-sheet space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-bold">Reconciliación de volumen</h2>
+            <p className="mt-2 max-w-2xl text-sm text-[var(--mute)]">{q.note}</p>
+          </div>
+          <p className="text-right text-sm">
+            <span className="text-[var(--mute)]">Brecha total</span>
+            <span
+              className={`mt-1 block font-display text-2xl font-black tabular-nums ${
+                q.totalGapLiters === 0 ? 'text-[var(--seal)]' : 'text-[var(--alarm)]'
+              }`}
+            >
+              {q.totalGapLiters > 0 ? '+' : ''}
+              {q.totalGapLiters.toLocaleString('es-BO')} L
+            </span>
+          </p>
+        </div>
+
+        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {q.steps.map((step, i) => (
+            <li
+              key={step.key}
+              className="border border-[var(--rail)]/45 bg-white/50 px-4 py-4"
+            >
+              <p className="font-display text-xs font-bold tracking-wide text-[var(--mute)]">
+                {String(i + 1).padStart(2, '0')} · {step.label}
+              </p>
+              <p className="font-display mt-2 text-2xl font-black tabular-nums">
+                {step.liters === null ? '—' : formatVolume(step.liters)}
+              </p>
+            </li>
+          ))}
+        </ol>
+
+        {q.deltas.length > 0 && (
+          <ul className="space-y-1 text-sm text-[var(--mute)]">
+            {q.deltas.map((d) => (
+              <li key={`${d.from}-${d.to}`}>
+                {d.from} → {d.to}:{' '}
+                <span
+                  className={
+                    d.differenceLiters === 0
+                      ? 'text-[var(--seal)]'
+                      : 'font-semibold text-[var(--alarm)]'
+                  }
+                >
+                  {d.differenceLiters > 0 ? '+' : ''}
+                  {d.differenceLiters.toLocaleString('es-BO')} L
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section>
@@ -167,6 +249,116 @@ export default async function BatchDetailPage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section>
+          <h2 className="font-display mb-3 text-xl font-bold">Documentos</h2>
+          {passport.documents.length === 0 ? (
+            <p className="text-sm text-[var(--mute)]">Sin documentos.</p>
+          ) : (
+            <ul className="divide-y divide-[var(--rail)]/35 border border-[var(--rail)]/45 bg-[var(--paper)]">
+              {passport.documents.map((d) => (
+                <li key={d.id} className="px-4 py-3 text-sm">
+                  <p className="font-medium">{d.name}</p>
+                  <p className="mt-1 capitalize text-[var(--mute)]">
+                    {formatStatus(d.type)}
+                  </p>
+                  <p className="mt-1 truncate font-mono text-xs text-[var(--mute)]">
+                    {d.sha256Hash}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section>
+          <h2 className="font-display mb-3 text-xl font-bold">Calidad / lab</h2>
+          {passport.quality.certificates.length === 0 &&
+          passport.quality.labAnalyses.length === 0 ? (
+            <p className="text-sm text-[var(--mute)]">Sin registros de calidad.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {passport.quality.certificates.map((c) => (
+                <li key={c.id} className="border border-[var(--rail)]/45 bg-[var(--paper)] px-4 py-3">
+                  Cert. {c.certificateNumber} ·{' '}
+                  <span className="capitalize text-[var(--mute)]">
+                    {formatStatus(c.status)}
+                  </span>
+                </li>
+              ))}
+              {passport.quality.labAnalyses.map((l) => (
+                <li key={l.id} className="border border-[var(--rail)]/45 bg-[var(--paper)] px-4 py-3">
+                  Lab {l.laboratory} ·{' '}
+                  <span className="capitalize text-[var(--mute)]">
+                    {formatStatus(l.status)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {passport.iot.length > 0 && (
+        <section>
+          <h2 className="font-display mb-3 text-xl font-bold">Mediciones</h2>
+          <div className="fc-surface overflow-x-auto">
+            <table className="fc-table min-w-[480px]">
+              <thead>
+                <tr>
+                  <th>Fuente</th>
+                  <th>Volumen</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {passport.iot.slice(0, 5).map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.source}</td>
+                    <td className="tabular-nums">{formatVolume(m.volumeLiters)}</td>
+                    <td className="text-[var(--mute)]">
+                      {new Date(m.timestamp).toLocaleString('es-BO')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {passport.blockchain.length > 0 && (
+        <section>
+          <h2 className="font-display mb-3 text-xl font-bold">Anclas indexadas</h2>
+          <div className="fc-surface overflow-x-auto">
+            <table className="fc-table min-w-[640px]">
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Hash</th>
+                  <th>Tx</th>
+                  <th>Bloque</th>
+                </tr>
+              </thead>
+              <tbody>
+                {passport.blockchain.slice(0, 6).map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.eventKind}</td>
+                    <td className="max-w-[140px] truncate font-mono text-xs text-[var(--mute)]">
+                      {a.dataHash}
+                    </td>
+                    <td className="max-w-[160px] truncate font-mono text-xs text-[var(--mute)]">
+                      {a.transactionHash ?? '—'}
+                    </td>
+                    <td className="tabular-nums">{a.blockNumber ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 

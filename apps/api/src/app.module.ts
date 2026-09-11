@@ -9,12 +9,16 @@ import { AuthorizationsModule } from './authorizations/authorizations.module';
 import { BatchesModule } from './batches/batches.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { CustodyModule } from './custody/custody.module';
+import { CustodyQrModule } from './custody-qr/custody-qr.module';
 import { CustomsModule } from './customs/customs.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DocumentsModule } from './documents/documents.module';
+import { DemoModule } from './demo/demo.module';
+import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { QualityModule } from './quality/quality.module';
+import { StationsModule } from './stations/stations.module';
 import { TanksModule } from './tanks/tanks.module';
 import { TransportsModule } from './transports/transports.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
@@ -30,9 +34,13 @@ import { VehiclesModule } from './vehicles/vehicles.module';
       ],
     }),
     PrismaModule,
+    AuthModule,
+    DemoModule,
     DashboardModule,
     BatchesModule,
     CustodyModule,
+    CustodyQrModule,
+    StationsModule,
     AuthorizationsModule,
     TransportsModule,
     VehiclesModule,
