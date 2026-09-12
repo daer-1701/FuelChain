@@ -7,8 +7,9 @@ import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { batonDeepLink } from '@/lib/baton-qr';
 import { canDispatchFuel, homeForRole } from '@/lib/role-access';
-import { roleLabel } from '@/lib/es-labels';
+import { labelEs, roleLabel } from '@/lib/es-labels';
 import { useDispatchOptions } from '@/lib/use-dispatch-options';
+import { useActiveDriverTrip } from '@/lib/use-active-driver-trip';
 
 type IssueResult = {
   data: {
@@ -37,6 +38,10 @@ export default function VerifyPage() {
   const [pending, startTransition] = useTransition();
   const [lookup, setLookup] = useState('');
   const canIssue = canDispatchFuel(user?.role);
+  const { trip: activeTrip } = useActiveDriverTrip(
+    user?.cisternCode ?? cistern,
+  );
+  const blockedByOpenTrip = Boolean(activeTrip);
 
   useEffect(() => {
     if (user?.cisternCode) setCistern(user.cisternCode);
@@ -93,7 +98,7 @@ export default function VerifyPage() {
   }, [log]);
 
   function issue() {
-    if (!canIssue) return;
+    if (!canIssue || blockedByOpenTrip) return;
     startTransition(async () => {
       setLog(null);
       try {
@@ -192,6 +197,36 @@ export default function VerifyPage() {
       <section className="grid gap-8 lg:grid-cols-2">
         <div className="fc-sheet space-y-4">
           <h2 className="fc-section-title">Emitir bastón</h2>
+          {activeTrip && (
+            <div className="border border-[var(--diesel)] bg-[var(--diesel-soft)] px-3 py-3 text-sm">
+              <p className="font-semibold">Ya tenés un viaje abierto</p>
+              <p className="mt-1 text-[var(--mute)]">
+                {activeTrip.cisternCode} → {activeTrip.stationCode} · lote{' '}
+                {activeTrip.batchCode} · {labelEs(activeTrip.status)}. Solo un
+                viaje a la vez: la estación debe recibir antes de abrir otro.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3">
+                <Link
+                  href={activeTrip.deepLinkPath}
+                  className="font-semibold text-[var(--diesel)] underline"
+                >
+                  Ver ficha del viaje
+                </Link>
+                <Link
+                  href="/tramos"
+                  className="font-semibold text-[var(--diesel)] underline"
+                >
+                  Ir a tramos
+                </Link>
+                <Link
+                  href="/mi-qr"
+                  className="font-semibold text-[var(--diesel)] underline"
+                >
+                  Mi QR
+                </Link>
+              </div>
+            </div>
+          )}
           <label className="fc-label">
             Lote
             <select
@@ -265,12 +300,12 @@ export default function VerifyPage() {
           </div>
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || blockedByOpenTrip}
             onClick={issue}
             aria-busy={pending}
             className="fc-btn fc-btn-ink"
           >
-            Generar QR
+            {blockedByOpenTrip ? 'Viaje en curso' : 'Generar QR'}
           </button>
           {issued && (
             <div className="space-y-2 border-t border-[var(--rail)]/40 pt-4">

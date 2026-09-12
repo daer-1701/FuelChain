@@ -7,7 +7,7 @@ import {
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ActorRole, BatchStatus, Prisma } from '@prisma/client';
+import { ActorRole, BatchStatus, DeliveryStatus, Prisma } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.service';
 import {
   assertCanTransition,
@@ -228,6 +228,40 @@ export class CustodyQrService {
           'Esta cisterna está asignada a otro chofer',
         );
       }
+    }
+
+    const openStatuses: DeliveryStatus[] = [
+      DeliveryStatus.LOADED,
+      DeliveryStatus.IN_TRANSIT,
+    ];
+    const openTripWhere: Prisma.DeliveryWhereInput =
+      actor.role === ActorRole.TRANSPORTER ||
+      actor.role === ActorRole.DEPOT_OPERATOR
+        ? {
+            status: { in: openStatuses },
+            OR: [
+              { cisternId: cistern.id },
+              { cistern: { driverId: actor.id } },
+            ],
+          }
+        : {
+            status: { in: openStatuses },
+            cisternId: cistern.id,
+          };
+
+    const openTrip = await this.prisma.delivery.findFirst({
+      where: openTripWhere,
+      orderBy: { loadedAt: 'desc' },
+      include: {
+        cistern: { select: { code: true } },
+        station: { select: { code: true, name: true } },
+        batch: { select: { batchCode: true } },
+      },
+    });
+    if (openTrip) {
+      throw new BadRequestException(
+        `Ya hay un viaje abierto (${openTrip.cistern.code} → ${openTrip.station.code}, lote ${openTrip.batch.batchCode}). Completá la recepción en estación antes de abrir otro.`,
+      );
     }
 
     assertCisternCanLoad({

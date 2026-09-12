@@ -107,6 +107,14 @@ function CisternQrInner() {
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const canAccept = canAcceptCustody(user?.role);
+  const isDriver =
+    user?.role === 'TRANSPORTER' || user?.role === 'DEPOT_OPERATOR';
+  const ownCistern =
+    !isDriver ||
+    !user?.cisternCode ||
+    !payload?.cistern ||
+    payload.cistern.code === user.cisternCode ||
+    payload.cistern.qrToken === user.cisternCode;
 
   const here = `${pathname}?${searchParams.toString()}`.replace(/\?$/, '');
   const loginHref = `/login?next=${encodeURIComponent(here)}`;
@@ -225,13 +233,21 @@ function CisternQrInner() {
         </h1>
         {note && <p className="text-sm text-[var(--mute)]">{note}</p>}
         <div className="flex flex-wrap items-center gap-3">
-          <QrScanButton />
+          {!isDriver && <QrScanButton />}
           {user?.role === 'STATION_STAFF' && (
             <Link
               href="/escanear"
               className="text-sm font-semibold text-[var(--diesel)] underline"
             >
               Volver al historial de escaneos
+            </Link>
+          )}
+          {isDriver && (
+            <Link
+              href="/mi-qr"
+              className="text-sm font-semibold text-[var(--diesel)] underline"
+            >
+              Volver a mi QR
             </Link>
           )}
         </div>
@@ -244,7 +260,19 @@ function CisternQrInner() {
       )}
       {msg && <p className="text-sm text-[var(--seal)]">{msg}</p>}
 
-      {payload && (
+      {payload && !ownCistern && (
+        <section className="fc-sheet space-y-3">
+          <p>
+            Como chofer solo podés ver el QR de tu cisterna (
+            <strong>{user?.cisternCode}</strong>).
+          </p>
+          <Link href="/mi-qr" className="fc-btn inline-block">
+            Ir a mi QR
+          </Link>
+        </section>
+      )}
+
+      {payload && ownCistern && (
         <section className="fc-sheet space-y-3">
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-[var(--mute)]">Dispositivo</dt>
@@ -324,7 +352,7 @@ function CisternQrInner() {
         </section>
       )}
 
-      {drops.length > 0 && (
+      {ownCistern && drops.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Cambios de cantidad en ruta</h2>
           <p className="text-sm text-[var(--mute)]">
@@ -367,7 +395,7 @@ function CisternQrInner() {
         </section>
       )}
 
-      {qualityChanges.length > 0 && (
+      {ownCistern && qualityChanges.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Cambios de calidad en ruta</h2>
           <p className="text-sm text-[var(--mute)]">
@@ -402,7 +430,7 @@ function CisternQrInner() {
         </section>
       )}
 
-      {checkpoints.length > 0 && (
+      {ownCistern && checkpoints.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Historial del camino</h2>
           <ol className="space-y-2">
