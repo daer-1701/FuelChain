@@ -8,6 +8,7 @@ import { AuditsModule } from './audits/audits.module';
 import { AuthorizationsModule } from './authorizations/authorizations.module';
 import { BatchesModule } from './batches/batches.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { CheckpointsModule } from './checkpoints/checkpoints.module';
 import { CustodyModule } from './custody/custody.module';
 import { CustodyQrModule } from './custody-qr/custody-qr.module';
 import { CustomsModule } from './customs/customs.module';
@@ -51,6 +52,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     AnomaliesModule,
     AuditsModule,
     BlockchainModule,
+    CheckpointsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

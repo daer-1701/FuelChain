@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { friendlyError } from '@/lib/api-error';
 import type {
   SupervisionResponse,
   SupervisionStation,
@@ -51,7 +52,7 @@ export function SupervisionPanel({
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Error de carga');
+          setError(friendlyError(e, 'Error de carga'));
         }
       }
     })();
@@ -80,36 +81,59 @@ export function SupervisionPanel({
     data.data.find((s) => s.code === selected) ?? data.data[0] ?? null;
 
   const receivedCount =
-    station?.cisterns.filter((c) => c.status === 'CONSUMED' || c.consumedAt)
-      .length ?? 0;
+    station?.cisterns.filter(
+      (c) =>
+        c.status === 'DELIVERED' ||
+        c.status === 'CONSUMED' ||
+        Boolean(c.consumedAt),
+    ).length ?? 0;
   const inboundCount =
-    station?.cisterns.filter((c) => c.status === 'ACTIVE' && !c.consumedAt)
-      .length ?? 0;
+    station?.cisterns.filter(
+      (c) =>
+        (c.status === 'IN_TRANSIT' ||
+          c.status === 'LOADED' ||
+          c.status === 'ACTIVE') &&
+        !c.consumedAt,
+    ).length ?? 0;
 
   return (
     <div className="space-y-8">
       <header className="max-w-2xl">
         <p className="fc-stamp text-[var(--mute)]">
-          {mode === 'anh' ? 'ANH · supervisión DEMO' : 'Estación · operación DEMO'}
+          {mode === 'anh'
+            ? 'ANH · verificación de movimientos DEMO'
+            : 'Estación · tu surtidor DEMO'}
         </p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
           {mode === 'anh'
-            ? 'Red de surtidores'
-            : 'Mis tanques y cisternas'}
+            ? 'Todos los movimientos'
+            : 'Tanque y cisternas'}
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
           {mode === 'anh'
-            ? 'Por cada surtidor: cantidad actual, calidad y cisternas que entregaron. La decisión regulatoria sigue siendo humana.'
-            : 'Solo tu EESS: tanques, calidad y cisternas recibidas aquí. Para aceptar una entrega, escaneá el QR del chofer. No emitís ni simulás despachos a otras estaciones.'}{' '}
+            ? 'Verificás cantidad, calidad y cisternas en cada surtidor de la red. La decisión regulatoria sigue siendo humana.'
+            : 'Controlás el combustible de tu EESS: estado del tanque y seguimiento de las cisternas que vienen o ya descargaron aquí. Recibís con el QR del chofer.'}{' '}
           {data.note}
         </p>
         {mode === 'station' && (
-          <p className="mt-4 text-sm">
-            El chofer te muestra el QR → abrís el link → confirmás litros
-            recibidos. Sesión:{' '}
-            <strong>{user?.name}</strong>
-            {user?.stationCode ? ` · ${user.stationCode}` : ''}.
-          </p>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            <p>
+              Sesión: <strong>{user?.name}</strong>
+              {user?.stationCode ? ` · ${user.stationCode}` : ''}.
+            </p>
+            <Link
+              href="/contratos"
+              className="font-semibold text-[var(--diesel)] underline"
+            >
+              Ver contratos con choferes
+            </Link>
+            <Link
+              href="/tramos"
+              className="font-semibold text-[var(--diesel)] underline"
+            >
+              Ver tramos GPS
+            </Link>
+          </div>
         )}
       </header>
 
@@ -214,12 +238,14 @@ export function SupervisionPanel({
                   {station.address ? ` · ${station.address}` : ''}
                 </p>
               </div>
-              <Link
-                href={`/mapa#${station.code}`}
-                className="border border-[var(--ink)] px-3 py-1.5 text-xs font-semibold"
-              >
-                Ver en mapa
-              </Link>
+              {mode === 'anh' && (
+                <Link
+                  href={`/mapa#${station.code}`}
+                  className="border border-[var(--ink)] px-3 py-1.5 text-xs font-semibold"
+                >
+                  Ver en mapa
+                </Link>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -341,6 +367,18 @@ export function SupervisionPanel({
                             ? `Recibida ${new Date(c.consumedAt).toLocaleString('es-BO')}`
                             : `Emitida ${new Date(c.issuedAt).toLocaleString('es-BO')}`}
                         </p>
+                        {c.checkpoints && c.checkpoints.length > 0 && (
+                          <ul className="mt-2 space-y-1 border-l border-[var(--rail)]/50 pl-3 text-xs text-[var(--mute)]">
+                            {c.checkpoints.map((cp) => (
+                              <li key={cp.id}>
+                                {cp.kind.replaceAll('_', ' ')}
+                                {cp.label ? ` · ${cp.label}` : ''} ·{' '}
+                                {liters(cp.volumeLiters)} ·{' '}
+                                {cp.latitude.toFixed(3)},{cp.longitude.toFixed(3)}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                       <p className="tabular-nums font-semibold">
                         {liters(c.volumeLiters)}

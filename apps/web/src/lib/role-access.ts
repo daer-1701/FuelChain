@@ -1,4 +1,4 @@
-/** UI navigation and homes aligned to FuelChain roles (job = screen). */
+/** UI navigation — producto FuelChain = 4 actores DEMO. */
 
 export type AppRole =
   | 'ADMIN'
@@ -16,103 +16,92 @@ export type NavItem = {
   label: string;
 };
 
+/**
+ * Menú visible. Producto confirmado:
+ * - Estación: tanque + cisternas propias + contratos
+ * - Chofer: registra viaje (QR/simular) + contratos
+ * - ANH: verifica todos los movimientos
+ * - Ciudadano: mapa
+ * Roles legacy (importador, depósito, lab, auditor) quedan con acceso mínimo.
+ */
 const ALL_NAV: NavItem[] = [
-  { href: '/', label: 'Resumen' },
-  { href: '/supervision', label: 'Supervisión' },
+  { href: '/supervision', label: 'Movimientos' },
   { href: '/estacion', label: 'Mi estación' },
-  { href: '/batches', label: 'Lotes' },
+  { href: '/verify', label: 'Registrar viaje' },
+  { href: '/tramos', label: 'Tramos GPS' },
+  { href: '/simular', label: 'Simular entrega' },
+  { href: '/contratos', label: 'Contratos' },
   { href: '/mapa', label: 'Cochabamba' },
-  { href: '/simular', label: 'Simular' },
-  { href: '/verify', label: 'QR custodia' },
+  { href: '/', label: 'Resumen' },
+  { href: '/batches', label: 'Lotes' },
   { href: '/anomalies', label: 'Discrepancias' },
   { href: '/audits', label: 'Auditorías' },
   { href: '/blockchain', label: 'Evidencia' },
 ];
 
-/**
- * Menú por rol — solo pantallas que el actor usa de verdad.
- * - Chofer: emite QR / simula despacho
- * - Estación: inventario propio + recibir QR (/q, no menú)
- * - ANH: supervisión de la red
- * - Auditor: casos y discrepancias
- * - Importador: lotes y evidencia
- * - Depósito: carga a cisterna (QR / simular)
- * - Lab: lotes / calidad (pasaporte)
- * - Ciudadano: solo mapa
- */
 const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
-  IMPORTER: ['/', '/batches', '/mapa', '/blockchain'],
-  TRANSPORTER: ['/verify', '/simular', '/batches', '/mapa'],
-  DEPOT_OPERATOR: ['/verify', '/simular', '/batches', '/anomalies'],
-  STATION_STAFF: ['/estacion', '/mapa', '/anomalies', '/batches'],
-  LAB: ['/batches', '/anomalies'],
-  AUDITOR: [
-    '/audits',
-    '/anomalies',
-    '/supervision',
-    '/batches',
-    '/blockchain',
-  ],
-  VERIFIER: ['/supervision', '/batches', '/mapa', '/blockchain'],
+  STATION_STAFF: ['/estacion', '/contratos', '/tramos'],
+  TRANSPORTER: ['/verify', '/tramos', '/simular', '/contratos'],
+  VERIFIER: ['/supervision', '/tramos', '/mapa'],
   CITIZEN: ['/mapa'],
+  DEPOT_OPERATOR: ['/verify', '/tramos', '/simular', '/contratos'],
+  IMPORTER: ['/batches', '/mapa', '/blockchain'],
+  LAB: ['/batches'],
+  AUDITOR: ['/supervision', '/tramos', '/anomalies', '/audits'],
 };
 
 export const HOME_BY_ROLE: Record<AppRole, string> = {
   ADMIN: '/supervision',
-  IMPORTER: '/batches',
-  TRANSPORTER: '/verify',
-  DEPOT_OPERATOR: '/verify',
   STATION_STAFF: '/estacion',
-  LAB: '/batches',
-  AUDITOR: '/audits',
+  TRANSPORTER: '/verify',
   VERIFIER: '/supervision',
   CITIZEN: '/mapa',
+  DEPOT_OPERATOR: '/verify',
+  IMPORTER: '/batches',
+  LAB: '/batches',
+  AUDITOR: '/supervision',
 };
 
-/** Rutas permitidas (menú + deep links como /q). */
 const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ['/'],
-  IMPORTER: ['/', '/batches', '/mapa', '/blockchain'],
-  TRANSPORTER: ['/verify', '/simular', '/batches', '/mapa', '/q'],
-  DEPOT_OPERATOR: [
-    '/verify',
-    '/simular',
-    '/batches',
-    '/anomalies',
-    '/q',
-  ],
-  STATION_STAFF: [
-    '/estacion',
-    '/mapa',
-    '/anomalies',
-    '/batches',
-    '/q',
-  ],
-  LAB: ['/batches', '/anomalies'],
-  AUDITOR: [
-    '/audits',
-    '/anomalies',
-    '/supervision',
-    '/batches',
-    '/blockchain',
-    '/mapa',
-  ],
-  VERIFIER: ['/supervision', '/batches', '/mapa', '/blockchain'],
+  STATION_STAFF: ['/estacion', '/contratos', '/tramos', '/q'],
+  TRANSPORTER: ['/verify', '/simular', '/contratos', '/tramos', '/q'],
+  VERIFIER: ['/supervision', '/mapa', '/tramos'],
   CITIZEN: ['/mapa'],
+  DEPOT_OPERATOR: ['/verify', '/simular', '/contratos', '/tramos', '/q'],
+  IMPORTER: ['/batches', '/mapa', '/blockchain'],
+  LAB: ['/batches'],
+  AUDITOR: [
+    '/supervision',
+    '/tramos',
+    '/anomalies',
+    '/audits',
+    '/mapa',
+    '/batches',
+  ],
 };
 
 export const ROLE_BLURB: Record<AppRole, string> = {
   ADMIN: 'Acceso completo DEMO.',
-  IMPORTER: 'Crea y sigue lotes de importación.',
-  TRANSPORTER: 'Emite QR de despacho desde tu cisterna.',
-  DEPOT_OPERATOR: 'Carga cisternas y registra despachos.',
-  STATION_STAFF: 'Recibe cisternas y controla tu tanque.',
-  LAB: 'Calidad y certificados del lote.',
-  AUDITOR: 'Investiga discrepancias y cierra casos.',
-  VERIFIER: 'Supervisa la red de surtidores (ANH).',
+  STATION_STAFF:
+    'Tu EESS: tanque, cisternas en camino y contratos con el chofer.',
+  TRANSPORTER: 'Registrás el viaje de la cisterna y acordás con el surtidor.',
+  VERIFIER: 'ANH: verificás todos los movimientos de la red.',
   CITIZEN: 'Consulta cantidad y calidad en el mapa.',
+  DEPOT_OPERATOR: 'Legacy DEMO — usá el perfil chofer.',
+  IMPORTER: 'Legacy DEMO — fuera del núcleo de 4 actores.',
+  LAB: 'Legacy DEMO — calidad queda en el pasaporte.',
+  AUDITOR: 'Legacy DEMO — la verificación la hace ANH.',
 };
+
+/** Roles que se muestran en login DEMO. */
+export const DEMO_LOGIN_ROLES = [
+  'TRANSPORTER',
+  'STATION_STAFF',
+  'VERIFIER',
+  'CITIZEN',
+] as const;
 
 export function isAppRole(role: string | undefined | null): role is AppRole {
   return Boolean(role && role in NAV_BY_ROLE);
@@ -149,7 +138,6 @@ export function canAccessPath(
   );
 }
 
-/** Quién puede emitir / simular despachos (UI). */
 export function canDispatchFuel(role: string | undefined | null): boolean {
   return (
     role === 'ADMIN' ||
@@ -158,27 +146,50 @@ export function canDispatchFuel(role: string | undefined | null): boolean {
   );
 }
 
-/** Quién confirma recepción en estación (UI). */
 export function canAcceptCustody(role: string | undefined | null): boolean {
   return role === 'ADMIN' || role === 'STATION_STAFF';
 }
 
-/** Quién crea lotes de importación (UI). */
+export function canManageContracts(role: string | undefined | null): boolean {
+  return (
+    role === 'ADMIN' ||
+    role === 'STATION_STAFF' ||
+    role === 'TRANSPORTER' ||
+    role === 'DEPOT_OPERATOR'
+  );
+}
+
+export function canWriteCheckpoint(role: string | undefined | null): boolean {
+  return (
+    role === 'ADMIN' ||
+    role === 'TRANSPORTER' ||
+    role === 'DEPOT_OPERATOR'
+  );
+}
+
+export function canReadCheckpoint(role: string | undefined | null): boolean {
+  return (
+    role === 'ADMIN' ||
+    role === 'TRANSPORTER' ||
+    role === 'DEPOT_OPERATOR' ||
+    role === 'STATION_STAFF' ||
+    role === 'VERIFIER' ||
+    role === 'AUDITOR'
+  );
+}
+
 export function canCreateBatch(role: string | undefined | null): boolean {
   return role === 'ADMIN' || role === 'IMPORTER';
 }
 
-/** Quién trabaja casos de auditoría (UI). */
 export function canWriteAudit(role: string | undefined | null): boolean {
-  return role === 'ADMIN' || role === 'AUDITOR';
+  return role === 'ADMIN' || role === 'AUDITOR' || role === 'VERIFIER';
 }
 
-/** Quién cambia estado de discrepancias (UI). */
 export function canResolveAnomaly(role: string | undefined | null): boolean {
-  return role === 'ADMIN' || role === 'AUDITOR';
+  return role === 'ADMIN' || role === 'AUDITOR' || role === 'VERIFIER';
 }
 
-/** Quién ancla evidencia on-chain (UI). */
 export function canAnchorEvidence(role: string | undefined | null): boolean {
   return (
     role === 'ADMIN' || role === 'AUDITOR' || role === 'IMPORTER'

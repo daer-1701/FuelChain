@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider';
 import { safeInternalPath } from '@/lib/safe-next';
 import { canAccessPath, homeForRole } from '@/lib/role-access';
 
+/** Visibles sin sesión. Con sesión, el rol debe poder acceder (salvo /login). */
 const PUBLIC = ['/login', '/mapa', '/cochabamba', '/q'];
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   );
   const qs = searchParams.toString();
   const here = qs ? `${pathname}?${qs}` : pathname || '/';
+  const roleBlocked =
+    Boolean(user) &&
+    pathname !== '/login' &&
+    !canAccessPath(user!.role, pathname);
 
   useEffect(() => {
     if (!ready) return;
@@ -38,10 +43,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace(dest);
       return;
     }
-    if (user && !isPublic && !canAccessPath(user.role, pathname)) {
-      router.replace(homeForRole(user.role));
+    // Incluye /mapa público: estación no ve la red completa.
+    if (roleBlocked) {
+      router.replace(homeForRole(user!.role));
     }
-  }, [ready, user, isPublic, pathname, here, router, searchParams]);
+  }, [ready, user, isPublic, pathname, here, router, searchParams, roleBlocked]);
 
   if (!ready) {
     return (
@@ -53,7 +59,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!user && !isPublic) return null;
   if (user && pathname === '/login') return null;
-  if (user && !isPublic && !canAccessPath(user.role, pathname)) {
+  if (roleBlocked) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-[var(--mute)]">
         Redirigiendo a tu panel…

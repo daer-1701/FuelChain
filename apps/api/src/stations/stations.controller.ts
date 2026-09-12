@@ -42,6 +42,17 @@ export class StationsController {
     });
   }
 
+  @Get('contracts')
+  @RequireRoles(
+    ActorRole.ADMIN,
+    ActorRole.STATION_STAFF,
+    ActorRole.TRANSPORTER,
+    ActorRole.DEPOT_OPERATOR,
+  )
+  contracts(@CurrentUser() user: AuthUser) {
+    return this.stations.listContractsForActor(user);
+  }
+
   @Get()
   @RequireRoles(
     ActorRole.ADMIN,

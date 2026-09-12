@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canWriteAudit } from '@/lib/role-access';
 
 const STATUSES = [
@@ -47,11 +48,11 @@ export function AuditWorkbench({
           headers: authHeaders(),
           body: JSON.stringify({ status }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res);
         setLog(`Estado actualizado a ${status}.`);
         router.refresh();
       } catch (e) {
-        setLog(e instanceof Error ? e.message : 'No se pudo actualizar');
+        setLog(friendlyError(e, 'No se pudo actualizar'));
       }
     });
   }
@@ -66,12 +67,12 @@ export function AuditWorkbench({
           headers: authHeaders(),
           body: JSON.stringify({ body: note.trim() }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res);
         setNote('');
         setLog('Nota agregada.');
         router.refresh();
       } catch (e) {
-        setLog(e instanceof Error ? e.message : 'No se pudo agregar la nota');
+        setLog(friendlyError(e, 'No se pudo agregar la nota'));
       }
     });
   }

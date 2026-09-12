@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 
 type VerifyPayload = {
   note: string;
@@ -34,10 +35,10 @@ export function EvidenceVerify({
           `${API_URL}/blockchain/verify-evidence/${encodeURIComponent(custodyEventId)}`,
           { cache: 'no-store' },
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo verificar.');
         setResult((await res.json()) as VerifyPayload);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo verificar');
+        setError(friendlyError(e, 'No se pudo verificar'));
       }
     });
   }

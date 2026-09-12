@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { explorerTxUrl } from '@/lib/explorer';
 import { canAnchorEvidence } from '@/lib/role-access';
 
@@ -93,19 +94,12 @@ export function LiveAnchorPanel({
           headers: authHeaders(),
           body: JSON.stringify({ batchCode, eventKind, note }),
         });
-        const json = (await res.json()) as AnchorResult & {
-          message?: string | string[];
-        };
-        if (!res.ok) {
-          const msg = Array.isArray(json.message)
-            ? json.message.join(', ')
-            : (json.message ?? `HTTP ${res.status}`);
-          throw new Error(msg);
-        }
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo anclar.');
+        const json = (await res.json()) as AnchorResult;
         setResult(json);
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Fallo al anclar');
+        setError(friendlyError(e, 'Fallo al anclar'));
       }
     });
   }

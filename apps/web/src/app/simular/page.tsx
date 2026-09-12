@@ -4,9 +4,26 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canDispatchFuel, homeForRole } from '@/lib/role-access';
 import { CbbaStationsExplorer } from '@/components/cbba-stations-explorer';
 import type { PublicStation } from '@/components/station-types';
+
+/** Lotes del seed DEMO — evita 404 por códigos inventados. */
+const DEMO_BATCHES = [
+  {
+    code: 'FC-BO-2026-000182',
+    label: 'FC-BO-2026-000182 · Diésel (en tránsito CBBA)',
+  },
+  {
+    code: 'FC-BO-2026-000184',
+    label: 'FC-BO-2026-000184 · Gasolina (auditoría)',
+  },
+  {
+    code: 'FC-BO-2026-000181',
+    label: 'FC-BO-2026-000181 · Gasolina (completado)',
+  },
+] as const;
 
 type SimResult = {
   note?: string;
@@ -19,7 +36,7 @@ type SimResult = {
 export default function SimularPage() {
   const { authHeaders, user } = useAuth();
   const [stationCode, setStationCode] = useState('ST-CBB-01');
-  const [batchCode, setBatchCode] = useState('FC-BO-2026-000182');
+  const [batchCode, setBatchCode] = useState<string>(DEMO_BATCHES[0].code);
   const [log, setLog] = useState<string | null>(null);
   const [result, setResult] = useState<SimResult | null>(null);
   const [pending, start] = useTransition();
@@ -46,12 +63,12 @@ export default function SimularPage() {
             volumeLiters: 8000,
           }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res);
         const json = (await res.json()) as SimResult;
         setResult(json);
         setLog(json.note ?? 'Simulación OK');
       } catch (e) {
-        setLog(e instanceof Error ? e.message : 'Falló la simulación');
+        setLog(friendlyError(e, 'Falló la simulación'));
       }
     });
   }
@@ -61,8 +78,8 @@ export default function SimularPage() {
       <div className="space-y-4">
         <h1 className="font-display text-3xl font-black">Simular</h1>
         <p className="text-[var(--mute)]">
-          Esta pantalla es para chofer o depósito (emitir + entregar). Tu rol
-          ({user.role}) no despacha combustible.
+          Esta pantalla es para chofer. Tu rol ({user.role}) no despacha
+          combustible.
         </p>
         <Link
           href={homeForRole(user.role)}
@@ -77,26 +94,31 @@ export default function SimularPage() {
   return (
     <div className="space-y-8">
       <header className="max-w-2xl">
-        <p className="fc-stamp text-[var(--mute)]">Chofer / depósito · DEMO</p>
+        <p className="fc-stamp text-[var(--mute)]">Chofer · atajo DEMO</p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
-          Cisterna → estación → mapa
+          Simular entrega
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Atajo DEMO: emite el QR de tu cisterna y completa la recepción en la
-          estación destino. Cisterna:{' '}
-          <strong>{cisternCode}</strong>. Sesión:{' '}
-          <strong>{user?.name}</strong> ({user?.role}).
+          Atajo DEMO: registrás el viaje (QR) y la recepción en la estación de
+          una sola vez. Cisterna: <strong>{cisternCode}</strong>. Sesión:{' '}
+          <strong>{user?.name}</strong>.
         </p>
       </header>
 
       <div className="fc-sheet grid gap-4 md:grid-cols-3">
         <label className="block text-sm md:col-span-1">
-          Lote
-          <input
+          Lote DEMO
+          <select
             className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
             value={batchCode}
             onChange={(e) => setBatchCode(e.target.value)}
-          />
+          >
+            {DEMO_BATCHES.map((b) => (
+              <option key={b.code} value={b.code}>
+                {b.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block text-sm md:col-span-1">
           Estación destino
@@ -124,7 +146,15 @@ export default function SimularPage() {
         </div>
       </div>
 
-      {log && <p className="text-sm">{log}</p>}
+      {log && (
+        <p
+          className={`text-sm ${
+            result ? 'text-[var(--seal)]' : 'text-[var(--alarm)]'
+          }`}
+        >
+          {log}
+        </p>
+      )}
 
       {result?.steps && (
         <ol className="list-decimal space-y-1 pl-5 text-sm text-[var(--mute)]">
@@ -157,11 +187,7 @@ export default function SimularPage() {
       <p className="text-sm text-[var(--mute)]">
         Paso a paso:{' '}
         <Link href="/verify" className="underline">
-          QR custodia
-        </Link>
-        . Mapa:{' '}
-        <Link href="/mapa" className="underline">
-          /mapa
+          Registrar viaje
         </Link>
         .
       </p>

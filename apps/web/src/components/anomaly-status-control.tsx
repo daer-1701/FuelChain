@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canResolveAnomaly } from '@/lib/role-access';
 
 const STATUSES = [
@@ -40,10 +41,10 @@ export function AnomalyStatusControl({
           headers: authHeaders(),
           body: JSON.stringify({ status }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res);
         router.refresh();
       } catch (e) {
-        setErr(e instanceof Error ? e.message : 'Error');
+        setErr(friendlyError(e, 'No se pudo guardar el estado'));
       }
     });
   }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { batonDeepLink } from '@/lib/baton-qr';
 import { canDispatchFuel, homeForRole } from '@/lib/role-access';
 
@@ -61,7 +62,7 @@ export default function VerifyPage() {
             stationCode,
           }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo emitir el QR.');
         const json = (await res.json()) as IssueResult;
         setIssued(json.data);
         localStorage.setItem(
@@ -70,7 +71,7 @@ export default function VerifyPage() {
         );
         setLog(`Bastón emitido: ${json.data.tokenId}`);
       } catch (e) {
-        setLog(e instanceof Error ? e.message : 'Error al emitir');
+        setLog(friendlyError(e, 'Error al emitir'));
       }
     });
   }
@@ -91,13 +92,13 @@ export default function VerifyPage() {
           headers: authHeaders(),
           body: JSON.stringify({ events }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo sincronizar.');
         const json = await res.json();
         localStorage.setItem('fc-offline-queue', '[]');
         setQueueLen(0);
-        setLog(`Sync OK: ${JSON.stringify(json.results)}`);
+        setLog('Sincronización OK.');
       } catch (e) {
-        setLog(e instanceof Error ? e.message : 'Sync falló');
+        setLog(friendlyError(e, 'Sync falló'));
       }
     });
   }
@@ -138,13 +139,17 @@ export default function VerifyPage() {
   return (
     <div className="space-y-10">
       <header className="max-w-xl">
-        <p className="fc-stamp text-[var(--mute)]">Chofer · custodia QR</p>
+        <p className="fc-stamp text-[var(--mute)]">Chofer · registro de viaje</p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
-          Custodia QR Cochabamba
+          Registrar viaje
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          El QR es el token de un despacho: lote + cisterna + litros y calidad
-          de carga. El chofer solo emite desde su cisterna asignada.
+          Emite el QR del despacho: lote, cisterna, litros y calidad de carga.
+          La estación lo acepta al llegar. También podés ver{' '}
+          <Link href="/contratos" className="text-[var(--diesel)] underline">
+            contratos con el surtidor
+          </Link>
+          .
         </p>
       </header>
 
@@ -152,12 +157,22 @@ export default function VerifyPage() {
         <div className="fc-sheet space-y-4">
           <h2 className="font-display text-xl font-bold">Emitir bastón</h2>
           <label className="block text-sm">
-            Lote
-            <input
+            Lote DEMO
+            <select
               className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
               value={batchCode}
               onChange={(e) => setBatchCode(e.target.value)}
-            />
+            >
+              <option value="FC-BO-2026-000182">
+                FC-BO-2026-000182 · Diésel (en tránsito)
+              </option>
+              <option value="FC-BO-2026-000184">
+                FC-BO-2026-000184 · Gasolina (auditoría)
+              </option>
+              <option value="FC-BO-2026-000181">
+                FC-BO-2026-000181 · Gasolina (completado)
+              </option>
+            </select>
           </label>
           <label className="block text-sm">
             Cisterna

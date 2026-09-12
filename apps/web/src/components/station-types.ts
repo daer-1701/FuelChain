@@ -71,6 +71,16 @@ export type SupervisionStation = {
     batchQualityStatus: string;
     issuedAt: string;
     consumedAt: string | null;
+    checkpoints?: Array<{
+      id: string;
+      kind: string;
+      label: string | null;
+      volumeLiters: number;
+      latitude: number;
+      longitude: number;
+      capturedAt: string;
+      waterDetected: boolean;
+    }>;
   }>;
 };
 

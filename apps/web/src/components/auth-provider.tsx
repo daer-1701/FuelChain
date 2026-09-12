@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse } from '@/lib/api-error';
 
 export type SessionUser = {
   id: string;
@@ -64,8 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || 'Login falló');
+      throw await errorFromResponse(res, 'No se pudo iniciar sesión.');
     }
     const json = (await res.json()) as {
       data: { token: string; user: SessionUser };

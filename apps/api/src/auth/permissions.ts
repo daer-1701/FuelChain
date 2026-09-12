@@ -76,4 +76,17 @@ export const RolesAllowed = {
     ActorRole.TRANSPORTER,
     ActorRole.DEPOT_OPERATOR,
   ],
+  checkpointWrite: [
+    ActorRole.ADMIN,
+    ActorRole.TRANSPORTER,
+    ActorRole.DEPOT_OPERATOR,
+  ],
+  checkpointRead: [
+    ActorRole.ADMIN,
+    ActorRole.TRANSPORTER,
+    ActorRole.DEPOT_OPERATOR,
+    ActorRole.STATION_STAFF,
+    ActorRole.VERIFIER,
+    ActorRole.AUDITOR,
+  ],
 } as const;

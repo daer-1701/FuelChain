@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canCreateBatch } from '@/lib/role-access';
 
 export function CreateBatchForm() {
@@ -38,14 +39,14 @@ export function CreateBatchForm() {
             isDemo: true,
           }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo crear el lote.');
         const json = (await res.json()) as { batchCode?: string };
         const code = json.batchCode;
         setLog(code ? `Lote creado: ${code}` : 'Lote creado.');
         router.refresh();
         if (code) router.push(`/batches/${code}`);
       } catch (e) {
-        setLog(e instanceof Error ? e.message : 'No se pudo crear el lote');
+        setLog(friendlyError(e, 'No se pudo crear el lote'));
       }
     });
   }

@@ -15,6 +15,7 @@ import {
 } from '@/components/dashboard-widgets';
 import { useEffect, useState } from 'react';
 import { API_URL } from '@/lib/api';
+import { friendlyError } from '@/lib/api-error';
 import type { DashboardKpis } from '@/lib/types';
 
 /**
@@ -46,7 +47,7 @@ export default function DashboardPage() {
         if (!cancelled) setData(json);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'API unavailable');
+          setError(friendlyError(e, 'API no disponible'));
         }
       }
     })();

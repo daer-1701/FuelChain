@@ -1,35 +1,25 @@
 ---
-description: Menús, AuthGate y pantallas por rol FuelChain
+description: Menús y pantallas — 4 actores FuelChain
 globs: apps/web/**/*.{tsx,ts}
 alwaysApply: false
 ---
 
-# FuelChain — roles en web
+# FuelChain — roles en web (4 actores)
 
-Antes de añadir rutas, nav items o acciones en `apps/web`:
+Fuente: `apps/web/src/lib/role-access.ts`.
 
-1. Leer `apps/web/src/lib/role-access.ts` (`navForRole`, `homeForRole`, `canAccessPath`, helpers `can*`).
-2. Actualizar **NAV / ROUTES / HOME** si el rol debe ver la pantalla.
-3. Gatear acciones en UI (`canDispatchFuel`, `canAcceptCustody`, `canCreateBatch`, `canWriteAudit`, `canResolveAnomaly`, `canAnchorEvidence`).
-4. `AuthGate` redirige a `homeForRole` si la ruta no está permitida — no dependas solo de ocultar el link.
-
-## Homes esperados
-
-| Rol | Home |
-|-----|------|
-| VERIFIER | `/supervision` |
-| STATION_STAFF | `/estacion` |
-| TRANSPORTER / DEPOT_OPERATOR | `/verify` |
-| AUDITOR | `/audits` |
-| IMPORTER | `/batches` |
-| CITIZEN | `/mapa` |
+| Rol | Home | Menú |
+|-----|------|------|
+| STATION_STAFF | `/estacion` | Mi estación, Contratos |
+| TRANSPORTER | `/verify` | Registrar viaje, Simular, Contratos |
+| VERIFIER | `/supervision` | Movimientos, Cochabamba |
+| CITIZEN | `/mapa` | Cochabamba |
 
 ## Antipatrones
 
-- Misma KPI strip ANH dentro de `/estacion`.
-- Estación con menú Simular / emitir QR.
-- Links a rutas que AuthGate bloquea (p. ej. sync solo en `/verify` para estación).
-- Footer del mapa pidiendo “login para simular” a quien ya tiene sesión (usar CTA por rol).
-- Formulario de anclar evidencia visible a roles sin `canAnchorEvidence`.
+- Estación con mapa de toda Cochabamba o menú Simular/emitir QR.
+- Login promocionando importador / depósito / lab / auditor.
+- ANH sin acceso a supervisión de red.
+- Contratos visibles a ciudadano.
 
-Detalle de producto: `.cursor/rules/FuelChain Product AGENTS.md`.
+Detalle: `FuelChain Product AGENTS.md`.

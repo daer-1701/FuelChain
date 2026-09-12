@@ -5,6 +5,7 @@ import { useParams, usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { parseBatonPayloadParam } from '@/lib/baton-qr';
 import { canAcceptCustody, homeForRole } from '@/lib/role-access';
 
@@ -149,7 +150,7 @@ function QrBatonInner() {
             receivedVolumeLiters: Number(receivedVol) || undefined,
           }),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo aceptar el bastón.');
         const json = await res.json();
         setBaton({
           ...baton,
@@ -171,9 +172,7 @@ function QrBatonInner() {
         setMsg(bits.join(' '));
       } catch (e) {
         setMsg(
-          e instanceof Error
-            ? `Falló online — se encola offline: ${e.message}`
-            : 'Error',
+          `Falló online — se encola offline: ${friendlyError(e, 'Error de red')}`,
         );
         enqueueOffline();
       }
@@ -229,13 +228,13 @@ function QrBatonInner() {
           headers: authHeaders(),
           body: JSON.stringify({ events }),
         });
-        if (!res.ok) throw new Error(await res.text());
-        const json = await res.json();
+        if (!res.ok) throw await errorFromResponse(res, 'No se pudo sincronizar.');
+        await res.json();
         localStorage.setItem('fc-offline-queue', '[]');
         setOfflineQueue(0);
-        setMsg(`Sync OK: ${JSON.stringify(json.results)}`);
+        setMsg('Sincronización OK.');
       } catch (e) {
-        setMsg(e instanceof Error ? e.message : 'Sync falló');
+        setMsg(friendlyError(e, 'Sync falló'));
       }
     });
   }

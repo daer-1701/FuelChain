@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { ActorRole, Prisma } from '@prisma/client';
+import type { AuthUser } from '../auth/auth.service';
 import { serialize } from '../common/serialize';
 import {
   applyStockWithdraw,
@@ -45,14 +47,22 @@ export class StationsService {
         const last = tank?.measurements[0];
         const lastDelivery = s.deliveries[0];
         const batch = lastDelivery?.batch;
-        const capacity = tank
-          ? Number(tank.capacityLiters.toString())
-          : null;
-        const stock = tank
-          ? Number(tank.currentStockLiters.toString())
-          : last
-            ? Number(last.volumeLiters.toString())
+        const capacity =
+          s.tanks.length > 0
+            ? s.tanks.reduce(
+                (acc, t) => acc + Number(t.capacityLiters.toString()),
+                0,
+              )
             : null;
+        const stock =
+          s.tanks.length > 0
+            ? s.tanks.reduce(
+                (acc, t) => acc + Number(t.currentStockLiters.toString()),
+                0,
+              )
+            : last
+              ? Number(last.volumeLiters.toString())
+              : null;
         const fillRatio =
           capacity && stock != null && capacity > 0 ? stock / capacity : 0;
         const availability = tank
@@ -139,7 +149,14 @@ export class StationsService {
           deliveries: {
             orderBy: [{ deliveredAt: 'desc' }, { loadedAt: 'desc' }],
             take: 8,
-            include: { batch: true, cistern: true },
+            include: {
+              batch: true,
+              cistern: true,
+              checkpoints: {
+                orderBy: { capturedAt: 'asc' },
+                take: 6,
+              },
+            },
           },
         },
       }),
@@ -171,8 +188,14 @@ export class StationsService {
       const latestDelivery =
         s.deliveries.find((d) => d.status === 'DELIVERED') ?? s.deliveries[0];
       const batch = latestDelivery?.batch;
-      const capacity = tank ? Number(tank.capacityLiters.toString()) : 0;
-      const stock = tank ? Number(tank.currentStockLiters.toString()) : 0;
+      const capacity = s.tanks.reduce(
+        (acc, t) => acc + Number(t.capacityLiters.toString()),
+        0,
+      );
+      const stock = s.tanks.reduce(
+        (acc, t) => acc + Number(t.currentStockLiters.toString()),
+        0,
+      );
       const fillPercent =
         capacity > 0
           ? Math.round(Math.min(100, (stock / capacity) * 100))
@@ -260,6 +283,16 @@ export class StationsService {
           batchQualityStatus: d.batch.qualityStatus,
           issuedAt: d.loadedAt,
           consumedAt: d.deliveredAt,
+          checkpoints: d.checkpoints.map((c) => ({
+            id: c.id,
+            kind: c.kind,
+            label: c.label,
+            volumeLiters: Number(c.volumeLiters.toString()),
+            latitude: c.latitude,
+            longitude: c.longitude,
+            capturedAt: c.capturedAt,
+            waterDetected: c.waterDetected,
+          })),
         })),
       };
     });
@@ -293,6 +326,63 @@ export class StationsService {
         capacityLiters: Number(c.capacityLiters.toString()),
         currentStockLiters: Number(c.currentLoadLiters.toString()),
         location: `${c.carrier} · ${c.plate ?? c.code}`,
+      })),
+    });
+  }
+
+  /**
+   * Contratos DEMO surtidor ↔ chofer derivados de entregas (Delivery).
+   * Estación: entregas a su EESS. Chofer: entregas de su cisterna.
+   */
+  async listContractsForActor(user: AuthUser) {
+    let where: Prisma.DeliveryWhereInput = { cistern: { driverId: user.id } };
+    if (user.role === ActorRole.STATION_STAFF && user.stationId) {
+      where = { destinationStationId: user.stationId };
+    } else if (user.cisternCode) {
+      where = { cistern: { code: user.cisternCode } };
+    } else if (user.role === ActorRole.ADMIN) {
+      where = {};
+    }
+
+    const rows = await this.prisma.delivery.findMany({
+      where,
+      orderBy: [{ loadedAt: 'desc' }],
+      take: 20,
+      include: {
+        batch: true,
+        cistern: { include: { driver: true } },
+        station: true,
+      },
+    });
+
+    return serialize({
+      label: 'DEMO',
+      note:
+        'Contrato de entrega DEMO entre surtidor y chofer (derivado del despacho). No es un contrato legal oficial.',
+      data: rows.map((d) => ({
+        id: d.id,
+        title: `Entrega ${d.cistern.code} → ${d.station.code}`,
+        status: d.status,
+        batchCode: d.batch.batchCode,
+        product: d.batch.product,
+        cisternCode: d.cistern.code,
+        driverName: d.cistern.driver?.name ?? 'Chofer DEMO',
+        stationCode: d.station.code,
+        stationName: d.station.name,
+        loadedLiters: Number(d.loadedLiters.toString()),
+        receivedLiters:
+          d.receivedLiters != null
+            ? Number(d.receivedLiters.toString())
+            : null,
+        qualityOk: !d.loadWaterDetected && !d.receivedWaterDetected,
+        loadedAt: d.loadedAt,
+        deliveredAt: d.deliveredAt,
+        batonTokenId: d.batonTokenId,
+        parties: {
+          station: d.station.name,
+          driver: d.cistern.driver?.name ?? 'Chofer DEMO',
+          carrier: d.cistern.carrier,
+        },
       })),
     });
   }

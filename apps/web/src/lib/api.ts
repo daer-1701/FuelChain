@@ -1,3 +1,5 @@
+import { errorFromResponse } from '@/lib/api-error';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -6,7 +8,7 @@ export async function apiGet<T>(path: string): Promise<T> {
     cache: 'no-store',
   });
   if (!res.ok) {
-    throw new Error(`API ${path} failed: ${res.status}`);
+    throw await errorFromResponse(res, `No se pudo cargar ${path}.`);
   }
   return res.json() as Promise<T>;
 }

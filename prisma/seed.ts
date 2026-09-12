@@ -87,11 +87,24 @@ async function seedCochabambaStations() {
       longitude: -66.1475,
       availability: StationAvailability.FULL,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-CALA-01',
-      capacity: 45000,
-      fillLiters: 18000,
-      waterDetected: false,
-      temp: 21.2,
+      tanks: [
+        {
+          tankName: 'TANK-CALA-DIESEL',
+          capacity: 45000,
+          fillLiters: 28600,
+          productHint: 'Diésel Oil',
+          waterDetected: false,
+          temp: 21.2,
+        },
+        {
+          tankName: 'TANK-CALA-GAS',
+          capacity: 32000,
+          fillLiters: 12400,
+          productHint: 'Gasolina Especial',
+          waterDetected: false,
+          temp: 20.8,
+        },
+      ],
     },
     {
       code: 'ST-CBB-02',
@@ -102,11 +115,15 @@ async function seedCochabambaStations() {
       longitude: -66.2789,
       availability: StationAvailability.MEDIUM,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-QLLO-VG',
-      capacity: 40000,
-      fillLiters: 17500,
-      waterDetected: false,
-      temp: 22.0,
+      tanks: [
+        {
+          tankName: 'TANK-QLLO-VG',
+          capacity: 40000,
+          fillLiters: 17500,
+          waterDetected: false,
+          temp: 22.0,
+        },
+      ],
     },
     {
       code: 'ST-CBB-03',
@@ -117,11 +134,15 @@ async function seedCochabambaStations() {
       longitude: -66.0418,
       availability: StationAvailability.LOW,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-SAC-01',
-      capacity: 38000,
-      fillLiters: 5100,
-      waterDetected: false,
-      temp: 23.1,
+      tanks: [
+        {
+          tankName: 'TANK-SAC-01',
+          capacity: 38000,
+          fillLiters: 5100,
+          waterDetected: false,
+          temp: 23.1,
+        },
+      ],
     },
     {
       code: 'ST-CBB-04',
@@ -132,11 +153,15 @@ async function seedCochabambaStations() {
       longitude: -66.1742,
       availability: StationAvailability.MEDIUM,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-MAY-01',
-      capacity: 35000,
-      fillLiters: 16200,
-      waterDetected: false,
-      temp: 21.8,
+      tanks: [
+        {
+          tankName: 'TANK-MAY-01',
+          capacity: 35000,
+          fillLiters: 16200,
+          waterDetected: false,
+          temp: 21.8,
+        },
+      ],
     },
     {
       code: 'ST-CBB-05',
@@ -147,11 +172,15 @@ async function seedCochabambaStations() {
       longitude: -66.3178,
       availability: StationAvailability.EMPTY,
       products: ['Diésel Oil'],
-      tankName: 'TANK-VIN-01',
-      capacity: 28000,
-      fillLiters: 600,
-      waterDetected: false,
-      temp: 22.6,
+      tanks: [
+        {
+          tankName: 'TANK-VIN-01',
+          capacity: 28000,
+          fillLiters: 600,
+          waterDetected: false,
+          temp: 22.6,
+        },
+      ],
     },
     {
       code: 'ST-CBB-06',
@@ -162,11 +191,15 @@ async function seedCochabambaStations() {
       longitude: -66.1648,
       availability: StationAvailability.FULL,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-PET-01',
-      capacity: 42000,
-      fillLiters: 35100,
-      waterDetected: false,
-      temp: 24.0,
+      tanks: [
+        {
+          tankName: 'TANK-PET-01',
+          capacity: 42000,
+          fillLiters: 35100,
+          waterDetected: false,
+          temp: 24.0,
+        },
+      ],
     },
     {
       code: 'ST-CBB-07',
@@ -177,11 +210,15 @@ async function seedCochabambaStations() {
       longitude: -66.2685,
       availability: StationAvailability.MEDIUM,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-BG-01',
-      capacity: 40000,
-      fillLiters: 19800,
-      waterDetected: false,
-      temp: 22.3,
+      tanks: [
+        {
+          tankName: 'TANK-BG-01',
+          capacity: 40000,
+          fillLiters: 19800,
+          waterDetected: false,
+          temp: 22.3,
+        },
+      ],
     },
     {
       code: 'ST-CBB-08',
@@ -192,11 +229,15 @@ async function seedCochabambaStations() {
       longitude: -66.1525,
       availability: StationAvailability.LOW,
       products: ['Gasolina Especial'],
-      tankName: 'TANK-RIO-01',
-      capacity: 30000,
-      fillLiters: 3800,
-      waterDetected: true,
-      temp: 23.4,
+      tanks: [
+        {
+          tankName: 'TANK-RIO-01',
+          capacity: 30000,
+          fillLiters: 3800,
+          waterDetected: true,
+          temp: 23.4,
+        },
+      ],
     },
     {
       code: 'ST-CBB-09',
@@ -207,11 +248,15 @@ async function seedCochabambaStations() {
       longitude: -66.2552,
       availability: StationAvailability.FULL,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-IQ-01',
-      capacity: 36000,
-      fillLiters: 30100,
-      waterDetected: false,
-      temp: 21.9,
+      tanks: [
+        {
+          tankName: 'TANK-IQ-01',
+          capacity: 36000,
+          fillLiters: 30100,
+          waterDetected: false,
+          temp: 21.9,
+        },
+      ],
     },
     {
       code: 'ST-CBB-10',
@@ -222,16 +267,22 @@ async function seedCochabambaStations() {
       longitude: -66.1562,
       availability: StationAvailability.UNKNOWN,
       products: ['Gasolina Especial', 'Diésel Oil'],
-      tankName: 'TANK-AYA-01',
-      capacity: 32000,
-      fillLiters: null as number | null,
-      waterDetected: false,
-      temp: null as number | null,
+      tanks: [
+        {
+          tankName: 'TANK-AYA-01',
+          capacity: 32000,
+          fillLiters: null as number | null,
+          waterDetected: false,
+          temp: null as number | null,
+        },
+      ],
     },
   ];
 
   const created = [];
   for (const d of defs) {
+    const primaryFill = d.tanks[0]?.fillLiters ?? null;
+    const primaryCap = d.tanks[0]?.capacity ?? 1;
     const station = await prisma.station.create({
       data: {
         code: d.code,
@@ -243,56 +294,58 @@ async function seedCochabambaStations() {
         longitude: d.longitude,
         publicVisible: true,
         availability:
-          d.fillLiters == null
+          primaryFill == null
             ? StationAvailability.UNKNOWN
-            : d.fillLiters / d.capacity >= 0.7
+            : primaryFill / primaryCap >= 0.7
               ? StationAvailability.FULL
-              : d.fillLiters / d.capacity >= 0.35
+              : primaryFill / primaryCap >= 0.35
                 ? StationAvailability.MEDIUM
-                : d.fillLiters / d.capacity > 0.05
+                : primaryFill / primaryCap > 0.05
                   ? StationAvailability.LOW
                   : StationAvailability.EMPTY,
         products: d.products,
-        lastInventoryAt: d.fillLiters != null ? hoursAgo(2) : null,
+        lastInventoryAt: primaryFill != null ? hoursAgo(2) : null,
         isDemo: true,
       },
     });
 
-    if (d.fillLiters != null && d.fillLiters > d.capacity) {
-      throw new Error(
-        `Seed inventory overflow ${d.code}: ${d.fillLiters} > ${d.capacity}`,
-      );
-    }
+    for (const t of d.tanks) {
+      if (t.fillLiters != null && t.fillLiters > t.capacity) {
+        throw new Error(
+          `Seed inventory overflow ${d.code}/${t.tankName}: ${t.fillLiters} > ${t.capacity}`,
+        );
+      }
 
-    const tank = await prisma.storageTank.create({
-      data: {
-        name: d.tankName,
-        capacityLiters: d.capacity,
-        currentStockLiters: d.fillLiters ?? 0,
-        location: `${d.name} — Cochabamba (DEMO)`,
-        stationId: station.id,
-        status:
-          d.availability === StationAvailability.EMPTY
-            ? TankStatus.AVAILABLE
-            : TankStatus.IN_USE,
-        isDemo: true,
-      },
-    });
-
-    if (d.fillLiters != null) {
-      await prisma.measurement.create({
+      const tank = await prisma.storageTank.create({
         data: {
-          tankId: tank.id,
-          deviceId: `SIM-CBBA-${d.code}`,
-          volumeLiters: d.fillLiters,
-          temperature: d.temp ?? undefined,
-          waterDetected: d.waterDetected,
-          density: 0.745 + Math.random() * 0.02,
-          source: MeasurementSource.SIMULATOR,
-          timestamp: hoursAgo(2),
+          name: t.tankName,
+          capacityLiters: t.capacity,
+          currentStockLiters: t.fillLiters ?? 0,
+          location: `${d.name} — Cochabamba (DEMO)`,
+          stationId: station.id,
+          status:
+            t.fillLiters != null && t.fillLiters / t.capacity <= 0.05
+              ? TankStatus.AVAILABLE
+              : TankStatus.IN_USE,
           isDemo: true,
         },
       });
+
+      if (t.fillLiters != null) {
+        await prisma.measurement.create({
+          data: {
+            tankId: tank.id,
+            deviceId: `SIM-CBBA-${d.code}-${t.tankName}`,
+            volumeLiters: t.fillLiters,
+            temperature: t.temp ?? undefined,
+            waterDetected: t.waterDetected,
+            density: 0.745 + (t.waterDetected ? 0.06 : 0.01),
+            source: MeasurementSource.SIMULATOR,
+            timestamp: hoursAgo(2),
+            isDemo: true,
+          },
+        });
+      }
     }
 
     created.push(station);
@@ -315,6 +368,7 @@ async function resetDemo() {
   await prisma.customsEvent.deleteMany();
   await prisma.custodyEvent.deleteMany();
   await prisma.custodyBaton.deleteMany();
+  await prisma.routeCheckpoint.deleteMany();
   await prisma.delivery.deleteMany();
   await prisma.cistern.deleteMany();
   await prisma.offlineSyncEvent.deleteMany();
@@ -397,7 +451,7 @@ async function main() {
   await prisma.user.create({
     data: {
       email: 'anh@fuelchain.bo',
-      name: 'Verificador ANH (read-only DEMO)',
+      name: 'ANH — verificación de movimientos',
       role: ActorRole.VERIFIER,
       passwordHash: demoPasswordHash('demo123'),
       isDemo: true,
@@ -573,93 +627,271 @@ async function main() {
   console.log('  Tank: TANK-001 | Measurement source: SIMULATOR (ESP32 deferred)');
 }
 
-/** Despachos reales: cisterna → estación, con calidad de viaje. */
+/** Despachos DEMO ricos: Cala Cala con historial + en ruta; red con calidad mixta. */
 async function seedCbbaCustodyDeliveries(
   stations: Array<{ id: string; code: string }>,
   batches: Array<{ id: string; batchCode: string }>,
   driverId: string,
 ) {
-  const fleet = [];
-  for (let n = 1; n <= 4; n += 1) {
-    const code = `CIS-CBB-${String(n).padStart(2, '0')}`;
-    const cistern = await prisma.cistern.create({
+  const byCode = Object.fromEntries(stations.map((s) => [s.code, s]));
+  const diesel = batches.find((b) => b.batchCode.includes('182')) ?? batches[0];
+  const gasAudit =
+    batches.find((b) => b.batchCode.includes('184')) ?? batches[1] ?? batches[0];
+  const gasDone =
+    batches.find((b) => b.batchCode.includes('181')) ?? batches[2] ?? batches[0];
+
+  const mkCistern = async (
+    code: string,
+    plate: string,
+    opts: {
+      driverId?: string;
+      load?: number;
+      status?: CisternStatus;
+      batchId?: string;
+    } = {},
+  ) =>
+    prisma.cistern.create({
       data: {
         code,
-        plate: `CBB-${100 + n}`,
+        plate,
         carrier: 'Transportes DEMO SRL',
         capacityLiters: 30000,
-        currentLoadLiters: 0,
-        status: CisternStatus.AVAILABLE,
-        driverId: n === 1 ? driverId : null,
-        currentBatchId: null,
+        currentLoadLiters: opts.load ?? 0,
+        status: opts.status ?? CisternStatus.AVAILABLE,
+        driverId: opts.driverId ?? null,
+        currentBatchId: opts.batchId ?? null,
         isDemo: true,
       },
     });
-    fleet.push(cistern);
-  }
 
-  let deliveredByBatch = new Map<string, number>();
-  let i = 0;
-  for (const station of stations) {
-    const batch = batches[i % batches.length];
-    const cistern = fleet[i % fleet.length];
-    const volume = 8000 + (i % 4) * 500;
-    const water = station.code === 'ST-CBB-08';
-    const tokenId = `BT-DEMO-${station.code}-${i + 1}`;
+  const cis01 = await mkCistern('CIS-CBB-01', 'CBB-101', {
+    driverId,
+    load: 8000,
+    status: CisternStatus.IN_TRANSIT,
+    batchId: diesel.id,
+  });
+  const cis02 = await mkCistern('CIS-CBB-02', 'CBB-102', {
+    load: 7500,
+    status: CisternStatus.IN_TRANSIT,
+    batchId: gasAudit.id,
+  });
+  const cis03 = await mkCistern('CIS-CBB-03', 'CBB-103');
+  const cis04 = await mkCistern('CIS-CBB-04', 'CBB-104');
+  const fleet = [cis01, cis02, cis03, cis04];
+
+  type Trip = {
+    stationCode: string;
+    batch: { id: string; batchCode: string };
+    cistern: { id: string; code: string };
+    volume: number;
+    received?: number;
+    status: DeliveryStatus;
+    water?: boolean;
+    density?: number;
+    hoursLoaded: number;
+    hoursDelivered?: number;
+    activeBaton?: boolean;
+  };
+
+  const trips: Trip[] = [
+    // Cala Cala — ejemplos para estacion@
+    {
+      stationCode: 'ST-CBB-01',
+      batch: diesel,
+      cistern: cis03,
+      volume: 8500,
+      received: 8480,
+      status: DeliveryStatus.DELIVERED,
+      hoursLoaded: 46,
+      hoursDelivered: 44,
+    },
+    {
+      stationCode: 'ST-CBB-01',
+      batch: gasDone,
+      cistern: cis04,
+      volume: 7200,
+      received: 7185,
+      status: DeliveryStatus.DELIVERED,
+      hoursLoaded: 20,
+      hoursDelivered: 18,
+    },
+    {
+      stationCode: 'ST-CBB-01',
+      batch: diesel,
+      cistern: cis01,
+      volume: 8000,
+      status: DeliveryStatus.IN_TRANSIT,
+      hoursLoaded: 3,
+      activeBaton: true,
+    },
+    // Red — para mapa / ANH
+    {
+      stationCode: 'ST-CBB-02',
+      batch: diesel,
+      cistern: cis03,
+      volume: 8000,
+      received: 7970,
+      status: DeliveryStatus.DELIVERED,
+      hoursLoaded: 40,
+      hoursDelivered: 38,
+    },
+    {
+      stationCode: 'ST-CBB-03',
+      batch: gasAudit,
+      cistern: cis04,
+      volume: 6500,
+      received: 6480,
+      status: DeliveryStatus.DELIVERED,
+      hoursLoaded: 36,
+      hoursDelivered: 34,
+    },
+    {
+      stationCode: 'ST-CBB-05',
+      batch: diesel,
+      cistern: cis03,
+      volume: 5000,
+      received: 4990,
+      status: DeliveryStatus.DELIVERED,
+      hoursLoaded: 52,
+      hoursDelivered: 50,
+    },
+    {
+      stationCode: 'ST-CBB-06',
+      batch: gasDone,
+      cistern: cis04,
+      volume: 9000,
+      received: 8990,
+      status: DeliveryStatus.DELIVERED,
+      hoursLoaded: 28,
+      hoursDelivered: 26,
+    },
+    {
+      stationCode: 'ST-CBB-08',
+      batch: gasAudit,
+      cistern: cis03,
+      volume: 6000,
+      received: 5950,
+      status: DeliveryStatus.DELIVERED,
+      water: true,
+      density: 0.81,
+      hoursLoaded: 24,
+      hoursDelivered: 22,
+    },
+    {
+      stationCode: 'ST-CBB-04',
+      batch: diesel,
+      cistern: cis02,
+      volume: 7500,
+      status: DeliveryStatus.IN_TRANSIT,
+      hoursLoaded: 5,
+      activeBaton: true,
+    },
+  ];
+
+  const deliveredByBatch = new Map<string, number>();
+  let n = 0;
+  for (const trip of trips) {
+    const station = byCode[trip.stationCode];
+    if (!station) continue;
+    n += 1;
+    const tokenId = `BT-DEMO-${trip.stationCode}-${n}`;
+    const water = Boolean(trip.water);
+    const density = trip.density ?? (water ? 0.81 : 0.746);
     const payload = {
-      batchCode: batch.batchCode,
-      stationCode: station.code,
-      cisternCode: cistern.code,
-      volumeLiters: volume,
+      batch: trip.batch.batchCode,
+      station: trip.stationCode,
+      cistern: trip.cistern.code,
+      vol: trip.volume,
       label: 'DEMO',
     };
+
+    const delivered = trip.status === DeliveryStatus.DELIVERED;
     const delivery = await prisma.delivery.create({
       data: {
-        batchId: batch.id,
-        cisternId: cistern.id,
+        batchId: trip.batch.id,
+        cisternId: trip.cistern.id,
         destinationStationId: station.id,
-        status: DeliveryStatus.DELIVERED,
-        loadedLiters: volume,
-        receivedLiters: volume - 20,
-        loadDensity: water ? 0.81 : 0.746,
+        status: trip.status,
+        loadedLiters: trip.volume,
+        receivedLiters: delivered ? (trip.received ?? trip.volume - 20) : null,
+        loadDensity: density,
         loadTemperature: 22.1,
         loadWaterDetected: water,
-        loadCertificateStatus: 'DEMO',
-        receivedDensity: water ? 0.81 : 0.746,
-        receivedTemperature: 22.4,
-        receivedWaterDetected: water,
-        loadedAt: hoursAgo(30 - i),
-        deliveredAt: hoursAgo(28 - i),
+        loadCertificateStatus: water ? 'ALERTA DEMO' : 'OK DEMO',
+        receivedDensity: delivered ? density : null,
+        receivedTemperature: delivered ? 22.4 : null,
+        receivedWaterDetected: delivered ? water : false,
+        loadedAt: hoursAgo(trip.hoursLoaded),
+        deliveredAt:
+          delivered && trip.hoursDelivered != null
+            ? hoursAgo(trip.hoursDelivered)
+            : null,
         batonTokenId: tokenId,
         isDemo: true,
       },
     });
+
     await prisma.custodyBaton.create({
       data: {
         tokenId,
-        batchId: batch.id,
+        batchId: trip.batch.id,
         stationId: station.id,
-        cisternId: cistern.id,
+        cisternId: trip.cistern.id,
         deliveryId: delivery.id,
-        cisternCode: cistern.code,
-        eventType: 'RECEIVED',
-        volumeLiters: volume,
+        cisternCode: trip.cistern.code,
+        eventType: delivered ? 'RECEIVED' : 'IN_TRANSIT',
+        volumeLiters: trip.volume,
         payloadJson: payload,
         payloadHash: demoHash(JSON.stringify(payload)),
         signature: demoHash(`sig:${tokenId}`),
-        status: BatonStatus.CONSUMED,
+        status: delivered ? BatonStatus.CONSUMED : BatonStatus.ACTIVE,
         issuedByRole: 'TRANSPORTER',
-        consumedByRole: 'STATION_STAFF',
-        issuedAt: hoursAgo(30 - i),
-        consumedAt: hoursAgo(28 - i),
+        consumedByRole: delivered ? 'STATION_STAFF' : null,
+        issuedAt: hoursAgo(trip.hoursLoaded),
+        consumedAt:
+          delivered && trip.hoursDelivered != null
+            ? hoursAgo(trip.hoursDelivered)
+            : null,
+        expiresAt: delivered ? null : hoursAgo(-48),
         isDemo: true,
       },
     });
-    deliveredByBatch.set(
-      batch.id,
-      (deliveredByBatch.get(batch.id) ?? 0) + volume - 20,
-    );
-    i += 1;
+
+    await prisma.custodyEvent.create({
+      data: {
+        batchId: trip.batch.id,
+        eventType: delivered
+          ? CustodyEventType.RECEIVED
+          : CustodyEventType.IN_TRANSIT,
+        location: delivered
+          ? `Estación ${trip.stationCode} (Cochabamba) DEMO`
+          : `Cisterna ${trip.cistern.code} → ${trip.stationCode} DEMO`,
+        declaredVolume: trip.volume,
+        measuredVolume: delivered
+          ? (trip.received ?? trip.volume - 20)
+          : trip.volume,
+        actorId: driverId,
+        timestamp: hoursAgo(
+          delivered ? (trip.hoursDelivered ?? trip.hoursLoaded) : trip.hoursLoaded,
+        ),
+        metadata: {
+          label: 'DEMO',
+          cisternCode: trip.cistern.code,
+          stationCode: trip.stationCode,
+          deliveryId: delivery.id,
+          batonTokenId: tokenId,
+        },
+        isDemo: true,
+      },
+    });
+
+    if (delivered) {
+      const recv = trip.received ?? trip.volume - 20;
+      deliveredByBatch.set(
+        trip.batch.id,
+        (deliveredByBatch.get(trip.batch.id) ?? 0) + recv,
+      );
+    }
   }
 
   for (const [batchId, liters] of deliveredByBatch) {
@@ -668,6 +900,65 @@ async function seedCbbaCustodyDeliveries(
       data: { deliveredLiters: liters },
     });
   }
+
+  console.log(
+    `[DEMO] Entregas CBBA: ${trips.length} (Cala Cala: 2 recibidas + 1 en ruta · flota ${fleet.length} cisternas)`,
+  );
+
+  // Checkpoints GPS DEMO para despachos en tránsito
+  const inTransit = await prisma.delivery.findMany({
+    where: { status: DeliveryStatus.IN_TRANSIT },
+    include: { cistern: true, station: true, batch: true },
+  });
+  for (const d of inTransit) {
+    const baseLat = Number(d.station.latitude);
+    const baseLng = Number(d.station.longitude);
+    await prisma.routeCheckpoint.create({
+      data: {
+        kind: 'LOAD_DEPARTURE',
+        label: 'Salida depósito DEMO Santa Cruz',
+        deliveryId: d.id,
+        cisternId: d.cisternId,
+        batchId: d.batchId,
+        actorId: driverId,
+        volumeLiters: d.loadedLiters,
+        density: d.loadDensity,
+        temperature: d.loadTemperature,
+        waterDetected: d.loadWaterDetected,
+        latitude: -17.7833,
+        longitude: -63.1821,
+        accuracyMeters: 25,
+        capturedAt: hoursAgo(8),
+        clientEventId: `seed-dep-${d.id}`,
+        note: 'Checkpoint DEMO',
+        isDemo: true,
+      },
+    });
+    await prisma.routeCheckpoint.create({
+      data: {
+        kind: 'ROUTE_WAYPOINT',
+        label: 'Control ruta DEMO · aproximación CBBA',
+        deliveryId: d.id,
+        cisternId: d.cisternId,
+        batchId: d.batchId,
+        actorId: driverId,
+        volumeLiters: Number(d.loadedLiters.toString()) - 30,
+        density: d.loadDensity,
+        temperature: 22.5,
+        waterDetected: false,
+        latitude: baseLat + 0.08,
+        longitude: baseLng + 0.05,
+        accuracyMeters: 40,
+        capturedAt: hoursAgo(4),
+        clientEventId: `seed-wp-${d.id}`,
+        note: 'Checkpoint DEMO',
+        isDemo: true,
+      },
+    });
+  }
+  console.log(
+    `[DEMO] Checkpoints GPS: ${inTransit.length * 2} tramos para despachos en ruta`,
+  );
 }
 
 async function seedHappyPath(

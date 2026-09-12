@@ -6,42 +6,29 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { safeInternalPath } from '@/lib/safe-next';
 import { canAccessPath, homeForRole } from '@/lib/role-access';
+import { friendlyError } from '@/lib/api-error';
 
+/** Solo los 4 actores del producto. */
 const PRESETS = [
   {
     email: 'chofer@fuelchain.bo',
-    role: 'Chofer cisterna',
-    blurb: 'Emite QR y lleva el despacho',
+    role: 'Chofer',
+    blurb: 'Registrá el viaje de la cisterna',
   },
   {
     email: 'estacion@fuelchain.bo',
-    role: 'Encargado EESS',
-    blurb: 'Solo Cala Cala: recibe y ve su tanque',
+    role: 'Estación (EESS)',
+    blurb: 'Tanque, cisternas y contratos de tu surtidor',
   },
   {
     email: 'anh@fuelchain.bo',
-    role: 'ANH / Supervisión',
-    blurb: 'Vigilá toda la red de surtidores',
-  },
-  {
-    email: 'auditor@fuelchain.bo',
-    role: 'Auditor',
-    blurb: 'Casos y discrepancias humanas',
-  },
-  {
-    email: 'importador@fuelchain.bo',
-    role: 'Importador',
-    blurb: 'Crea lotes y evidencia',
-  },
-  {
-    email: 'deposito@fuelchain.bo',
-    role: 'Depósito',
-    blurb: 'Carga cisternas (despacho)',
+    role: 'ANH',
+    blurb: 'Verificá todos los movimientos',
   },
   {
     email: 'ciudadano@fuelchain.bo',
     role: 'Ciudadano',
-    blurb: 'Solo mapa cantidad + calidad',
+    blurb: 'Mapa cantidad + calidad',
   },
 ];
 
@@ -55,7 +42,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const hint = useMemo(() => 'Contraseña DEMO para operadores: demo123', []);
+  const hint = useMemo(() => 'Contraseña DEMO: demo123', []);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -73,7 +60,7 @@ export default function LoginPage() {
             : homeForRole(sessionUser.role);
         router.replace(dest);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error de login');
+        setError(friendlyError(err, 'Error de login'));
       }
     });
   }
@@ -89,8 +76,8 @@ export default function LoginPage() {
           BOLIVIA
         </p>
         <p className="mt-4 leading-relaxed text-[var(--mute)]">
-          El público consulta surtidores sin cuenta. Operadores (chofer,
-          estación, auditor) entran con login.
+          Cuatro actores: chofer registra el viaje, estación controla su tanque,
+          ANH verifica movimientos, ciudadano consulta el mapa.
         </p>
 
         <Link
@@ -100,7 +87,7 @@ export default function LoginPage() {
           Ver surtidores (sin login)
         </Link>
         <p className="mt-2 text-sm text-[var(--mute)]">
-          Mapa público de Cochabamba · semáforo DEMO
+          Mapa público · cantidad y calidad DEMO
         </p>
       </header>
 

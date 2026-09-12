@@ -39,6 +39,12 @@ enum CisternStatus {
   OFFLINE
 }
 
+enum CheckpointKind {
+  LOAD_DEPARTURE
+  ROUTE_WAYPOINT
+  ARRIVAL_STATION
+}
+
 enum BatchStatus {
   DRAFT
   AUTHORIZED
@@ -229,6 +235,7 @@ model User {
   customsEvents     CustomsEvent[]   @relation("CustomsActor")
   auditNotes        AuditNote[]
   assignedAudits    AuditCase[]      @relation("AuditAssignee")
+  routeCheckpoints  RouteCheckpoint[] @relation("CheckpointActor")
 
   @@index([stationId])
   @@map("users")
@@ -270,6 +277,7 @@ model FuelBatch {
   custodyBatons    CustodyBaton[]
   deliveries       Delivery[]
   loadedCisterns   Cistern[]         @relation("CisternCurrentBatch")
+  routeCheckpoints RouteCheckpoint[]
 
   @@index([status])
   @@index([riskLevel])
@@ -605,6 +613,7 @@ model Cistern {
   currentBatch FuelBatch? @relation("CisternCurrentBatch", fields: [currentBatchId], references: [id], onDelete: SetNull)
   deliveries   Delivery[]
   batons       CustodyBaton[]
+  checkpoints  RouteCheckpoint[]
 
   @@index([driverId])
   @@index([status])
@@ -637,11 +646,45 @@ model Delivery {
   cistern  Cistern       @relation(fields: [cisternId], references: [id], onDelete: Restrict)
   station  Station       @relation(fields: [destinationStationId], references: [id], onDelete: Restrict)
   batons   CustodyBaton[]
+  checkpoints RouteCheckpoint[]
 
   @@index([batchId, status])
   @@index([cisternId, status])
   @@index([destinationStationId])
   @@map("deliveries")
+}
+
+/// Tramo de ruta DEMO: cantidad + calidad proxy + ubicación (celular/chofer).
+model RouteCheckpoint {
+  id               String         @id @default(cuid())
+  kind             CheckpointKind
+  label            String?
+  deliveryId       String?
+  cisternId        String
+  batchId          String
+  actorId          String?
+  volumeLiters     Decimal        @db.Decimal(18, 3)
+  density          Decimal?       @db.Decimal(10, 4)
+  temperature      Decimal?       @db.Decimal(8, 2)
+  waterDetected    Boolean        @default(false)
+  latitude         Float
+  longitude        Float
+  accuracyMeters   Float?
+  capturedAt       DateTime       @default(now())
+  clientEventId    String?        @unique
+  note             String?
+  isDemo           Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+
+  delivery Delivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  cistern  Cistern   @relation(fields: [cisternId], references: [id], onDelete: Restrict)
+  batch    FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  actor    User?     @relation("CheckpointActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([cisternId, capturedAt])
+  @@index([deliveryId, capturedAt])
+  @@index([batchId, capturedAt])
+  @@map("route_checkpoints")
 }
 
 model OfflineSyncEvent {
