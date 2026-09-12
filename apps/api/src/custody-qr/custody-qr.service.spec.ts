@@ -56,6 +56,7 @@ function prismaHarness() {
     delivery: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue(null),
       update: jest.fn(),
       aggregate: jest.fn().mockResolvedValue({ _sum: { loadedLiters: null } }),
     },
@@ -65,6 +66,7 @@ function prismaHarness() {
     },
     qualityCertificate: { findFirst: jest.fn().mockResolvedValue(null) },
     measurement: { create: jest.fn() },
+    routeCheckpoint: { create: jest.fn().mockResolvedValue({}) },
     offlineSyncEvent: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -89,6 +91,8 @@ describe('CustodyQrService', () => {
     prisma.station.findUnique.mockResolvedValue({
       id: 'st1',
       code: 'ST-CBB-01',
+      latitude: new Prisma.Decimal(-17.3895),
+      longitude: new Prisma.Decimal(-66.1568),
     });
     prisma.cistern.findUnique.mockResolvedValue({
       id: 'cis1',
@@ -171,6 +175,29 @@ describe('CustodyQrService', () => {
       }),
     );
     expect(prisma.transport.findFirst).toHaveBeenCalled();
+  });
+
+  it('rejects a second open trip for the same driver', async () => {
+    prisma.delivery.findFirst.mockResolvedValue({
+      id: 'open1',
+      status: 'IN_TRANSIT',
+      cistern: { code: 'CIS-CBB-01' },
+      station: { code: 'ST-CBB-01', name: 'Cala Cala' },
+      batch: { batchCode: 'FC-BO-2026-000182' },
+    });
+
+    await expect(
+      service.issue(
+        {
+          batchCode: 'FC-BO-2026-000182',
+          eventType: 'IN_TRANSIT',
+          volumeLiters: 8000,
+          cisternCode: 'CIS-CBB-01',
+          stationCode: 'ST-CBB-02',
+        },
+        transporter,
+      ),
+    ).rejects.toThrow(/viaje abierto/i);
   });
 
   it('rejects QR issue from DRAFT', async () => {

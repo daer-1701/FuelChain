@@ -6,8 +6,9 @@ import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canDispatchFuel, homeForRole } from '@/lib/role-access';
-import { roleLabel } from '@/lib/es-labels';
+import { labelEs, roleLabel } from '@/lib/es-labels';
 import { useDispatchOptions } from '@/lib/use-dispatch-options';
+import { useActiveDriverTrip } from '@/lib/use-active-driver-trip';
 
 type SimResult = {
   note?: string;
@@ -30,6 +31,8 @@ export default function SimularPage() {
   const [pending, start] = useTransition();
   const canRun = canDispatchFuel(user?.role);
   const cisternCode = user?.cisternCode ?? 'CIS-CBB-01';
+  const { trip: activeTrip } = useActiveDriverTrip(cisternCode);
+  const blockedByOpenTrip = Boolean(activeTrip);
 
   useEffect(() => {
     if (user?.stationCode) setStationCode(user.stationCode);
@@ -48,7 +51,7 @@ export default function SimularPage() {
   }, [stations, stationCode]);
 
   function run() {
-    if (!canRun) return;
+    if (!canRun || blockedByOpenTrip) return;
     start(async () => {
       setLog(null);
       setResult(null);
@@ -120,6 +123,30 @@ export default function SimularPage() {
       </header>
 
       <div className="fc-sheet grid gap-4 md:grid-cols-2">
+        {activeTrip && (
+          <div className="border border-[var(--diesel)] bg-[var(--diesel-soft)] px-3 py-3 text-sm md:col-span-2">
+            <p className="font-semibold">Ya tenés un viaje abierto</p>
+            <p className="mt-1 text-[var(--mute)]">
+              {activeTrip.cisternCode} → {activeTrip.stationCode} · lote{' '}
+              {activeTrip.batchCode} · {labelEs(activeTrip.status)}. Solo un
+              viaje a la vez.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Link
+                href={activeTrip.deepLinkPath}
+                className="font-semibold text-[var(--diesel)] underline"
+              >
+                Ver ficha del viaje
+              </Link>
+              <Link
+                href="/tramos"
+                className="font-semibold text-[var(--diesel)] underline"
+              >
+                Ir a tramos
+              </Link>
+            </div>
+          </div>
+        )}
         <label className="fc-label">
           Lote
           <select
@@ -175,11 +202,15 @@ export default function SimularPage() {
         <div className="md:col-span-2">
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || blockedByOpenTrip}
             onClick={run}
             className="fc-btn w-full !py-3"
           >
-            {pending ? 'Emitiendo…' : 'Emitir viaje (QR)'}
+            {blockedByOpenTrip
+              ? 'Viaje en curso'
+              : pending
+                ? 'Emitiendo…'
+                : 'Emitir viaje (QR)'}
           </button>
         </div>
       </div>

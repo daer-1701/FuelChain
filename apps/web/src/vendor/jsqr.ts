@@ -2,8 +2,7 @@
  * jsQR 1.4.0 (MIT) — vendored para decodificar QR sin BarcodeDetector
  * (Firefox, Safari, etc.). Fuente: https://github.com/cozmo/jsQR
  */
-// @ts-nocheck — CJS interop + casing en Windows (jsQR.js / jsqr.ts)
-import * as JsQrModule from './jsQR.js';
+import * as JsQrModule from './jsqr.umd.js';
 
 export type QRCode = {
   data: string;
@@ -23,7 +22,8 @@ type JsQrFn = (
   },
 ) => QRCode | null;
 
-const mod = JsQrModule as unknown as { default?: JsQrFn } & JsQrFn;
-const jsQR: JsQrFn = typeof mod === 'function' ? mod : mod.default;
+const mod = JsQrModule as unknown as { default?: JsQrFn } | JsQrFn;
+const jsQR: JsQrFn =
+  typeof mod === 'function' ? mod : ((mod as { default: JsQrFn }).default as JsQrFn);
 
 export default jsQR;

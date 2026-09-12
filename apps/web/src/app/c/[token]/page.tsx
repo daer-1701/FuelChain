@@ -115,6 +115,14 @@ function CisternQrInner() {
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const canAccept = canAcceptCustody(user?.role);
+  const isDriver =
+    user?.role === 'TRANSPORTER' || user?.role === 'DEPOT_OPERATOR';
+  const ownCistern =
+    !isDriver ||
+    !user?.cisternCode ||
+    !payload?.cistern ||
+    payload.cistern.code === user.cisternCode ||
+    payload.cistern.qrToken === user.cisternCode;
 
   const here = `${pathname}?${searchParams.toString()}`.replace(/\?$/, '');
   const loginHref = `/login?next=${encodeURIComponent(here)}`;
@@ -227,22 +235,33 @@ function CisternQrInner() {
   const delivered = payload?.delivery?.status === 'DELIVERED';
 
   return (
-    <main className="fc-page mx-auto max-w-3xl">
-      <OpsPageHeader
-        stamp="Estación · QR de cisterna"
-        title={payload?.cistern.code ?? token}
-        lede={note}
-        actions={
-          <>
-            <QrScanButton />
-            {user?.role === 'STATION_STAFF' && (
-              <Link href="/escanear" className="fc-btn fc-btn-ghost !text-xs">
-                Historial escaneos
-              </Link>
-            )}
-          </>
-        }
-      />
+    <main className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <header className="space-y-2">
+        <p className="text-sm text-[var(--mute)]">QR de cisterna (sticker)</p>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
+          {payload?.cistern.code ?? token}
+        </h1>
+        {note && <p className="text-sm text-[var(--mute)]">{note}</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          {!isDriver && <QrScanButton />}
+          {user?.role === 'STATION_STAFF' && (
+            <Link
+              href="/escanear"
+              className="text-sm font-semibold text-[var(--diesel)] underline"
+            >
+              Volver al historial de escaneos
+            </Link>
+          )}
+          {isDriver && (
+            <Link
+              href="/mi-qr"
+              className="text-sm font-semibold text-[var(--diesel)] underline"
+            >
+              Volver a mi QR
+            </Link>
+          )}
+        </div>
+      </header>
 
       {error && (
         <p role="alert" className="text-[var(--alarm)]">
@@ -255,93 +274,48 @@ function CisternQrInner() {
         </p>
       )}
 
-      {payload && (
-        <ContextPanel
-          code={payload.cistern.deviceId}
-          title={payload.cistern.code}
-          subtitle={
-            payload.delivery
-              ? `${payload.delivery.station.code} · ${payload.delivery.station.name}`
-              : 'Sin entrega activa'
-          }
-          actions={
-            payload.delivery ? (
-              <StatusPill
-                label={labelEs(payload.delivery.status)}
-                tone={delivered ? 'ok' : 'warn'}
-                pulse={!delivered}
-              />
-            ) : (
-              <StatusPill label={labelEs(payload.cistern.status)} tone="mute" />
-            )
-          }
-        >
-          <SpecGrid
-            items={[
-              {
-                label: 'Dispositivo',
-                value: (
-                  <span className="font-mono text-xs">
-                    {payload.cistern.deviceId}
-                  </span>
-                ),
-              },
-              {
-                label: 'QR token',
-                value: (
-                  <span className="font-mono text-xs">
-                    {payload.cistern.qrToken}
-                  </span>
-                ),
-              },
-              { label: 'Placa', value: payload.cistern.plate ?? '—' },
-              {
-                label: 'Carga actual',
-                value: `${payload.cistern.currentLoadLiters} L`,
-              },
-              {
-                label: 'Chofer',
-                value: payload.cistern.driver?.name ?? '—',
-              },
-              {
-                label: 'Lote',
-                value: (
-                  <span className="fc-batch-code">
-                    {payload.delivery?.batch.batchCode ??
-                      payload.cistern.currentBatch?.batchCode ??
-                      '—'}
-                  </span>
-                ),
-              },
-            ]}
-          />
+      {payload && !ownCistern && (
+        <section className="fc-sheet space-y-3">
+          <p>
+            Como chofer solo podés ver el QR de tu cisterna (
+            <strong>{user?.cisternCode}</strong>).
+          </p>
+          <Link href="/mi-qr" className="fc-btn inline-block">
+            Ir a mi QR
+          </Link>
+        </section>
+      )}
 
-          {checkpoints.length > 0 && (
-            <div className="pt-2">
-              <p className="mb-3 fc-meta uppercase tracking-wide">
-                Progreso del viaje
-              </p>
-              <JourneyStepper
-                steps={[
-                  {
-                    id: 'LOAD_DEPARTURE',
-                    label: 'Salida',
-                    done: kinds.has('LOAD_DEPARTURE'),
-                  },
-                  {
-                    id: 'ROUTE_WAYPOINT',
-                    label: 'En ruta',
-                    done: kinds.has('ROUTE_WAYPOINT'),
-                  },
-                  {
-                    id: 'ARRIVAL_STATION',
-                    label: 'Llegada',
-                    done: kinds.has('ARRIVAL_STATION'),
-                  },
-                ]}
-              />
-            </div>
-          )}
+      {payload && ownCistern && (
+        <section className="fc-sheet space-y-3">
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <dt className="text-[var(--mute)]">Dispositivo</dt>
+            <dd className="font-mono text-xs">{payload.cistern.deviceId}</dd>
+            <dt className="text-[var(--mute)]">QR token</dt>
+            <dd className="font-mono text-xs">{payload.cistern.qrToken}</dd>
+            <dt className="text-[var(--mute)]">Placa</dt>
+            <dd>{payload.cistern.plate ?? '—'}</dd>
+            <dt className="text-[var(--mute)]">Carga actual</dt>
+            <dd className="tabular-nums">
+              {payload.cistern.currentLoadLiters} L
+            </dd>
+            <dt className="text-[var(--mute)]">Chofer</dt>
+            <dd>{payload.cistern.driver?.name ?? '—'}</dd>
+            <dt className="text-[var(--mute)]">Lote</dt>
+            <dd className="fc-batch-code">
+              {payload.delivery?.batch.batchCode ??
+                payload.cistern.currentBatch?.batchCode ??
+                '—'}
+            </dd>
+            <dt className="text-[var(--mute)]">Destino</dt>
+            <dd>
+              {payload.delivery
+                ? `${payload.delivery.station.code} · ${payload.delivery.station.name}`
+                : '—'}
+            </dd>
+            <dt className="text-[var(--mute)]">Estado viaje</dt>
+            <dd>{payload.delivery ? labelEs(payload.delivery.status) : '—'}</dd>
+          </dl>
 
           {!user && ready && (
             <div className="space-y-2 border-t border-[var(--rail)]/40 pt-4">
@@ -389,7 +363,7 @@ function CisternQrInner() {
         </ContextPanel>
       )}
 
-      {drops.length > 0 && (
+      {ownCistern && drops.length > 0 && (
         <section className="space-y-3">
           <h2 className="fc-section-title">Cambios de cantidad en ruta</h2>
           <p className="text-sm text-[var(--mute)]">
@@ -434,7 +408,7 @@ function CisternQrInner() {
         </section>
       )}
 
-      {qualityChanges.length > 0 && (
+      {ownCistern && qualityChanges.length > 0 && (
         <section className="space-y-3">
           <h2 className="fc-section-title">Cambios de calidad en ruta</h2>
           <p className="text-sm text-[var(--mute)]">
@@ -472,7 +446,7 @@ function CisternQrInner() {
         </section>
       )}
 
-      {checkpoints.length > 0 && (
+      {ownCistern && checkpoints.length > 0 && (
         <section className="space-y-3">
           <h2 className="fc-section-title">Historial del camino</h2>
           <TraceTimeline
