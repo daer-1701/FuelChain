@@ -1,0 +1,33 @@
+---
+description: Dominio operativo FuelChain (ANH, estación, chofer, ciudadano, Delivery)
+alwaysApply: true
+---
+
+# FuelChain — dominio de producto (siempre)
+
+Complementa `FuelChain AGENTS.md` (Web3). Detalle: `FuelChain Product AGENTS.md`.
+
+## Actores
+
+- **ANH (`VERIFIER`)**: supervisión de **toda** la red por surtidor (stock, calidad, cisternas).
+- **Estación (`STATION_STAFF`)**: **solo** su EESS; recibe QR; no emite ni simula despachos ajenos.
+- **Chofer / depósito (`TRANSPORTER` / `DEPOT_OPERATOR`)**: emite QR / simula con **cantidad + calidad** de la cisterna.
+- **Ciudadano (`CITIZEN` o `/mapa` anónimo)**: mapa cantidad + calidad. Sin menús de operador.
+
+## Modelo
+
+- Usar `Cistern` + `Delivery` + `FuelBatch.deliveredLiters`.
+- Calidad del viaje viene del despacho; **no** inventarla al accept.
+- Semáforo/mapa desde **stock real** del tanque.
+- Accept QR: solo `STATION_STAFF` (+ `ADMIN`), bloqueado a `stationCode` asignado.
+- Issue / simular: `TRANSPORTER` / `DEPOT_OPERATOR` / `ADMIN`.
+
+## UI
+
+- Fuente: `apps/web/src/lib/role-access.ts` + `apps/api/src/auth/permissions.ts`.
+- Pantalla = trabajo del rol. No dashboards genéricos para todos.
+- Datos DEMO etiquetados. No inventar APIs oficiales ANH/YPFB/Aduana.
+
+## Blockchain
+
+Sigue siendo evidencia (no litro físico). Anomalía ≠ robo. Respetar `FuelChain AGENTS.md`.

@@ -6,8 +6,7 @@ import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { parseBatonPayloadParam } from '@/lib/baton-qr';
-
-const ACCEPT_ROLES = new Set(['ADMIN', 'STATION_STAFF', 'DEPOT_OPERATOR']);
+import { canAcceptCustody, homeForRole } from '@/lib/role-access';
 
 type BatonData = {
   tokenId: string;
@@ -65,7 +64,11 @@ function QrBatonInner() {
 
   const here = `${pathname}?${searchParams.toString()}`.replace(/\?$/, '');
   const loginHref = `/login?next=${encodeURIComponent(here)}`;
-  const canAccept = Boolean(user && ACCEPT_ROLES.has(user.role));
+  const canAccept = canAcceptCustody(user?.role);
+
+  useEffect(() => {
+    if (user?.stationCode) setStationCode(user.stationCode);
+  }, [user?.stationCode]);
 
   useEffect(() => {
     const embedded = parseBatonPayloadParam(searchParams.get('p'));
@@ -84,6 +87,9 @@ function QrBatonInner() {
         if (!cancelled) {
           setBaton(json.data);
           setReceivedVol(String(json.data.volumeLiters ?? ''));
+          if (json.data.station?.code) {
+            setStationCode(json.data.station.code);
+          }
         }
       } catch (e) {
         if (cancelled) return;
@@ -151,7 +157,7 @@ function QrBatonInner() {
           consumedByRole: user?.role ?? null,
         });
         const bits = [
-          'Bastón aceptado. Inventario actualizado como delta.',
+          'Bastón aceptado. Inventario de tu estación actualizado.',
         ];
         if (json.movement?.status) {
           bits.push(`Movimiento: ${json.movement.status}.`);
@@ -176,8 +182,10 @@ function QrBatonInner() {
 
   function enqueueOffline() {
     if (!baton) return;
-    if (!user) {
-      setMsg('Iniciá sesión como estación para encolar la recepción.');
+    if (!user || !canAccept) {
+      setMsg(
+        'Iniciá sesión como encargado de estación para encolar la recepción.',
+      );
       return;
     }
     const clientEventId = `off-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -201,18 +209,47 @@ function QrBatonInner() {
     );
     setOfflineQueue(q.length);
     setMsg(
-      `Guardado offline (${clientEventId}). Sync cuando haya señal en /verify.`,
+      `Guardado offline (${clientEventId}). Usá «Sync cola» abajo cuando haya señal.`,
     );
+  }
+
+  function syncQueue() {
+    startTransition(async () => {
+      setMsg(null);
+      try {
+        const events = JSON.parse(
+          localStorage.getItem('fc-offline-queue') || '[]',
+        ) as Array<Record<string, unknown>>;
+        if (!events.length) {
+          setMsg('Cola vacía.');
+          return;
+        }
+        const res = await fetch(`${API_URL}/custody-qr/sync`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ events }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const json = await res.json();
+        localStorage.setItem('fc-offline-queue', '[]');
+        setOfflineQueue(0);
+        setMsg(`Sync OK: ${JSON.stringify(json.results)}`);
+      } catch (e) {
+        setMsg(e instanceof Error ? e.message : 'Sync falló');
+      }
+    });
   }
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <header>
         <p className="fc-stamp text-[var(--mute)]">Bastón QR · DEMO</p>
-        <h1 className="mt-2 font-display text-3xl font-black">Custodia</h1>
+        <h1 className="mt-2 font-display text-3xl font-black">
+          Recepción en estación
+        </h1>
         <p className="mt-2 text-sm text-[var(--mute)]">
-          Token <code>{token}</code>. La ficha es pública; aceptar exige sesión
-          de estación o depósito.
+          Token <code>{token}</code>. Cualquiera puede ver la ficha; solo el
+          encargado de la EESS confirma litros recibidos.
         </p>
       </header>
 
@@ -253,7 +290,7 @@ function QrBatonInner() {
             <div className="space-y-3 border-t border-[var(--rail)]/40 pt-4">
               <p className="text-sm text-[var(--mute)]">
                 Para confirmar la recepción necesitás entrar como encargado de
-                estación o depósito. El token se conserva.
+                estación. El token se conserva.
               </p>
               <Link
                 href={loginHref}
@@ -265,10 +302,18 @@ function QrBatonInner() {
           )}
 
           {baton.status === 'ACTIVE' && user && !canAccept && (
-            <p className="border-t border-[var(--rail)]/40 pt-4 text-sm text-[var(--alarm)]">
-              Tu rol ({user.role}) no puede aceptar custodia. Entrá con
-              estacion@ o deposito@.
-            </p>
+            <div className="space-y-2 border-t border-[var(--rail)]/40 pt-4 text-sm">
+              <p className="text-[var(--alarm)]">
+                Tu rol ({user.role}) no recibe en estación. Entrá con
+                estacion@.
+              </p>
+              <Link
+                href={homeForRole(user.role)}
+                className="inline-block underline"
+              >
+                Ir a tu panel
+              </Link>
+            </div>
           )}
 
           {baton.status === 'ACTIVE' && canAccept && (
@@ -279,6 +324,7 @@ function QrBatonInner() {
                   className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
                   value={stationCode}
                   onChange={(e) => setStationCode(e.target.value)}
+                  disabled={Boolean(user?.stationCode)}
                 >
                   <option value="ST-CBB-01">ST-CBB-01 Cala Cala</option>
                   <option value="ST-CBB-02">ST-CBB-02 Quillacollo</option>
@@ -287,6 +333,11 @@ function QrBatonInner() {
                   <option value="ST-CBB-05">ST-CBB-05 Vinto</option>
                 </select>
               </label>
+              {user?.stationCode && (
+                <p className="text-xs text-[var(--mute)]">
+                  Bloqueada a tu EESS asignada ({user.stationCode}).
+                </p>
+              )}
               <label className="block text-sm">
                 Litros recibidos
                 <input
@@ -318,12 +369,24 @@ function QrBatonInner() {
       )}
 
       {msg && <p className="text-sm">{msg}</p>}
-      <p className="text-xs text-[var(--mute)]">
-        Cola offline local: {offlineQueue} evento(s).{' '}
-        <Link href="/verify" className="underline">
-          Ir a sync
-        </Link>
-      </p>
+      <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--mute)]">
+        <span>Cola offline local: {offlineQueue} evento(s).</span>
+        {user && offlineQueue > 0 && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={syncQueue}
+            className="font-semibold text-[var(--diesel)] underline disabled:opacity-50"
+          >
+            Sync cola
+          </button>
+        )}
+        {user?.role === 'STATION_STAFF' && (
+          <Link href="/estacion" className="underline">
+            Ver mi estación
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

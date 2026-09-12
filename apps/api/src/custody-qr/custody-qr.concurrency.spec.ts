@@ -156,6 +156,7 @@ describe('CustodyQrService concurrent accept (Postgres)', () => {
     await prisma.measurement.deleteMany({ where: { batchId: batch.id } });
     await prisma.custodyEvent.deleteMany({ where: { batchId: batch.id } });
     await prisma.custodyBaton.deleteMany({ where: { batchId: batch.id } });
+    await prisma.delivery.deleteMany({ where: { batchId: batch.id } });
     await prisma.storageTank.deleteMany({ where: { stationId: station.id } });
     await prisma.station.delete({ where: { id: station.id } });
     await prisma.fuelBatch.delete({ where: { id: batch.id } });

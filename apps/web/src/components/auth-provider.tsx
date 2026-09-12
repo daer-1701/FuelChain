@@ -16,13 +16,17 @@ export type SessionUser = {
   name: string;
   role: string;
   isDemo: boolean;
+  stationId?: string | null;
+  stationCode?: string | null;
+  cisternId?: string | null;
+  cisternCode?: string | null;
 };
 
 type AuthState = {
   user: SessionUser | null;
   token: string | null;
   ready: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<SessionUser>;
   logout: () => void;
   authHeaders: () => HeadersInit;
 };
@@ -72,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     setToken(json.data.token);
     setUser(json.data.user);
+    return json.data.user;
   }, []);
 
   const logout = useCallback(() => {

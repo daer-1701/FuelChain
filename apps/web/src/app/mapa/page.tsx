@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { CbbaStationsExplorer } from '@/components/cbba-stations-explorer';
+import { MapaRoleCta } from '@/components/mapa-role-cta';
 import type { PublicStation } from '@/components/station-types';
 
 export const dynamic = 'force-dynamic';
@@ -32,11 +32,11 @@ export default async function MapaCochabambaPage() {
       <header className="max-w-2xl">
         <p className="fc-stamp text-[var(--mute)]">Cochabamba · público DEMO</p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
-          Dónde cargar
+          Cantidad y calidad
         </h1>
         <p className="mt-3 max-w-lg leading-relaxed text-[var(--mute)]">
-          Clic en un surtidor del mapa o de la lista para ver detalle. Semáforo
-          DEMO — no es la app oficial ANH Abastecimiento. {note}
+          Mapa ciudadano: semáforo de stock y estado de calidad por surtidor.
+          DEMO FuelChain — no es la app oficial ANH. {note}
         </p>
       </header>
 
@@ -48,13 +48,7 @@ export default async function MapaCochabambaPage() {
 
       <CbbaStationsExplorer stations={stations} />
 
-      <p className="text-sm text-[var(--mute)]">
-        ¿Sos operador?{' '}
-        <Link href="/login" className="text-[var(--diesel)] underline">
-          Iniciar sesión
-        </Link>{' '}
-        para simular entregas y custodia QR.
-      </p>
+      <MapaRoleCta />
     </div>
   );
 }

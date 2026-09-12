@@ -1,4 +1,5 @@
 import { BatchesTable } from '@/components/batches-table';
+import { CreateBatchForm } from '@/components/create-batch-form';
 import { apiGet } from '@/lib/api';
 import type { BatchesList } from '@/lib/types';
 
@@ -35,10 +36,12 @@ export default async function BatchesPage({
       <header className="max-w-xl">
         <h1 className="font-display text-3xl font-black tracking-tight">Lotes</h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          El lote es la unidad central. Busca por código y filtra por estado o
-          riesgo.
+          El lote es la unidad central. Importador declara; chofer despacha;
+          estación recibe; ANH y auditor revisan el pasaporte.
         </p>
       </header>
+
+      <CreateBatchForm />
 
       <form className="fc-surface flex flex-wrap items-end gap-3 p-4">
         <label className="flex min-w-[200px] flex-1 flex-col gap-1.5 text-sm text-[var(--mute)]">

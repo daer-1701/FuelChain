@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { canDispatchFuel, homeForRole } from '@/lib/role-access';
 import { CbbaStationsExplorer } from '@/components/cbba-stations-explorer';
 import type { PublicStation } from '@/components/station-types';
 
@@ -22,8 +23,15 @@ export default function SimularPage() {
   const [log, setLog] = useState<string | null>(null);
   const [result, setResult] = useState<SimResult | null>(null);
   const [pending, start] = useTransition();
+  const canRun = canDispatchFuel(user?.role);
+  const cisternCode = user?.cisternCode ?? 'CIS-CBB-01';
+
+  useEffect(() => {
+    if (user?.stationCode) setStationCode(user.stationCode);
+  }, [user?.stationCode]);
 
   function run() {
+    if (!canRun) return;
     start(async () => {
       setLog(null);
       setResult(null);
@@ -34,8 +42,8 @@ export default function SimularPage() {
           body: JSON.stringify({
             batchCode,
             stationCode,
-            cisternCode: 'CIS-CBB-07',
-            volumeLiters: 24800,
+            cisternCode,
+            volumeLiters: 8000,
           }),
         });
         if (!res.ok) throw new Error(await res.text());
@@ -48,16 +56,35 @@ export default function SimularPage() {
     });
   }
 
+  if (user && !canRun) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-display text-3xl font-black">Simular</h1>
+        <p className="text-[var(--mute)]">
+          Esta pantalla es para chofer o depósito (emitir + entregar). Tu rol
+          ({user.role}) no despacha combustible.
+        </p>
+        <Link
+          href={homeForRole(user.role)}
+          className="inline-block border-2 border-[var(--ink)] px-4 py-2 text-sm font-semibold"
+        >
+          Ir a tu panel
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <header className="max-w-2xl">
-        <p className="fc-stamp text-[var(--mute)]">Simulación · Cochabamba</p>
+        <p className="fc-stamp text-[var(--mute)]">Chofer / depósito · DEMO</p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
           Cisterna → estación → mapa
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Un clic simula el traspaso con QR (emisión + recepción) y refresca el
-          semáforo del surtidor. Sesión actual:{' '}
+          Atajo DEMO: emite el QR de tu cisterna y completa la recepción en la
+          estación destino. Cisterna:{' '}
+          <strong>{cisternCode}</strong>. Sesión:{' '}
           <strong>{user?.name}</strong> ({user?.role}).
         </p>
       </header>
@@ -81,7 +108,7 @@ export default function SimularPage() {
             <option value="ST-CBB-01">ST-CBB-01 Cala Cala</option>
             <option value="ST-CBB-02">ST-CBB-02 Quillacollo</option>
             <option value="ST-CBB-03">ST-CBB-03 Sacaba</option>
-            <option value="ST-CBB-05">ST-CBB-05 Vinto (vacío)</option>
+            <option value="ST-CBB-05">ST-CBB-05 Vinto</option>
             <option value="ST-CBB-06">ST-CBB-06 Av. Petrolera</option>
           </select>
         </label>
@@ -116,8 +143,7 @@ export default function SimularPage() {
           >
             {result.issued.data.tokenId}
           </Link>{' '}
-          · estado aceptación:{' '}
-          {result.accepted?.data?.status ?? '—'}
+          · estado aceptación: {result.accepted?.data?.status ?? '—'}
         </p>
       )}
 
@@ -129,11 +155,11 @@ export default function SimularPage() {
       )}
 
       <p className="text-sm text-[var(--mute)]">
-        También podés hacerlo paso a paso en{' '}
+        Paso a paso:{' '}
         <Link href="/verify" className="underline">
           QR custodia
-        </Link>{' '}
-        o ver el mapa en{' '}
+        </Link>
+        . Mapa:{' '}
         <Link href="/mapa" className="underline">
           /mapa
         </Link>

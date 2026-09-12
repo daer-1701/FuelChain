@@ -22,6 +22,21 @@ enum ActorRole {
   AUDITOR
   STATION_STAFF
   VERIFIER
+  CITIZEN
+}
+
+enum DeliveryStatus {
+  LOADED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum CisternStatus {
+  AVAILABLE
+  LOADED
+  IN_TRANSIT
+  OFFLINE
 }
 
 enum BatchStatus {
@@ -201,16 +216,21 @@ model User {
   role          ActorRole
   passwordHash  String?
   walletAddress String?
+  /// EESS assigned to STATION_STAFF (DEMO: one station per operator).
+  stationId     String?
   isDemo        Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  station           Station?         @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  drivenCisterns    Cistern[]        @relation("CisternDriver")
   uploadedDocuments Document[]       @relation("DocumentUploader")
   custodyEvents     CustodyEvent[]   @relation("CustodyActor")
   customsEvents     CustomsEvent[]   @relation("CustomsActor")
   auditNotes        AuditNote[]
   assignedAudits    AuditCase[]      @relation("AuditAssignee")
 
+  @@index([stationId])
   @@map("users")
 }
 
@@ -229,6 +249,7 @@ model FuelBatch {
   riskScore            Int         @default(0)
   riskLevel            RiskLevel   @default(LOW)
   qualityStatus        QualityStatus @default(PENDING)
+  deliveredLiters      Decimal     @default(0) @db.Decimal(18, 3)
   currentLocation      String?
   isDemo               Boolean     @default(true)
   createdAt            DateTime    @default(now())
@@ -247,6 +268,8 @@ model FuelBatch {
   auditCases       AuditCase[]
   blockchainAnchors BlockchainAnchor[]
   custodyBatons    CustodyBaton[]
+  deliveries       Delivery[]
+  loadedCisterns   Cistern[]         @relation("CisternCurrentBatch")
 
   @@index([status])
   @@index([riskLevel])
@@ -473,8 +496,10 @@ model Station {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  tanks   StorageTank[]
-  batons  CustodyBaton[]
+  tanks      StorageTank[]
+  batons     CustodyBaton[]
+  staff      User[]
+  deliveries Delivery[]
 
   @@index([city, publicVisible])
   @@index([availability])
@@ -533,8 +558,10 @@ model CustodyBaton {
   batchId        String
   vehicleId      String?
   stationId      String?
+  cisternId      String?
+  deliveryId     String?
   cisternCode    String?
-  eventType      String
+  eventType      String?
   volumeLiters   Decimal     @db.Decimal(18, 3)
   payloadJson    Json
   payloadHash    String
@@ -549,12 +576,72 @@ model CustodyBaton {
   isDemo         Boolean     @default(true)
   createdAt      DateTime    @default(now())
 
-  batch   FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  station Station?  @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  batch    FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  station  Station?  @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  cistern  Cistern?  @relation(fields: [cisternId], references: [id], onDelete: SetNull)
+  delivery Delivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
 
   @@index([batchId, status])
   @@index([tokenId])
+  @@index([deliveryId])
   @@map("custody_batons")
+}
+
+model Cistern {
+  id                String        @id @default(cuid())
+  code              String        @unique
+  plate             String?
+  carrier           String
+  capacityLiters    Decimal       @db.Decimal(18, 3)
+  currentLoadLiters Decimal       @default(0) @db.Decimal(18, 3)
+  status            CisternStatus @default(AVAILABLE)
+  driverId          String?
+  currentBatchId    String?
+  isDemo            Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  driver       User?      @relation("CisternDriver", fields: [driverId], references: [id], onDelete: SetNull)
+  currentBatch FuelBatch? @relation("CisternCurrentBatch", fields: [currentBatchId], references: [id], onDelete: SetNull)
+  deliveries   Delivery[]
+  batons       CustodyBaton[]
+
+  @@index([driverId])
+  @@index([status])
+  @@map("cisterns")
+}
+
+model Delivery {
+  id                   String         @id @default(cuid())
+  batchId              String
+  cisternId            String
+  destinationStationId String
+  status               DeliveryStatus @default(LOADED)
+  loadedLiters         Decimal        @db.Decimal(18, 3)
+  receivedLiters       Decimal?       @db.Decimal(18, 3)
+  loadDensity          Decimal?       @db.Decimal(10, 4)
+  loadTemperature      Decimal?       @db.Decimal(8, 2)
+  loadWaterDetected    Boolean        @default(false)
+  loadCertificateStatus String?
+  receivedDensity      Decimal?       @db.Decimal(10, 4)
+  receivedTemperature  Decimal?       @db.Decimal(8, 2)
+  receivedWaterDetected Boolean       @default(false)
+  loadedAt             DateTime       @default(now())
+  deliveredAt          DateTime?
+  batonTokenId         String?
+  isDemo               Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  batch    FuelBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  cistern  Cistern       @relation(fields: [cisternId], references: [id], onDelete: Restrict)
+  station  Station       @relation(fields: [destinationStationId], references: [id], onDelete: Restrict)
+  batons   CustodyBaton[]
+
+  @@index([batchId, status])
+  @@index([cisternId, status])
+  @@index([destinationStationId])
+  @@map("deliveries")
 }
 
 model OfflineSyncEvent {

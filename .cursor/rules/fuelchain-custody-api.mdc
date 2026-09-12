@@ -1,0 +1,44 @@
+---
+description: Permisos API, QR custody y supervisión scoped por estación
+globs: apps/api/src/**/*.{ts,js}
+alwaysApply: false
+---
+
+# FuelChain — custody / permissions API
+
+Fuente de permisos mutadores: `apps/api/src/auth/permissions.ts`.
+
+## QR / demo
+
+| Acción | Roles |
+|--------|--------|
+| `qrIssue` | ADMIN, TRANSPORTER, DEPOT_OPERATOR |
+| `qrAccept` | ADMIN, STATION_STAFF **solo** |
+| `qrSync` | ADMIN, STATION_STAFF, TRANSPORTER, DEPOT_OPERATOR |
+| `demoSimulate` | ADMIN, TRANSPORTER, DEPOT_OPERATOR (nunca STATION_STAFF) |
+
+Al **accept**:
+
+- `STATION_STAFF` debe quedar limitado a su `stationId` / `stationCode`.
+- Rechazar aceptación hacia otra EESS.
+- Contabilidad vía `Delivery` + tanque estación + `deliveredLiters`.
+- Calidad del viaje desde despacho/cisterna, no inventada aquí.
+
+## Supervisión
+
+`GET /stations/supervision`:
+
+- `VERIFIER` / `AUDITOR` / `ADMIN` → red (+ flota si aplica).
+- `STATION_STAFF` → **solo** su estación, sin flota de red.
+
+## Anomalías / auditoría
+
+- Crear señales: según `anomalyCreate` (incluye estación/depósito donde aplique).
+- Cambiar estado / cerrar: `AUDITOR` / `ADMIN`.
+- Anomalía = señal de revisión, **nunca** conclusión automática de robo.
+
+## Web3 boundary
+
+Anclar evidencia solo vía servicio blockchain + `blockchainAnchor` roles. JWT ≠ rol on-chain.
+
+Producto: `.cursor/rules/FuelChain Product AGENTS.md`. Evidencia: `FuelChain AGENTS.md`.

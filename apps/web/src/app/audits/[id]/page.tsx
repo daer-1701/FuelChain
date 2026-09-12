@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AuditWorkbench } from '@/components/audit-workbench';
 import { apiGet } from '@/lib/api';
 import { formatStatus } from '@/lib/types';
 
@@ -94,6 +95,8 @@ export default async function AuditDetailPage({
         </p>
       )}
 
+      <AuditWorkbench caseId={c.id} currentStatus={c.status} />
+
       <section>
         <h2 className="font-display text-xl font-bold">Notas del auditor</h2>
         <ul className="mt-4 divide-y divide-[var(--rail)]/35 border-y border-[var(--rail)]/45">
@@ -102,6 +105,9 @@ export default async function AuditDetailPage({
               {n.body}
             </li>
           ))}
+          {c.notes.length === 0 && (
+            <li className="py-3 text-sm text-[var(--mute)]">Sin notas aún.</li>
+          )}
         </ul>
       </section>
     </div>

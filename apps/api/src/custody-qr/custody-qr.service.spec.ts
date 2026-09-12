@@ -47,6 +47,16 @@ function prismaHarness() {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    cistern: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      update: jest.fn(),
+    },
+    delivery: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    qualityCertificate: { findFirst: jest.fn().mockResolvedValue(null) },
     measurement: { create: jest.fn() },
     offlineSyncEvent: {
       findUnique: jest.fn(),

@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
-import { applyStockDelta } from './tank-inventory';
+import { applyStockDelta, applyStockWithdraw } from './tank-inventory';
 
 describe('applyStockDelta', () => {
   it('adds reception as a delta on previous stock', () => {
@@ -21,6 +21,15 @@ describe('applyStockDelta', () => {
         capacityLiters: new Decimal(45000),
       }),
     ).toThrow(BadRequestException);
+  });
+
+  it('withdraws load from a cistern or tank', () => {
+    const result = applyStockWithdraw({
+      previousStock: 20000,
+      withdrawLiters: 8000,
+      capacityLiters: 30000,
+    });
+    expect(result.nextStock.toString()).toBe('12000');
   });
 
   it('rejects non-positive reception', () => {

@@ -1827,23 +1827,51 @@ Trust boundaries must be explicit.
 
 # 62. Application roles
 
-Current application roles may include concepts such as:
+Current application roles (Prisma `ActorRole` / JWT):
 
 ```text
-TRANSPORTER
-STATION_STAFF
-DEPOT_OPERATOR
+ADMIN
 IMPORTER
+TRANSPORTER          → chofer / cisterna
+DEPOT_OPERATOR       → carga en depósito
+STATION_STAFF        → encargado EESS
 LAB
 AUDITOR
-VERIFIER
+VERIFIER             → ANH supervisión (red)
+CITIZEN              → mapa público (cantidad + calidad)
 ```
+
+Product meaning of key roles:
+
+| App role | Product actor | Primary job |
+|----------|---------------|-------------|
+| VERIFIER | ANH | Supervise network by station: stock, quality, cisterns |
+| STATION_STAFF | Estación | Own EESS only; receive cisterns via QR |
+| TRANSPORTER | Chofer | Issue QR dispatch with volume + quality from assigned cistern |
+| DEPOT_OPERATOR | Depósito | Load cisterns / issue dispatch (not receive at station) |
+| CITIZEN | Ciudadano | Public map: quantity + quality (no operator menus) |
+| AUDITOR | Auditor | Human review of anomalies and cases |
+| IMPORTER | Importador | Create/follow import batches + evidence |
+| LAB | Laboratorio | Quality certificates on batch passport |
 
 Do not automatically map these 1:1 into Solidity roles.
 
 First determine who actually signs blockchain transactions.
 
 Backend application roles and wallet roles are different security domains.
+
+Source of truth for UI menus/homes/gates:
+
+```text
+apps/web/src/lib/role-access.ts
+apps/api/src/auth/permissions.ts
+```
+
+Companion product agent (ops / roles / Delivery model):
+
+```text
+.cursor/rules/FuelChain Product AGENTS.md
+```
 
 ---
 
@@ -2168,3 +2196,88 @@ What assumptions am I trusting?
 ```
 
 The code and architecture must make those questions easy to answer.
+
+---
+
+# 76. Product domain — Cochabamba DEMO (must preserve)
+
+When changing features, preserve this operational product model. Blockchain rules above still apply; this section defines **who does what** in the demo.
+
+## Four public stories
+
+1. **ANH (`VERIFIER`)** supervises the network **by station**: current quantity, quality, and cisterns that delivered or are in transit.
+2. **Station (`STATION_STAFF`)** controls **only its assigned EESS**: tanks + receive cistern QR. Never dispatch to other stations or invent quality on accept.
+3. **Cistern / driver (`TRANSPORTER`, load side also `DEPOT_OPERATOR`)** sends **quantity + quality** at dispatch (QR issue / simulate).
+4. **Citizen (`CITIZEN` or anonymous `/mapa`)** sees the map with **quantity + quality** (semaphore from stock). Labeled DEMO.
+
+## Domain entities (last mile)
+
+Prefer the real model already in Prisma:
+
+```text
+Cistern   → physical tanker identity (code, capacity, stock, quality of load)
+Delivery  → one dispatch trip (batch + cistern + liters + quality + station)
+FuelBatch.deliveredLiters → accumulated deliveries (batch is not "RECEIVED" from a single drop)
+```
+
+Do **not** regress to:
+
+```text
+accept QR ⇒ invent quality
+station can accept any stationCode
+one RECEIVED event empties the whole import batch
+semaphore disconnected from tank stock
+ciudadano@ = VERIFIER / operator menus
+```
+
+## Custody QR jobs
+
+| Action | Allowed roles |
+|--------|----------------|
+| Issue QR / simulate dispatch | ADMIN, TRANSPORTER, DEPOT_OPERATOR |
+| Accept at station | ADMIN, STATION_STAFF only |
+| Sync offline queue | ADMIN, STATION_STAFF, TRANSPORTER, DEPOT_OPERATOR |
+
+Accept must enforce `actor.stationId` / `stationCode` match for `STATION_STAFF`.
+
+Quality on the trip comes from the **dispatch / cistern load**, not from the station inventing values on accept.
+
+## Screen = job
+
+Do not give every role the same dashboard. Use `role-access.ts`:
+
+| Role | Home (typical) |
+|------|----------------|
+| VERIFIER | `/supervision` |
+| STATION_STAFF | `/estacion` |
+| TRANSPORTER / DEPOT_OPERATOR | `/verify` |
+| AUDITOR | `/audits` |
+| IMPORTER | `/batches` |
+| CITIZEN | `/mapa` |
+| ADMIN | `/supervision` (full nav) |
+
+If a screen has no real action for that role, gate it or redirect — do not leave a decorative clone of another role's UI.
+
+## Dual demo arcs (both valid)
+
+**Integrity arc (Web3 / §65):** batch → custody → canonical hash → HSK → passport → auditor explorer.
+
+**Ops arc (product):** issue QR from cistern → station accept → stock/quality update → map + ANH supervision.
+
+Do not drop the ops arc when improving blockchain UX, and do not drop evidence wording when improving ops screens.
+
+---
+
+# 77. Agent roster (which rules to follow)
+
+| Agent / rule file | Responsibility |
+|-------------------|----------------|
+| `FuelChain AGENTS.md` (this file) | Blockchain, evidence, security, HSK, contracts, hashing |
+| `FuelChain Product AGENTS.md` | Roles, screens, Cistern/Delivery, ANH/estación/chofer/ciudadano |
+| `fuelchain-product-domain.mdc` | Always-on short product constraints |
+| `fuelchain-roles-ui.mdc` | Web nav / AuthGate / role UX |
+| `fuelchain-custody-api.mdc` | API permissions, QR issue/accept, supervision scoping |
+| `use-pnpm.mdc` | Package manager |
+| `ui-frontend-design.mdc` | Visual system for `apps/web` |
+
+When a change touches both evidence and ops, satisfy **both** the blockchain agent and the product agent.

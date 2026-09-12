@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { batonDeepLink } from '@/lib/baton-qr';
+import { canDispatchFuel, homeForRole } from '@/lib/role-access';
 
 type IssueResult = {
   data: {
@@ -17,15 +18,21 @@ type IssueResult = {
 };
 
 export default function VerifyPage() {
-  const { authHeaders } = useAuth();
+  const { authHeaders, user } = useAuth();
   const [batchCode, setBatchCode] = useState('FC-BO-2026-000182');
-  const [volume, setVolume] = useState('25000');
-  const [cistern, setCistern] = useState('CIS-CBB-07');
+  const [volume, setVolume] = useState('8000');
+  const [cistern, setCistern] = useState(user?.cisternCode ?? 'CIS-CBB-01');
+  const [stationCode, setStationCode] = useState('ST-CBB-01');
   const [issued, setIssued] = useState<IssueResult['data'] | null>(null);
   const [queueLen, setQueueLen] = useState(0);
   const [log, setLog] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [lookup, setLookup] = useState('');
+  const canIssue = canDispatchFuel(user?.role);
+
+  useEffect(() => {
+    if (user?.cisternCode) setCistern(user.cisternCode);
+  }, [user?.cisternCode]);
 
   useEffect(() => {
     try {
@@ -39,6 +46,7 @@ export default function VerifyPage() {
   }, [log]);
 
   function issue() {
+    if (!canIssue) return;
     startTransition(async () => {
       setLog(null);
       try {
@@ -50,6 +58,7 @@ export default function VerifyPage() {
             eventType: 'IN_TRANSIT',
             volumeLiters: Number(volume),
             cisternCode: cistern,
+            stationCode,
           }),
         });
         if (!res.ok) throw new Error(await res.text());
@@ -108,17 +117,34 @@ export default function VerifyPage() {
       )}`
     : null;
 
+  if (user && !canIssue) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-display text-3xl font-black">QR custodia</h1>
+        <p className="text-[var(--mute)]">
+          Emitir QR es trabajo del chofer o depósito. Tu rol ({user.role}) no
+          despacha. Si sos estación, escaneá el QR que te muestra el chofer.
+        </p>
+        <Link
+          href={homeForRole(user.role)}
+          className="inline-block border-2 border-[var(--ink)] px-4 py-2 text-sm font-semibold"
+        >
+          Ir a tu panel
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-10">
       <header className="max-w-xl">
-        <p className="fc-stamp text-[var(--mute)]">Verify · ANH / operador</p>
+        <p className="fc-stamp text-[var(--mute)]">Chofer · custodia QR</p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
           Custodia QR Cochabamba
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Emite un bastón firmado para la cisterna, muéstralo al siguiente actor
-          y sincroniza eventos capturados sin señal. Read-only para verificación
-          de lote; emisión es DEMO operativa.
+          El QR es el token de un despacho: lote + cisterna + litros y calidad
+          de carga. El chofer solo emite desde su cisterna asignada.
         </p>
       </header>
 
@@ -139,6 +165,15 @@ export default function VerifyPage() {
               className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
               value={cistern}
               onChange={(e) => setCistern(e.target.value)}
+              readOnly={Boolean(user?.cisternCode)}
+            />
+          </label>
+          <label className="block text-sm">
+            Estación destino
+            <input
+              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+              value={stationCode}
+              onChange={(e) => setStationCode(e.target.value)}
             />
           </label>
           <label className="block text-sm">

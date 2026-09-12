@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { explorerTxUrl } from '@/lib/explorer';
+import { canAnchorEvidence } from '@/lib/role-access';
 
 type ChainStatus = {
   live: boolean;
@@ -40,7 +41,8 @@ export function LiveAnchorPanel({
   defaultBatchCode?: string;
 }) {
   const router = useRouter();
-  const { authHeaders } = useAuth();
+  const { authHeaders, user } = useAuth();
+  const canAnchor = canAnchorEvidence(user?.role);
   const [status, setStatus] = useState<ChainStatus | null>(null);
   const [batchCode, setBatchCode] = useState(defaultBatchCode);
   const [eventKind, setEventKind] = useState(DEFAULT_EVENT);
@@ -81,6 +83,7 @@ export function LiveAnchorPanel({
   }, [result]);
 
   function onAnchor() {
+    if (!canAnchor) return;
     setError(null);
     setResult(null);
     startTransition(async () => {
@@ -108,6 +111,18 @@ export function LiveAnchorPanel({
   }
 
   const ready = Boolean(status?.live);
+
+  if (user && !canAnchor) {
+    return (
+      <section className="border-2 border-[var(--ink)] bg-[var(--paper)] p-5">
+        <h2 className="font-display text-xl font-bold">Evidencia en cadena</h2>
+        <p className="mt-2 text-sm text-[var(--mute)]">
+          Anclar on-chain es trabajo de auditor / importador / admin. Tu rol (
+          {user.role}) solo consulta el historial abajo.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="border-2 border-[var(--ink)] bg-[var(--paper)] p-5">

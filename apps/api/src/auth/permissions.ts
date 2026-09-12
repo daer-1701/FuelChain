@@ -1,6 +1,6 @@
 import { ActorRole } from '@prisma/client';
 
-/** Mutating role sets — least privilege for the current MVP (no Dispatch yet). */
+/** Mutating role sets — least privilege aligned to FuelChain jobs. */
 export const RolesAllowed = {
   batchCreate: [ActorRole.ADMIN, ActorRole.IMPORTER],
   batchUpdate: [ActorRole.ADMIN, ActorRole.IMPORTER, ActorRole.AUDITOR],
@@ -16,9 +16,9 @@ export const RolesAllowed = {
     ActorRole.ADMIN,
     ActorRole.TRANSPORTER,
     ActorRole.DEPOT_OPERATOR,
-    ActorRole.IMPORTER,
   ],
-  qrAccept: [ActorRole.ADMIN, ActorRole.STATION_STAFF, ActorRole.DEPOT_OPERATOR],
+  /** Solo estación (o admin) confirma recepción en EESS. */
+  qrAccept: [ActorRole.ADMIN, ActorRole.STATION_STAFF],
   qrSync: [
     ActorRole.ADMIN,
     ActorRole.STATION_STAFF,
@@ -29,7 +29,6 @@ export const RolesAllowed = {
     ActorRole.ADMIN,
     ActorRole.AUDITOR,
     ActorRole.IMPORTER,
-    ActorRole.VERIFIER,
   ],
   vehiclesWrite: [
     ActorRole.ADMIN,
@@ -59,7 +58,6 @@ export const RolesAllowed = {
   anomalyCreate: [
     ActorRole.ADMIN,
     ActorRole.AUDITOR,
-    ActorRole.VERIFIER,
     ActorRole.DEPOT_OPERATOR,
     ActorRole.STATION_STAFF,
   ],
@@ -76,9 +74,6 @@ export const RolesAllowed = {
   demoSimulate: [
     ActorRole.ADMIN,
     ActorRole.TRANSPORTER,
-    ActorRole.STATION_STAFF,
     ActorRole.DEPOT_OPERATOR,
-    ActorRole.AUDITOR,
-    ActorRole.IMPORTER,
   ],
 } as const;

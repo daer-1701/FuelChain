@@ -5,37 +5,43 @@ import { FormEvent, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { safeInternalPath } from '@/lib/safe-next';
+import { canAccessPath, homeForRole } from '@/lib/role-access';
 
 const PRESETS = [
   {
     email: 'chofer@fuelchain.bo',
     role: 'Chofer cisterna',
-    blurb: 'Emite QR de custodia en ruta',
+    blurb: 'Emite QR y lleva el despacho',
   },
   {
     email: 'estacion@fuelchain.bo',
     role: 'Encargado EESS',
-    blurb: 'Recibe cisterna y actualiza tanque',
+    blurb: 'Solo Cala Cala: recibe y ve su tanque',
   },
   {
     email: 'anh@fuelchain.bo',
-    role: 'ANH / Verify',
-    blurb: 'Pasaporte read-only',
+    role: 'ANH / Supervisión',
+    blurb: 'Vigilá toda la red de surtidores',
   },
   {
     email: 'auditor@fuelchain.bo',
     role: 'Auditor',
-    blurb: 'Discrepancias y casos',
+    blurb: 'Casos y discrepancias humanas',
   },
   {
     email: 'importador@fuelchain.bo',
     role: 'Importador',
-    blurb: 'Lotes y autorizaciones',
+    blurb: 'Crea lotes y evidencia',
   },
   {
     email: 'deposito@fuelchain.bo',
     role: 'Depósito',
-    blurb: 'Carga a cisterna',
+    blurb: 'Carga cisternas (despacho)',
+  },
+  {
+    email: 'ciudadano@fuelchain.bo',
+    role: 'Ciudadano',
+    blurb: 'Solo mapa cantidad + calidad',
   },
 ];
 
@@ -56,8 +62,16 @@ export default function LoginPage() {
     start(async () => {
       setError(null);
       try {
-        await login(email, password);
-        router.replace(safeInternalPath(next));
+        const sessionUser = await login(email, password);
+        const requested = safeInternalPath(next);
+        const dest =
+          requested &&
+          requested !== '/' &&
+          requested !== '/login' &&
+          canAccessPath(sessionUser.role, requested)
+            ? requested
+            : homeForRole(sessionUser.role);
+        router.replace(dest);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error de login');
       }

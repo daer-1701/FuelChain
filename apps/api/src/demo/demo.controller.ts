@@ -1,4 +1,10 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+} from '@nestjs/common';
+import { ActorRole } from '@prisma/client';
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import type { AuthUser } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -34,8 +40,8 @@ export class DemoController {
   ) {}
 
   /**
-   * DEMO orchestrator: issue + accept in one authenticated step.
-   * Real two-actor custody still goes through /custody-qr/issue and /accept.
+   * DEMO orchestrator for chofer/depósito/admin: issue + accept.
+   * Station staff only receives via /custody-qr/accept at their EESS.
    */
   @Post('simulate-cbba-delivery')
   @RequireRoles(...RolesAllowed.demoSimulate)
@@ -43,10 +49,16 @@ export class DemoController {
     @Body() dto: SimulateCbbaDto,
     @CurrentUser() user: AuthUser,
   ) {
+    if (user.role === ActorRole.STATION_STAFF) {
+      throw new BadRequestException(
+        'El surtidor no simula entregas: solo recibe la cisterna en su EESS',
+      );
+    }
+
     const batchCode = dto.batchCode ?? 'FC-BO-2026-000182';
     const stationCode = dto.stationCode ?? 'ST-CBB-01';
-    const cisternCode = dto.cisternCode ?? 'CIS-CBB-07';
-    const volumeLiters = dto.volumeLiters ?? 24800;
+    const cisternCode = dto.cisternCode ?? user.cisternCode ?? 'CIS-CBB-01';
+    const volumeLiters = dto.volumeLiters ?? 8000;
 
     const issued = await this.custodyQr.issue(
       {

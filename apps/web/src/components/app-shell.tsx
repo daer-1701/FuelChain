@@ -6,22 +6,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AuthProvider } from '@/components/auth-provider';
 import { AuthGate } from '@/components/auth-gate';
 import { useAuth } from '@/components/auth-provider';
-
-const nav = [
-  { href: '/', label: 'Resumen' },
-  { href: '/batches', label: 'Lotes' },
-  { href: '/mapa', label: 'Cochabamba' },
-  { href: '/simular', label: 'Simular' },
-  { href: '/verify', label: 'QR custodia' },
-  { href: '/anomalies', label: 'Discrepancias' },
-  { href: '/audits', label: 'Auditorías' },
-  { href: '/blockchain', label: 'Evidencia' },
-];
+import { navForRole, homeForRole, roleBlurb } from '@/lib/role-access';
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const nav = navForRole(user?.role);
+  const home = homeForRole(user?.role);
   const isLogin = pathname === '/login';
   const isPublicMap =
     pathname === '/mapa' || pathname.startsWith('/cochabamba');
@@ -39,7 +31,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
       <header className="border-b-2 border-[var(--ink)] bg-[var(--paper)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-5 py-5 md:px-8 md:py-6">
           <Link
-            href={user ? '/' : isPublicPreview ? pathname : '/login'}
+            href={user ? home : isPublicPreview ? pathname : '/login'}
             className="group block min-w-0"
           >
             <span className="font-display text-[clamp(2.4rem,6vw,3.75rem)] font-black leading-[0.9] tracking-tight text-[var(--ink)]">
@@ -52,17 +44,22 @@ function ShellInner({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <span className="fc-stamp text-[var(--mute)]">Datos demo</span>
             {user ? (
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="text-[var(--mute)]">
-                  {user.name} · {user.role}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="border border-[var(--ink)] px-2 py-1 text-xs font-semibold"
-                >
-                  Salir
-                </button>
+              <div className="flex flex-col items-start gap-1 sm:items-end">
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="text-[var(--mute)]">
+                    {user.name} · {user.role}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="border border-[var(--ink)] px-2 py-1 text-xs font-semibold"
+                  >
+                    Salir
+                  </button>
+                </div>
+                <p className="max-w-xs text-xs text-[var(--mute)] sm:text-right">
+                  {roleBlurb(user.role)}
+                </p>
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-3">

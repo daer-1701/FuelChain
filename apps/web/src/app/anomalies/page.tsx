@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AnomalyStatusControl } from '@/components/anomaly-status-control';
 import { apiGet } from '@/lib/api';
 import { formatStatus } from '@/lib/types';
 
@@ -35,7 +36,8 @@ export default async function AnomaliesPage() {
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
           Diferencias entre lo declarado, recibido y medido. Son señales para
-          revisar — el sistema no atribuye robo ni corrupción.
+          revisar — el sistema no atribuye robo ni corrupción. El auditor cambia
+          el estado; la estación solo consulta.
         </p>
       </header>
 
@@ -87,8 +89,11 @@ export default async function AnomaliesPage() {
                   <td>
                     {a.batch.riskLevel.toLowerCase()} · {a.batch.riskScore}
                   </td>
-                  <td className="capitalize text-[var(--mute)]">
-                    {formatStatus(a.status)}
+                  <td>
+                    <AnomalyStatusControl
+                      anomalyId={a.id}
+                      currentStatus={a.status}
+                    />
                   </td>
                 </tr>
               ))}

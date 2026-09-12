@@ -47,3 +47,53 @@ export function applyStockDelta(input: {
     availability: availabilityFromFillRatio(fillRatio),
   };
 }
+
+/** Unload / sale / DEMO consumption — never below zero. */
+export function applyStockWithdraw(input: {
+  previousStock: Decimal | string | number;
+  withdrawLiters: number;
+  capacityLiters: Decimal | string | number;
+}) {
+  if (!Number.isFinite(input.withdrawLiters) || input.withdrawLiters <= 0) {
+    throw new BadRequestException('withdrawLiters must be greater than 0');
+  }
+  const previous = new Decimal(input.previousStock.toString());
+  const withdraw = new Decimal(input.withdrawLiters);
+  if (withdraw.gt(previous)) {
+    throw new BadRequestException(
+      `Insufficient stock: ${previous.toString()} < ${withdraw.toString()}`,
+    );
+  }
+  const capacity = new Decimal(input.capacityLiters.toString());
+  const nextStock = previous.minus(withdraw);
+  const capNum = Number(capacity.toString());
+  const fillRatio = capNum > 0 ? Number(nextStock.toString()) / capNum : 0;
+  return {
+    previousStock: previous,
+    withdraw,
+    nextStock,
+    fillRatio,
+    availability: availabilityFromFillRatio(fillRatio),
+  };
+}
+
+/** ~2 % of capacity per 24 h since last inventory, capped so the tank is never emptied by demo burn. */
+export function demoConsumptionLiters(input: {
+  stockLiters: number;
+  capacityLiters: number;
+  lastInventoryAt: Date | string | null;
+  now?: Date;
+}): number {
+  if (!input.lastInventoryAt || input.stockLiters <= 0 || input.capacityLiters <= 0) {
+    return 0;
+  }
+  const last = new Date(input.lastInventoryAt);
+  const now = input.now ?? new Date();
+  const hours = Math.max(0, (now.getTime() - last.getTime()) / 3_600_000);
+  if (hours < 1) return 0;
+  const daily = input.capacityLiters * 0.02;
+  const raw = (daily * hours) / 24;
+  const floor = input.capacityLiters * 0.04;
+  const maxBurn = Math.max(0, input.stockLiters - floor);
+  return Math.min(raw, maxBurn, input.stockLiters);
+}

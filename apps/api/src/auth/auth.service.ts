@@ -15,6 +15,10 @@ export type AuthUser = {
   name: string;
   role: ActorRole;
   isDemo: boolean;
+  stationId?: string | null;
+  stationCode?: string | null;
+  cisternId?: string | null;
+  cisternCode?: string | null;
 };
 
 @Injectable()
@@ -80,7 +84,13 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        station: { select: { code: true } },
+        drivenCisterns: { select: { id: true, code: true }, take: 1 },
+      },
+    });
     if (!user?.passwordHash) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -93,6 +103,10 @@ export class AuthService {
       name: user.name,
       role: user.role,
       isDemo: user.isDemo,
+      stationId: user.stationId,
+      stationCode: user.station?.code ?? null,
+      cisternId: user.drivenCisterns[0]?.id ?? null,
+      cisternCode: user.drivenCisterns[0]?.code ?? null,
     };
     return serialize({
       label: 'DEMO',
@@ -109,6 +123,10 @@ export class AuthService {
     const payload = this.verifyToken(token);
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      include: {
+        station: { select: { code: true } },
+        drivenCisterns: { select: { id: true, code: true }, take: 1 },
+      },
     });
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
     return {
@@ -117,6 +135,10 @@ export class AuthService {
       name: user.name,
       role: user.role,
       isDemo: user.isDemo,
+      stationId: user.stationId,
+      stationCode: user.station?.code ?? null,
+      cisternId: user.drivenCisterns[0]?.id ?? null,
+      cisternCode: user.drivenCisterns[0]?.code ?? null,
     };
   }
 

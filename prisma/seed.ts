@@ -25,6 +25,9 @@ import {
   ActorRole,
   TankStatus,
   StationAvailability,
+  BatonStatus,
+  CisternStatus,
+  DeliveryStatus,
 } from '@prisma/client';
 import { createHash, randomBytes, scryptSync } from 'crypto';
 import { resolve } from 'path';
@@ -86,7 +89,7 @@ async function seedCochabambaStations() {
       products: ['Gasolina Especial', 'Diésel Oil'],
       tankName: 'TANK-CALA-01',
       capacity: 45000,
-      fillLiters: 39200,
+      fillLiters: 18000,
       waterDetected: false,
       temp: 21.2,
     },
@@ -239,7 +242,16 @@ async function seedCochabambaStations() {
         latitude: d.latitude,
         longitude: d.longitude,
         publicVisible: true,
-        availability: d.availability,
+        availability:
+          d.fillLiters == null
+            ? StationAvailability.UNKNOWN
+            : d.fillLiters / d.capacity >= 0.7
+              ? StationAvailability.FULL
+              : d.fillLiters / d.capacity >= 0.35
+                ? StationAvailability.MEDIUM
+                : d.fillLiters / d.capacity > 0.05
+                  ? StationAvailability.LOW
+                  : StationAvailability.EMPTY,
         products: d.products,
         lastInventoryAt: d.fillLiters != null ? hoursAgo(2) : null,
         isDemo: true,
@@ -286,17 +298,6 @@ async function seedCochabambaStations() {
     created.push(station);
   }
 
-  await prisma.storageTank.create({
-    data: {
-      name: 'CIS-CBB-07',
-      capacityLiters: 30000,
-      location: 'Cisterna en ruta valle Cochabamba (DEMO)',
-      cisternCode: 'CIS-CBB-07',
-      status: TankStatus.IN_USE,
-      isDemo: true,
-    },
-  });
-
   return created;
 }
 
@@ -314,6 +315,8 @@ async function resetDemo() {
   await prisma.customsEvent.deleteMany();
   await prisma.custodyEvent.deleteMany();
   await prisma.custodyBaton.deleteMany();
+  await prisma.delivery.deleteMany();
+  await prisma.cistern.deleteMany();
   await prisma.offlineSyncEvent.deleteMany();
   await prisma.transport.deleteMany();
   await prisma.document.deleteMany();
@@ -405,7 +408,7 @@ async function main() {
     data: {
       email: 'ciudadano@fuelchain.bo',
       name: 'Ciudadano mapa CBBA',
-      role: ActorRole.VERIFIER,
+      role: ActorRole.CITIZEN,
       passwordHash: demoPasswordHash('demo123'),
       isDemo: true,
     },
@@ -436,6 +439,7 @@ async function main() {
     data: {
       name: 'TANK-001',
       capacityLiters: 200000,
+      currentStockLiters: 160000,
       location: 'Depósito DEMO — Santa Cruz (coords ficticias)',
       status: TankStatus.IN_USE,
       isDemo: true,
@@ -445,6 +449,17 @@ async function main() {
   const cbbaStations = await seedCochabambaStations();
   console.log(
     `[DEMO] Cochabamba stations: ${cbbaStations.map((s) => s.code).join(', ')}`,
+  );
+
+  // Encargado EESS → solo Cala Cala (ST-CBB-01); no ve otras estaciones.
+  const homeStation =
+    cbbaStations.find((s) => s.code === 'ST-CBB-01') ?? cbbaStations[0];
+  await prisma.user.update({
+    where: { email: 'estacion@fuelchain.bo' },
+    data: { stationId: homeStation.id },
+  });
+  console.log(
+    `[DEMO] estacion@ asignado a ${homeStation.code} (${homeStation.name})`,
   );
 
   // ─── Batch 1: LOW / CERTIFIED / COMPLETED ──────────────────────────────────
@@ -539,13 +554,120 @@ async function main() {
     },
   });
 
+  await seedCbbaCustodyDeliveries(
+    cbbaStations,
+    [
+      { id: batch2.id, batchCode: batch2.batchCode },
+      { id: batch3.id, batchCode: batch3.batchCode },
+      { id: batch1.id, batchCode: batch1.batchCode },
+    ],
+    transporter.id,
+  );
+
   console.log('[DEMO] Seed complete:');
   console.log('  - FC-BO-2026-000181  LOW / COMPLETED');
   console.log('  - FC-BO-2026-000182  MEDIUM / IN_TRANSIT');
   console.log('  - FC-BO-2026-000184  HIGH / AUDIT_REQUIRED (discrepancy narrative)');
-  console.log('  - 10 estaciones CBBA + cisterna CIS-CBB-07');
+  console.log('  - 10 estaciones CBBA + cisternas + entregas QR DEMO');
   console.log('  - Login DEMO password: demo123 (chofer@ / estacion@ / ciudadano@ / anh@ …)');
   console.log('  Tank: TANK-001 | Measurement source: SIMULATOR (ESP32 deferred)');
+}
+
+/** Despachos reales: cisterna → estación, con calidad de viaje. */
+async function seedCbbaCustodyDeliveries(
+  stations: Array<{ id: string; code: string }>,
+  batches: Array<{ id: string; batchCode: string }>,
+  driverId: string,
+) {
+  const fleet = [];
+  for (let n = 1; n <= 4; n += 1) {
+    const code = `CIS-CBB-${String(n).padStart(2, '0')}`;
+    const cistern = await prisma.cistern.create({
+      data: {
+        code,
+        plate: `CBB-${100 + n}`,
+        carrier: 'Transportes DEMO SRL',
+        capacityLiters: 30000,
+        currentLoadLiters: 0,
+        status: CisternStatus.AVAILABLE,
+        driverId: n === 1 ? driverId : null,
+        currentBatchId: null,
+        isDemo: true,
+      },
+    });
+    fleet.push(cistern);
+  }
+
+  let deliveredByBatch = new Map<string, number>();
+  let i = 0;
+  for (const station of stations) {
+    const batch = batches[i % batches.length];
+    const cistern = fleet[i % fleet.length];
+    const volume = 8000 + (i % 4) * 500;
+    const water = station.code === 'ST-CBB-08';
+    const tokenId = `BT-DEMO-${station.code}-${i + 1}`;
+    const payload = {
+      batchCode: batch.batchCode,
+      stationCode: station.code,
+      cisternCode: cistern.code,
+      volumeLiters: volume,
+      label: 'DEMO',
+    };
+    const delivery = await prisma.delivery.create({
+      data: {
+        batchId: batch.id,
+        cisternId: cistern.id,
+        destinationStationId: station.id,
+        status: DeliveryStatus.DELIVERED,
+        loadedLiters: volume,
+        receivedLiters: volume - 20,
+        loadDensity: water ? 0.81 : 0.746,
+        loadTemperature: 22.1,
+        loadWaterDetected: water,
+        loadCertificateStatus: 'DEMO',
+        receivedDensity: water ? 0.81 : 0.746,
+        receivedTemperature: 22.4,
+        receivedWaterDetected: water,
+        loadedAt: hoursAgo(30 - i),
+        deliveredAt: hoursAgo(28 - i),
+        batonTokenId: tokenId,
+        isDemo: true,
+      },
+    });
+    await prisma.custodyBaton.create({
+      data: {
+        tokenId,
+        batchId: batch.id,
+        stationId: station.id,
+        cisternId: cistern.id,
+        deliveryId: delivery.id,
+        cisternCode: cistern.code,
+        eventType: 'RECEIVED',
+        volumeLiters: volume,
+        payloadJson: payload,
+        payloadHash: demoHash(JSON.stringify(payload)),
+        signature: demoHash(`sig:${tokenId}`),
+        status: BatonStatus.CONSUMED,
+        issuedByRole: 'TRANSPORTER',
+        consumedByRole: 'STATION_STAFF',
+        issuedAt: hoursAgo(30 - i),
+        consumedAt: hoursAgo(28 - i),
+        isDemo: true,
+      },
+    });
+    deliveredByBatch.set(
+      batch.id,
+      (deliveredByBatch.get(batch.id) ?? 0) + volume - 20,
+    );
+    i += 1;
+  }
+
+  for (const [batchId, liters] of deliveredByBatch) {
+    await prisma.fuelBatch.update({
+      where: { id: batchId },
+      data: { deliveredLiters: liters },
+    });
+  }
 }
 
 async function seedHappyPath(

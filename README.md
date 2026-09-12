@@ -74,6 +74,8 @@ No reutilices la private key de blockchain como secreto de QR o de sesión. Copi
 | Web | http://localhost:3000 |
 | API health | http://localhost:3001/health |
 | Mapa público | http://localhost:3000/mapa |
+| Supervisión ANH | http://localhost:3000/supervision (`anh@` / `demo123`) |
+| Mi estación | http://localhost:3000/estacion (`estacion@` / `demo123`) |
 | QR custodia | http://localhost:3000/verify (emite; requiere login) |
 | Aceptar bastón | http://localhost:3000/q/BT-… (ficha pública; aceptar pide estación) |
 | Lote demo | http://localhost:3000/batches/FC-BO-2026-000184 |
