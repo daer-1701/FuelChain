@@ -28,38 +28,39 @@ function ShellInner({ children }: { children: React.ReactNode }) {
     logout();
     router.replace('/login');
   }
+
   return (
     <div className="min-h-screen">
-      <header className="border-b-2 border-[var(--ink)] bg-[var(--paper)]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-5 py-5 md:px-8 md:py-6">
+      <header className="fc-shell-header">
+        <div className="mx-auto flex max-w-[var(--fc-max)] flex-wrap items-end justify-between gap-4 px-5 py-4 md:px-8 md:py-5">
           <Link
             href={user ? home : isPublicPreview ? pathname : '/login'}
             className="group block min-w-0"
           >
-            <span className="font-display text-[clamp(2.4rem,6vw,3.75rem)] font-black leading-[0.9] tracking-tight text-[var(--ink)]">
-              FuelChain
-            </span>
-            <span className="mt-2 block font-display text-xl font-bold tracking-[0.22em] text-[var(--diesel)] md:text-2xl">
-              BOLIVIA
-            </span>
+            <span className="fc-shell-brand">FuelChain</span>
+            <span className="fc-shell-subbrand">BOLIVIA</span>
           </Link>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <span className="fc-stamp text-[var(--mute)]">Datos demo</span>
             {user ? (
-              <div className="flex flex-col items-start gap-1 sm:items-end">
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="text-[var(--mute)]">
-                    {user.name} · {roleLabel(user.role)}
+              <div className="flex flex-col items-start gap-1.5 sm:items-end">
+                <div className="flex flex-wrap items-center gap-2.5 text-sm">
+                  <span className="fc-meta">
+                    <span className="font-semibold text-[var(--ink)]">
+                      {user.name}
+                    </span>
+                    {' · '}
+                    {roleLabel(user.role)}
                   </span>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="border border-[var(--ink)] px-2 py-1 text-xs font-semibold"
+                    className="fc-btn fc-btn-ghost !px-2.5 !py-1 !text-xs"
                   >
                     Salir
                   </button>
                 </div>
-                <p className="max-w-xs text-xs text-[var(--mute)] sm:text-right">
+                <p className="max-w-xs text-right text-[0.75rem] leading-snug text-[var(--mute)]">
                   {roleBlurb(user.role)}
                 </p>
               </div>
@@ -71,7 +72,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                 {isPublicPreview && (
                   <Link
                     href="/login"
-                    className="border-2 border-[var(--ink)] px-3 py-1.5 text-xs font-semibold"
+                    className="fc-btn fc-btn-ghost !text-xs"
                   >
                     Acceso operadores
                   </Link>
@@ -82,7 +83,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         </div>
         {showOperatorNav && (
           <nav
-            className="mx-auto flex max-w-6xl gap-0 overflow-x-auto border-t border-[var(--rail)]/40 px-2 md:px-5"
+            className="fc-shell-nav mx-auto max-w-[var(--fc-max)] px-1 md:px-4"
             aria-label="Principal"
           >
             {nav.map((item) => {
@@ -95,11 +96,6 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-[var(--ink)] after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:bg-[var(--diesel)]'
-                      : 'text-[var(--mute)] hover:text-[var(--ink)]'
-                  }`}
                 >
                   {item.label}
                 </Link>
@@ -109,27 +105,18 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         )}
         {showPublicNav && (
           <nav
-            className="mx-auto flex max-w-6xl gap-0 overflow-x-auto border-t border-[var(--rail)]/40 px-2 md:px-5"
+            className="fc-shell-nav mx-auto max-w-[var(--fc-max)] px-1 md:px-4"
             aria-label="Público"
           >
-            <Link
-              href="/mapa"
-              aria-current="page"
-              className="relative whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--ink)] after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:bg-[var(--diesel)]"
-            >
+            <Link href="/mapa" aria-current="page">
               Surtidores Bolivia
             </Link>
-            <Link
-              href="/login"
-              className="relative whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--mute)] hover:text-[var(--ink)]"
-            >
-              Acceso operadores
-            </Link>
+            <Link href="/login">Acceso operadores</Link>
           </nav>
         )}
       </header>
 
-      <main className="fc-reveal mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10">
+      <main className="fc-shell-main fc-reveal">
         <Suspense
           fallback={
             <div className="flex min-h-[40vh] items-center justify-center text-[var(--mute)]">

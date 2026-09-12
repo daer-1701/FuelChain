@@ -439,15 +439,15 @@ export default function TramosPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">
           Camino del combustible · cantidad y calidad
         </p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
+        <h1 className="fc-title mt-2">
           Tramos del viaje
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           El núcleo de FuelChain: en cada tramo registrás litros, densidad,
           temperatura y GPS. Así se verifica el camino completo — salida,
           control en ruta y llegada — antes de la recepción en estación.
@@ -517,21 +517,21 @@ export default function TramosPage() {
           <button
             type="button"
             onClick={() => setShowForm((v) => !v)}
-            className="border-2 border-[var(--ink)] px-4 py-2 text-sm font-semibold"
+            className="fc-btn fc-btn-ghost"
           >
             {showForm ? 'Ocultar registro' : 'Registrar tramo GPS'}
           </button>
           {showForm && (
             <section className="fc-sheet space-y-4">
-              <h2 className="font-display text-xl font-bold">Nuevo tramo</h2>
-              <p className="text-sm text-[var(--mute)]">
+              <h2 className="fc-section-title">Nuevo tramo</h2>
+              <p className="fc-meta">
                 1) Elegí el tipo · 2) Capturá GPS · 3) Subí al sistema
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm sm:col-span-2">
+                <label className="fc-label sm:col-span-2">
                   Tipo de tramo
                   <select
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+                    className="fc-field"
                     value={kind}
                     onChange={(e) => setKind(e.target.value)}
                   >
@@ -542,34 +542,34 @@ export default function TramosPage() {
                     ))}
                   </select>
                 </label>
-                <label className="block text-sm sm:col-span-2">
+                <label className="fc-label sm:col-span-2">
                   Etiqueta
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+                    className="fc-field"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="fc-label">
                   Litros
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={volume}
                     onChange={(e) => setVolume(e.target.value)}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="fc-label">
                   Densidad
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={density}
                     onChange={(e) => setDensity(e.target.value)}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="fc-label">
                   Temperatura °C
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={temperature}
                     onChange={(e) => setTemperature(e.target.value)}
                   />
@@ -587,7 +587,7 @@ export default function TramosPage() {
                 <button
                   type="button"
                   onClick={captureGps}
-                  className="border-2 border-[var(--ink)] px-3 py-2 font-semibold"
+                  className="fc-btn fc-btn-ghost"
                 >
                   Capturar GPS
                 </button>
@@ -599,10 +599,10 @@ export default function TramosPage() {
                 )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm">
+                <label className="fc-label">
                   Latitud (manual)
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={lat ?? ''}
                     onChange={(e) => {
                       const n = Number(e.target.value);
@@ -612,10 +612,10 @@ export default function TramosPage() {
                     placeholder="-17.3895"
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="fc-label">
                   Longitud (manual)
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={lng ?? ''}
                     onChange={(e) => {
                       const n = Number(e.target.value);
@@ -631,7 +631,7 @@ export default function TramosPage() {
                 type="button"
                 disabled={pending}
                 onClick={submit}
-                className="bg-[var(--diesel)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
+                className="fc-btn"
               >
                 {pending ? 'Guardando…' : 'Subir tramo'}
               </button>

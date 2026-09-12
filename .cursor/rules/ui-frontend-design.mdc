@@ -1,14 +1,28 @@
 ---
-description: Aplicar skill frontend-design en trabajo UI/UX
+description: Aplicar skills UI/UX de FuelChain en trabajo frontend
 globs: apps/web/**/*.{tsx,ts,css}
 alwaysApply: false
 ---
 
-# UI / UX — usar skill del proyecto
+# UI / UX — skills del frontend FuelChain
 
 Cuando diseñes, rediseñes o pulas interfaz en `apps/web`:
 
-1. Lee y sigue `.cursor/skills/frontend-design/SKILL.md`.
-2. Si auditas a11y/UX, usa `.cursor/skills/web-design-guidelines/SKILL.md`.
-3. Identidad FuelChain (ver `apps/web/DESIGN_SYSTEM.md`): mesa de control logístico, tokens void/steel/fuel/seal/alarm, tipografía Syne + Manrope.
-4. Evita AI-slop: purple gradients, Inter/Roboto, cream+terracotta, ALL-CAPS eyebrows, grids de cards idénticas, mono en cada label.
+1. Lee `apps/web/.cursor/skills/fuelchain-design-system/SKILL.md` primero.
+2. Pantalla nueva → `frontend-design` + design system.
+3. Auditoría a11y/UX → `web-design-guidelines`.
+4. Flujo completo → `ux-flow-auditor`.
+5. Pulido visual → `impeccable`.
+
+## Identidad (no reemplazar)
+
+- Tipografía: **Chivo** (display) + **IBM Plex Sans** (body)
+- Tokens: `--haze` `--paper` `--rail` `--mute` `--ink` `--diesel` `--seal` `--alarm`
+- Utilidades: `.fc-page` `.fc-title` `.fc-lede` `.fc-sheet` `.fc-field` `.fc-btn` `.fc-table` `.fc-stamp`
+- Shell: `.fc-shell-header` / `.fc-shell-nav` / `.fc-shell-main`
+
+## Evitar
+
+- Purple SaaS, neón, glassmorphism, dark mode artificial
+- Cards dentro de cards / métricas inventadas / texto marketing vacío
+- Cambiar paleta o tipografías sin razón de producto

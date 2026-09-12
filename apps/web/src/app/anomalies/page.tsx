@@ -30,12 +30,12 @@ export default async function AnomaliesPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-xl">
-        <h1 className="font-display text-3xl font-black tracking-tight">
+    <div className="fc-page">
+      <header className="fc-page-header">
+        <h1 className="fc-title">
           Discrepancias
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Diferencias entre lo declarado, recibido y medido. Son señales para
           revisar — el sistema no atribuye robo ni corrupción. El auditor cambia
           el estado; la estación solo consulta.

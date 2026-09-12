@@ -63,48 +63,46 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[1.1fr_1fr]">
-      <header className="max-w-lg">
+      <header className="fc-page-header max-w-lg">
         <p className="fc-stamp text-[var(--mute)]">Bolivia · acceso DEMO</p>
-        <h1 className="mt-2 font-display text-4xl font-black tracking-tight md:text-5xl">
+        <h1 className="fc-title fc-title-lg mt-2">
           FuelChain
         </h1>
-        <p className="mt-2 font-display text-lg font-bold tracking-[0.18em] text-[var(--diesel)]">
-          BOLIVIA
-        </p>
-        <p className="mt-4 leading-relaxed text-[var(--mute)]">
+        <p className="fc-shell-subbrand !mt-2 !text-lg">BOLIVIA</p>
+        <p className="fc-lede">
           {PRODUCT_FOCUS} {PATH_STEPS}. Chofer registra, estación verifica al
           recibir, ANH audita la red, ciudadano consulta el mapa.
         </p>
 
         <Link
           href="/mapa"
-          className="mt-8 inline-flex w-full items-center justify-center bg-[var(--diesel)] px-5 py-4 text-center font-display text-lg font-bold text-[var(--paper)] transition-opacity hover:opacity-90 sm:w-auto"
+          className="fc-btn mt-8 inline-flex w-full !px-5 !py-3.5 font-display !text-base !font-bold sm:w-auto"
         >
           Ver surtidores
         </Link>
-        <p className="mt-2 text-sm text-[var(--mute)]">
+        <p className="fc-meta mt-2">
           Mapa público · resultado de cantidad y calidad en el surtidor
         </p>
       </header>
 
       <div className="space-y-6">
         <form onSubmit={onSubmit} className="fc-sheet space-y-4">
-          <h2 className="font-display text-xl font-bold">Acceso operadores</h2>
-          <p className="text-sm text-[var(--mute)]">{hint}</p>
-          <label className="block text-sm">
+          <h2 className="fc-section-title">Acceso operadores</h2>
+          <p className="fc-meta">{hint}</p>
+          <label className="fc-label">
             Correo
             <input
-              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+              className="fc-field"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="username"
             />
           </label>
-          <label className="block text-sm">
+          <label className="fc-label">
             Contraseña
             <input
               type="password"
-              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+              className="fc-field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -118,7 +116,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={pending}
-            className="w-full bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
+            className="fc-btn fc-btn-ink w-full !py-3"
           >
             {pending ? 'Entrando…' : 'Entrar'}
           </button>
@@ -129,7 +127,7 @@ export default function LoginPage() {
             <button
               key={p.email}
               type="button"
-              className="border border-[var(--rail)]/50 px-3 py-3 text-left transition-colors hover:border-[var(--ink)]"
+              className="border border-[var(--rail)]/55 bg-[var(--paper)] px-3 py-3 text-left transition-colors hover:border-[var(--ink)]"
               onClick={() => {
                 setEmail(p.email);
                 setPassword('demo123');
@@ -141,7 +139,7 @@ export default function LoginPage() {
               <span className="mt-1 block text-xs text-[var(--mute)]">
                 {p.blurb}
               </span>
-              <span className="mt-1 block text-[10px] text-[var(--mute)]">
+              <span className="mt-1 block font-mono text-[10px] text-[var(--mute)]">
                 {p.email}
               </span>
             </button>

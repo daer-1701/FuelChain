@@ -27,12 +27,12 @@ export default async function AuditsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-xl">
-        <h1 className="font-display text-3xl font-black tracking-tight">
+    <div className="fc-page">
+      <header className="fc-page-header">
+        <h1 className="fc-title">
           Auditorías
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Casos abiertos por personas. La decisión final es humana.
         </p>
       </header>

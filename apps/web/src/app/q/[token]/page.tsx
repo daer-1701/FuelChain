@@ -261,16 +261,16 @@ function QrBatonInner() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <header>
+    <div className="mx-auto max-w-lg fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">Bastón QR · DEMO</p>
-        <h1 className="mt-2 font-display text-3xl font-black">
+        <h1 className="fc-title mt-2">
           Recepción en estación
         </h1>
-        <p className="mt-2 text-sm text-[var(--mute)]">
-          Token <code>{token}</code>. Cierre del camino trazable: el encargado
-          de la EESS verifica litros y calidad al recibir (no inventa la
-          calidad de carga).
+        <p className="fc-lede">
+          Token <code className="fc-batch-code text-[0.8em]">{token}</code>. Cierre
+          del camino trazable: el encargado de la EESS verifica litros y calidad
+          al recibir (no inventa la calidad de carga).
         </p>
         <div className="mt-4">
           <QrScanButton />
@@ -318,7 +318,7 @@ function QrBatonInner() {
               </p>
               <Link
                 href={loginHref}
-                className="inline-block bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)]"
+                className="fc-btn fc-btn-ink inline-block"
               >
                 Entrar y aceptar este bastón
               </Link>
@@ -342,10 +342,10 @@ function QrBatonInner() {
 
           {baton.status === 'ACTIVE' && canAccept && (
             <div className="space-y-3 border-t border-[var(--rail)]/40 pt-4">
-              <label className="block text-sm">
+              <label className="fc-label">
                 Estación recepción
                 <select
-                  className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+                  className="fc-field"
                   value={stationCode}
                   onChange={(e) => setStationCode(e.target.value)}
                   disabled={Boolean(user?.stationCode)}
@@ -358,31 +358,31 @@ function QrBatonInner() {
                 </select>
               </label>
               {user?.stationCode && (
-                <p className="text-xs text-[var(--mute)]">
+                <p className="fc-meta">
                   Bloqueada a tu EESS asignada ({user.stationCode}).
                 </p>
               )}
-              <label className="block text-sm">
+              <label className="fc-label">
                 Litros recibidos
                 <input
-                  className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                  className="fc-field fc-num"
                   value={receivedVol}
                   onChange={(e) => setReceivedVol(e.target.value)}
                 />
               </label>
               <div className="grid gap-3 sm:grid-cols-3">
-                <label className="block text-sm">
+                <label className="fc-label">
                   Densidad medida
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={recvDensity}
                     onChange={(e) => setRecvDensity(e.target.value)}
                   />
                 </label>
-                <label className="block text-sm">
+                <label className="fc-label">
                   Temp. °C
                   <input
-                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    className="fc-field fc-num"
                     value={recvTemp}
                     onChange={(e) => setRecvTemp(e.target.value)}
                   />
@@ -402,14 +402,14 @@ function QrBatonInner() {
                   disabled={pending}
                   onClick={acceptOnline}
                   aria-busy={pending}
-                  className="bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
+                  className="fc-btn fc-btn-ink"
                 >
                   {pending ? 'Aceptando…' : 'Aceptar (con señal)'}
                 </button>
                 <button
                   type="button"
                   onClick={enqueueOffline}
-                  className="border-2 border-[var(--ink)] px-4 py-2 text-sm font-semibold"
+                  className="fc-btn fc-btn-ghost"
                 >
                   Guardar sin señal
                 </button>

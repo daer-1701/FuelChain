@@ -33,12 +33,12 @@ export default async function BlockchainPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-xl">
-        <h1 className="font-display text-3xl font-black tracking-tight">
+    <div className="fc-page">
+      <header className="fc-page-header">
+        <h1 className="fc-title">
           Evidencia en cadena
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Registro a prueba de manipulación de eventos y hashes. No sustituye la
           base operacional ni demuestra existencia física del combustible. {note}
         </p>
