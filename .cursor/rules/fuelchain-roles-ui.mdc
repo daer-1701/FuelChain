@@ -12,7 +12,7 @@ Fuente: `apps/web/src/lib/role-access.ts`.
 |-----|------|------|
 | STATION_STAFF | `/estacion` | Mi estación, Contratos, Tramos GPS |
 | TRANSPORTER | `/verify` | Registrar viaje, Tramos GPS, Simular, Contratos |
-| VERIFIER | `/supervision` | Movimientos, Tramos GPS, Cochabamba |
+| VERIFIER | `/supervision` | Movimientos, Tramos GPS |
 | CITIZEN | `/mapa` | Cochabamba |
 
 Ciudadano entra por **Ver surtidores** → `/mapa` (no necesita preset de login).

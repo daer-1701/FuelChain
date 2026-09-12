@@ -72,20 +72,39 @@ function demoPasswordHash(password = 'demo123'): string {
 }
 
 /**
- * Estaciones DEMO del valle de Cochabamba.
- * Nombres/direcciones inspirados en listados públicos ANH (registro histórico);
- * coordenadas aproximadas; inventario 100% DEMO — no es feed oficial ANH Abastecimiento.
+ * Estaciones DEMO en los 9 departamentos de Bolivia.
+ * Inventario 100% DEMO — no es feed oficial ANH Abastecimiento.
  */
-async function seedCochabambaStations() {
-  const defs = [
+async function seedBoliviaStations() {
+  type TankDef = {
+    tankName: string;
+    capacity: number;
+    fillLiters: number | null;
+    waterDetected: boolean;
+    temp: number | null;
+    productHint?: string;
+  };
+  type StationDef = {
+    code: string;
+    name: string;
+    city: string;
+    municipality: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    products: string[];
+    tanks: TankDef[];
+  };
+
+  const defs: StationDef[] = [
     {
       code: 'ST-CBB-01',
       name: 'EESS Cala Cala (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Cercado',
       address: 'Av. América — zona Cala Cala (DEMO)',
       latitude: -17.3742,
       longitude: -66.1475,
-      availability: StationAvailability.FULL,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -109,11 +128,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-02',
       name: 'Surtidor Virgen de Guadalupe (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Quillacollo',
       address: 'Av. Albina Patiño — Quillacollo (DEMO)',
       latitude: -17.3978,
       longitude: -66.2789,
-      availability: StationAvailability.MEDIUM,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -128,11 +147,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-03',
       name: 'Trans Sacaba (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Sacaba',
       address: 'Calle Ayacucho — Sacaba (DEMO)',
       latitude: -17.4041,
       longitude: -66.0418,
-      availability: StationAvailability.LOW,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -147,11 +166,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-04',
       name: 'Señor de Santiago / Mayorazgo (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Cercado',
       address: 'Av. Melchor Pérez de Olguín (DEMO)',
       latitude: -17.3668,
       longitude: -66.1742,
-      availability: StationAvailability.MEDIUM,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -166,11 +185,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-05',
       name: 'El Viajero / Vinto (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Vinto',
       address: 'Av. Albina Patiño esq. Rosas — Vinto (DEMO)',
       latitude: -17.3935,
       longitude: -66.3178,
-      availability: StationAvailability.EMPTY,
       products: ['Diésel Oil'],
       tanks: [
         {
@@ -185,11 +204,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-06',
       name: 'Surtidor Nissan / Av. Petrolera (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Cercado',
       address: 'Av. Petrolera Km 1 (DEMO)',
       latitude: -17.4285,
       longitude: -66.1648,
-      availability: StationAvailability.FULL,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -204,11 +223,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-07',
       name: 'Pana Gas / Blanco Galindo (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Quillacollo',
       address: 'Av. Blanco Galindo Km 12,5 (DEMO)',
       latitude: -17.3862,
       longitude: -66.2685,
-      availability: StationAvailability.MEDIUM,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -223,11 +242,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-08',
       name: 'Gasolinera Rioja (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Cercado',
       address: 'Av. Petrolera Km 4,5 (DEMO)',
       latitude: -17.4412,
       longitude: -66.1525,
-      availability: StationAvailability.LOW,
       products: ['Gasolina Especial'],
       tanks: [
         {
@@ -242,11 +261,11 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-09',
       name: 'Iquircollo (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Quillacollo',
       address: 'Av. Blanco Galindo Km 11 1/2 (DEMO)',
       latitude: -17.3895,
       longitude: -66.2552,
-      availability: StationAvailability.FULL,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
@@ -261,19 +280,210 @@ async function seedCochabambaStations() {
     {
       code: 'ST-CBB-10',
       name: 'Estación Ayacucho Centro (DEMO)',
+      city: 'Cochabamba',
       municipality: 'Cercado',
       address: 'Av. Ayacucho zona central norte (DEMO)',
       latitude: -17.3858,
       longitude: -66.1562,
-      availability: StationAvailability.UNKNOWN,
       products: ['Gasolina Especial', 'Diésel Oil'],
       tanks: [
         {
           tankName: 'TANK-AYA-01',
           capacity: 32000,
-          fillLiters: null as number | null,
+          fillLiters: null,
           waterDetected: false,
-          temp: null as number | null,
+          temp: null,
+        },
+      ],
+    },
+    // —— Resto de Bolivia ——
+    {
+      code: 'ST-LPZ-01',
+      name: 'EESS El Alto Ceja (DEMO)',
+      city: 'La Paz',
+      municipality: 'El Alto',
+      address: 'Av. 6 de Marzo — Ceja (DEMO)',
+      latitude: -16.5085,
+      longitude: -68.1628,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-EA-01',
+          capacity: 50000,
+          fillLiters: 22000,
+          waterDetected: false,
+          temp: 12.5,
+        },
+      ],
+    },
+    {
+      code: 'ST-LPZ-02',
+      name: 'Surtidor Sopocachi (DEMO)',
+      city: 'La Paz',
+      municipality: 'La Paz',
+      address: 'Av. 6 de Agosto — Sopocachi (DEMO)',
+      latitude: -16.5102,
+      longitude: -68.1285,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-SOP-01',
+          capacity: 38000,
+          fillLiters: 9100,
+          waterDetected: false,
+          temp: 14.1,
+        },
+      ],
+    },
+    {
+      code: 'ST-SCZ-01',
+      name: 'EESS Equipetrol (DEMO)',
+      city: 'Santa Cruz',
+      municipality: 'Santa Cruz de la Sierra',
+      address: 'Av. San Martín — Equipetrol (DEMO)',
+      latitude: -17.7558,
+      longitude: -63.1985,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-EQ-01',
+          capacity: 55000,
+          fillLiters: 41200,
+          waterDetected: false,
+          temp: 28.2,
+        },
+      ],
+    },
+    {
+      code: 'ST-SCZ-02',
+      name: 'Surtidor Doble Vía La Guardia (DEMO)',
+      city: 'Santa Cruz',
+      municipality: 'La Guardia',
+      address: 'Doble Vía La Guardia Km 8 (DEMO)',
+      latitude: -17.8895,
+      longitude: -63.3212,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-LG-01',
+          capacity: 42000,
+          fillLiters: 7800,
+          waterDetected: false,
+          temp: 29.0,
+        },
+      ],
+    },
+    {
+      code: 'ST-ORU-01',
+      name: 'EESS Oruro Centro (DEMO)',
+      city: 'Oruro',
+      municipality: 'Oruro',
+      address: 'Av. 6 de Agosto — centro (DEMO)',
+      latitude: -17.9833,
+      longitude: -67.15,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-ORU-01',
+          capacity: 36000,
+          fillLiters: 15400,
+          waterDetected: false,
+          temp: 18.4,
+        },
+      ],
+    },
+    {
+      code: 'ST-PTS-01',
+      name: 'Surtidor Potosí Norte (DEMO)',
+      city: 'Potosí',
+      municipality: 'Potosí',
+      address: 'Av. Universitaria (DEMO)',
+      latitude: -19.5723,
+      longitude: -65.755,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-PTS-01',
+          capacity: 30000,
+          fillLiters: 4200,
+          waterDetected: false,
+          temp: 11.8,
+        },
+      ],
+    },
+    {
+      code: 'ST-TJA-01',
+      name: 'EESS Tarija Sur (DEMO)',
+      city: 'Tarija',
+      municipality: 'Tarija',
+      address: 'Av. La Paz — zona sur (DEMO)',
+      latitude: -21.5355,
+      longitude: -64.7296,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-TJA-01',
+          capacity: 40000,
+          fillLiters: 26800,
+          waterDetected: false,
+          temp: 24.6,
+        },
+      ],
+    },
+    {
+      code: 'ST-CHQ-01',
+      name: 'Surtidor Sucre Centro (DEMO)',
+      city: 'Chuquisaca',
+      municipality: 'Sucre',
+      address: 'Av. Japón — zona central (DEMO)',
+      latitude: -19.0333,
+      longitude: -65.2627,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-SUC-01',
+          capacity: 34000,
+          fillLiters: 18900,
+          waterDetected: false,
+          temp: 20.1,
+        },
+      ],
+    },
+    {
+      code: 'ST-BEN-01',
+      name: 'EESS Trinidad (DEMO)',
+      city: 'Beni',
+      municipality: 'Trinidad',
+      address: 'Av. 6 de Agosto — Trinidad (DEMO)',
+      latitude: -14.8333,
+      longitude: -64.9,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-TRI-01',
+          capacity: 32000,
+          fillLiters: 11200,
+          waterDetected: false,
+          temp: 27.5,
+        },
+      ],
+    },
+    {
+      code: 'ST-PND-01',
+      name: 'Surtidor Cobija (DEMO)',
+      city: 'Pando',
+      municipality: 'Cobija',
+      address: 'Av. 9 de Febrero (DEMO)',
+      latitude: -11.0267,
+      longitude: -68.7692,
+      products: ['Gasolina Especial', 'Diésel Oil'],
+      tanks: [
+        {
+          tankName: 'TANK-COB-01',
+          capacity: 28000,
+          fillLiters: 6400,
+          waterDetected: false,
+          temp: 26.8,
         },
       ],
     },
@@ -287,7 +497,7 @@ async function seedCochabambaStations() {
       data: {
         code: d.code,
         name: d.name,
-        city: 'Cochabamba',
+        city: d.city,
         municipality: d.municipality,
         address: d.address,
         latitude: d.latitude,
@@ -321,7 +531,7 @@ async function seedCochabambaStations() {
           name: t.tankName,
           capacityLiters: t.capacity,
           currentStockLiters: t.fillLiters ?? 0,
-          location: `${d.name} — Cochabamba (DEMO)`,
+          location: `${d.name} — ${d.city} (DEMO)`,
           stationId: station.id,
           status:
             t.fillLiters != null && t.fillLiters / t.capacity <= 0.05
@@ -335,7 +545,7 @@ async function seedCochabambaStations() {
         await prisma.measurement.create({
           data: {
             tankId: tank.id,
-            deviceId: `SIM-CBBA-${d.code}-${t.tankName}`,
+            deviceId: `SIM-${d.city.slice(0, 3).toUpperCase()}-${d.code}-${t.tankName}`,
             volumeLiters: t.fillLiters,
             temperature: t.temp ?? undefined,
             waterDetected: t.waterDetected,
@@ -500,14 +710,18 @@ async function main() {
     },
   });
 
-  const cbbaStations = await seedCochabambaStations();
+  const boliviaStations = await seedBoliviaStations();
+  const deptCount = new Set(boliviaStations.map((s) => s.city)).size;
   console.log(
-    `[DEMO] Cochabamba stations: ${cbbaStations.map((s) => s.code).join(', ')}`,
+    `[DEMO] Estaciones Bolivia: ${boliviaStations.length} en ${deptCount} departamentos`,
+  );
+  console.log(
+    `[DEMO] Códigos: ${boliviaStations.map((s) => s.code).join(', ')}`,
   );
 
   // Encargado EESS → solo Cala Cala (ST-CBB-01); no ve otras estaciones.
   const homeStation =
-    cbbaStations.find((s) => s.code === 'ST-CBB-01') ?? cbbaStations[0];
+    boliviaStations.find((s) => s.code === 'ST-CBB-01') ?? boliviaStations[0];
   await prisma.user.update({
     where: { email: 'estacion@fuelchain.bo' },
     data: { stationId: homeStation.id },
@@ -609,7 +823,7 @@ async function main() {
   });
 
   await seedCbbaCustodyDeliveries(
-    cbbaStations,
+    boliviaStations,
     [
       { id: batch2.id, batchCode: batch2.batchCode },
       { id: batch3.id, batchCode: batch3.batchCode },
@@ -622,7 +836,9 @@ async function main() {
   console.log('  - FC-BO-2026-000181  LOW / COMPLETED');
   console.log('  - FC-BO-2026-000182  MEDIUM / IN_TRANSIT');
   console.log('  - FC-BO-2026-000184  HIGH / AUDIT_REQUIRED (discrepancy narrative)');
-  console.log('  - 10 estaciones CBBA + cisternas + entregas QR DEMO');
+  console.log(
+    `  - ${boliviaStations.length} estaciones en ${deptCount} departamentos + entregas QR DEMO`,
+  );
   console.log('  - Login DEMO password: demo123 (chofer@ / estacion@ / ciudadano@ / anh@ …)');
   console.log('  Tank: TANK-001 | Measurement source: SIMULATOR (ESP32 deferred)');
 }

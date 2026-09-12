@@ -28,10 +28,10 @@ const ALL_NAV: NavItem[] = [
   { href: '/supervision', label: 'Movimientos' },
   { href: '/estacion', label: 'Mi estación' },
   { href: '/verify', label: 'Registrar viaje' },
-  { href: '/tramos', label: 'Tramos GPS' },
+  { href: '/tramos', label: 'Viajes GPS' },
   { href: '/simular', label: 'Simular entrega' },
   { href: '/contratos', label: 'Contratos' },
-  { href: '/mapa', label: 'Cochabamba' },
+  { href: '/mapa', label: 'Bolivia' },
   { href: '/', label: 'Resumen' },
   { href: '/batches', label: 'Lotes' },
   { href: '/anomalies', label: 'Discrepancias' },
@@ -43,7 +43,7 @@ const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
   STATION_STAFF: ['/estacion', '/contratos', '/tramos'],
   TRANSPORTER: ['/verify', '/tramos', '/simular', '/contratos'],
-  VERIFIER: ['/supervision', '/tramos', '/mapa'],
+  VERIFIER: ['/supervision', '/tramos'],
   CITIZEN: ['/mapa'],
   DEPOT_OPERATOR: ['/verify', '/tramos', '/simular', '/contratos'],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
@@ -67,7 +67,7 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ['/'],
   STATION_STAFF: ['/estacion', '/contratos', '/tramos', '/q'],
   TRANSPORTER: ['/verify', '/simular', '/contratos', '/tramos', '/q'],
-  VERIFIER: ['/supervision', '/mapa', '/tramos'],
+  VERIFIER: ['/supervision', '/tramos'],
   CITIZEN: ['/mapa'],
   DEPOT_OPERATOR: ['/verify', '/simular', '/contratos', '/tramos', '/q'],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
@@ -108,7 +108,7 @@ export function isAppRole(role: string | undefined | null): role is AppRole {
 }
 
 export function navForRole(role: string | undefined | null): NavItem[] {
-  if (!isAppRole(role)) return [{ href: '/mapa', label: 'Cochabamba' }];
+  if (!isAppRole(role)) return [{ href: '/mapa', label: 'Bolivia' }];
   const allowed = new Set(NAV_BY_ROLE[role]);
   return ALL_NAV.filter((n) => allowed.has(n.href));
 }

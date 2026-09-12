@@ -37,7 +37,7 @@ export function CbbaLeafletMap({
       markersRef.current.clear();
     }
 
-    const map = L.map(ref.current).setView([-17.3895, -66.1568], 12);
+    const map = L.map(ref.current).setView([-16.29, -63.55], 5.5);
     mapRef.current = map;
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:

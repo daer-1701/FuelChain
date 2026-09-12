@@ -8,35 +8,36 @@ export const dynamic = 'force-dynamic';
 type StationsResponse = {
   label: string;
   city: string;
+  departments?: string[];
   note: string;
   data: PublicStation[];
 };
 
-export default async function MapaCochabambaPage() {
+export default async function MapaBoliviaPage() {
   let stations: PublicStation[] = [];
-  let note = '';
+  let departments: string[] = [];
   let error: string | null = null;
 
   try {
-    const res = await apiGet<StationsResponse>(
-      '/stations/public?city=Cochabamba',
-    );
+    const res = await apiGet<StationsResponse>('/stations/public?city=all');
     stations = res.data;
-    note = res.note;
+    departments = res.departments ?? [
+      ...new Set(stations.map((s) => s.city).filter(Boolean) as string[]),
+    ];
   } catch (e) {
-    error = e instanceof Error ? e.message : 'API error';
+    error = e instanceof Error ? e.message : 'No se pudo cargar el mapa.';
   }
 
   return (
     <div className="space-y-8">
       <header className="max-w-2xl">
-        <p className="fc-stamp text-[var(--mute)]">Cochabamba · público DEMO</p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
-          Cantidad y calidad
+        <h1 className="font-display text-3xl font-black tracking-tight md:text-4xl">
+          Surtidores en Bolivia
         </h1>
-        <p className="mt-3 max-w-lg leading-relaxed text-[var(--mute)]">
-          Mapa ciudadano: semáforo de stock y estado de calidad por surtidor.
-          DEMO FuelChain — no es la app oficial ANH. {note}
+        <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--mute)]">
+          Elegí un departamento, tocá un surtidor y mirá si hay combustible y
+          si la calidad está bien. Información orientativa DEMO — no es la app
+          oficial ANH.
         </p>
       </header>
 
@@ -46,7 +47,10 @@ export default async function MapaCochabambaPage() {
         </p>
       )}
 
-      <CbbaStationsExplorer stations={stations} />
+      <CbbaStationsExplorer
+        stations={stations}
+        departments={departments}
+      />
 
       <MapaRoleCta />
     </div>

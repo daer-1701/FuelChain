@@ -30,13 +30,18 @@ export function SupervisionPanel({
   const [data, setData] = useState<SupervisionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [deptFilter, setDeptFilter] = useState<string>('all');
 
   useEffect(() => {
     if (!ready || !user) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/stations/supervision`, {
+        const q =
+          mode === 'anh' && deptFilter !== 'all'
+            ? `?city=${encodeURIComponent(deptFilter)}`
+            : '?city=all';
+        const res = await fetch(`${API_URL}/stations/supervision${q}`, {
           headers: authHeaders(),
           cache: 'no-store',
         });
@@ -59,7 +64,7 @@ export function SupervisionPanel({
     return () => {
       cancelled = true;
     };
-  }, [ready, user, authHeaders, mode]);
+  }, [ready, user, authHeaders, mode, deptFilter]);
 
   if (!ready) {
     return <p className="text-[var(--mute)]">Cargando sesión…</p>;
@@ -136,6 +141,38 @@ export function SupervisionPanel({
           </div>
         )}
       </header>
+
+      {mode === 'anh' && (data.departments?.length ?? 0) > 1 && (
+        <nav className="flex flex-wrap gap-2" aria-label="Departamento">
+          <button
+            type="button"
+            onClick={() => setDeptFilter('all')}
+            aria-pressed={deptFilter === 'all'}
+            className={`border px-3 py-1.5 text-sm font-semibold ${
+              deptFilter === 'all'
+                ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
+                : 'border-[var(--rail)]/60'
+            }`}
+          >
+            Toda Bolivia
+          </button>
+          {(data.departments ?? []).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDeptFilter(d)}
+              aria-pressed={deptFilter === d}
+              className={`border px-3 py-1.5 text-sm ${
+                deptFilter === d
+                  ? 'border-[var(--diesel)] bg-[var(--diesel-soft)] font-semibold'
+                  : 'border-[var(--rail)]/60'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {mode === 'anh' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -234,18 +271,12 @@ export function SupervisionPanel({
                   {station.name}
                 </h2>
                 <p className="mt-1 text-sm text-[var(--mute)]">
-                  {station.municipality}
+                  {[station.city, station.municipality]
+                    .filter(Boolean)
+                    .join(' · ')}
                   {station.address ? ` · ${station.address}` : ''}
                 </p>
               </div>
-              {mode === 'anh' && (
-                <Link
-                  href={`/mapa#${station.code}`}
-                  className="border border-[var(--ink)] px-3 py-1.5 text-xs font-semibold"
-                >
-                  Ver en mapa
-                </Link>
-              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

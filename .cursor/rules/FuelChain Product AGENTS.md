@@ -29,7 +29,7 @@ Language: the station **receives / controls fuel at the EESS**. Do not call the 
 |------|------|-----|
 | STATION_STAFF | `/estacion` | Mi estación, Contratos, Tramos GPS (+ `/q` accept) |
 | TRANSPORTER | `/verify` | Registrar viaje, Tramos GPS, Simular, Contratos |
-| VERIFIER | `/supervision` | Movimientos, Tramos GPS, Cochabamba mapa |
+| VERIFIER | `/supervision` | Movimientos, Tramos GPS |
 | CITIZEN | `/mapa` | Cochabamba |
 
 Source of truth: `apps/web/src/lib/role-access.ts`.

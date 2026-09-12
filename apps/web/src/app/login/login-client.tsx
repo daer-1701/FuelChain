@@ -63,7 +63,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[1.1fr_1fr]">
       <header className="max-w-lg">
-        <p className="fc-stamp text-[var(--mute)]">Cochabamba · acceso DEMO</p>
+        <p className="fc-stamp text-[var(--mute)]">Bolivia · acceso DEMO</p>
         <h1 className="mt-2 font-display text-4xl font-black tracking-tight md:text-5xl">
           FuelChain
         </h1>

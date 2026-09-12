@@ -115,7 +115,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
               aria-current="page"
               className="relative whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--ink)] after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:bg-[var(--diesel)]"
             >
-              Surtidores Cochabamba
+              Surtidores Bolivia
             </Link>
             <Link
               href="/login"

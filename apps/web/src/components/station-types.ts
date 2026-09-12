@@ -1,6 +1,7 @@
 export type PublicStation = {
   code: string;
   name: string;
+  city?: string;
   municipality: string | null;
   address: string | null;
   latitude: string | number;
@@ -14,6 +15,8 @@ export type PublicStation = {
   qualityLabel?: string;
   tankName: string | null;
   fillPercent: number | null;
+  stockLiters?: number | null;
+  capacityLiters?: number | null;
   waterDetected: boolean;
   temperature: string | number | null;
 };
@@ -21,6 +24,7 @@ export type PublicStation = {
 export type SupervisionStation = {
   code: string;
   name: string;
+  city?: string;
   municipality: string | null;
   address: string | null;
   availability: PublicStation['availability'];
@@ -87,6 +91,7 @@ export type SupervisionStation = {
 export type SupervisionResponse = {
   label: string;
   city: string;
+  departments?: string[];
   note: string;
   summary: {
     stations: number;

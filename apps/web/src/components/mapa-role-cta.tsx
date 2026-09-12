@@ -12,11 +12,10 @@ export function MapaRoleCta() {
   if (!user) {
     return (
       <p className="text-sm text-[var(--mute)]">
-        ¿Sos operador?{' '}
+        ¿Trabajás en una estación o sos chofer?{' '}
         <Link href="/login" className="text-[var(--diesel)] underline">
           Iniciar sesión
-        </Link>{' '}
-        (chofer emite QR, estación recibe, ANH supervisa).
+        </Link>
       </p>
     );
   }

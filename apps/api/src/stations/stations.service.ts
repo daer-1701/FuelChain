@@ -17,11 +17,22 @@ import {
 export class StationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listPublic(city = 'Cochabamba') {
-    await this.applyIdleConsumption(city);
+  private normalizeCityFilter(city?: string): string | undefined {
+    if (!city || city === 'all' || city === 'Bolivia' || city === '*') {
+      return undefined;
+    }
+    return city;
+  }
+
+  async listPublic(city?: string) {
+    const cityFilter = this.normalizeCityFilter(city);
+    await this.applyIdleConsumption(cityFilter);
     const rows = await this.prisma.station.findMany({
-      where: { city, publicVisible: true },
-      orderBy: { name: 'asc' },
+      where: {
+        publicVisible: true,
+        ...(cityFilter ? { city: cityFilter } : {}),
+      },
+      orderBy: [{ city: 'asc' }, { name: 'asc' }],
       include: {
         tanks: {
           include: {
@@ -37,11 +48,16 @@ export class StationsService {
       },
     });
 
+    const departments = [...new Set(rows.map((s) => s.city))].sort((a, b) =>
+      a.localeCompare(b, 'es'),
+    );
+
     return serialize({
       label: 'DEMO',
-      city,
+      city: cityFilter ?? 'Bolivia',
+      departments,
       note:
-        'Semáforo de cantidad + calidad agregada para ciudadanos. Datos DEMO.',
+        'Semáforo de cantidad + calidad por departamento. Datos DEMO Bolivia.',
       data: rows.map((s) => {
         const tank = s.tanks[0];
         const last = tank?.measurements[0];
@@ -91,6 +107,7 @@ export class StationsService {
         return {
           code: s.code,
           name: s.name,
+          city: s.city,
           municipality: s.municipality,
           address: s.address,
           latitude: s.latitude,
@@ -107,6 +124,8 @@ export class StationsService {
             capacity && stock != null
               ? Math.round(Math.min(100, (stock / capacity) * 100))
               : null,
+          stockLiters: stock != null ? Math.round(stock) : null,
+          capacityLiters: capacity != null ? Math.round(capacity) : null,
           waterDetected: last?.waterDetected ?? false,
           temperature: last?.temperature ?? null,
         };
@@ -127,19 +146,25 @@ export class StationsService {
    * Estación: solo su surtidor (stationId) — sin flota ajena.
    */
   async listSupervision(
-    city = 'Cochabamba',
+    city?: string,
     opts?: { stationId?: string; includeFleet?: boolean },
   ) {
-    await this.applyIdleConsumption(city);
+    const cityFilter = this.normalizeCityFilter(city);
+    await this.applyIdleConsumption(cityFilter);
     const stationFilter = opts?.stationId
-      ? { city, id: opts.stationId }
-      : { city };
+      ? {
+          id: opts.stationId,
+          ...(cityFilter ? { city: cityFilter } : {}),
+        }
+      : cityFilter
+        ? { city: cityFilter }
+        : {};
     const includeFleet = opts?.includeFleet !== false && !opts?.stationId;
 
     const [stations, fleet] = await Promise.all([
       this.prisma.station.findMany({
         where: stationFilter,
-        orderBy: { code: 'asc' },
+        orderBy: [{ city: 'asc' }, { code: 'asc' }],
         include: {
           tanks: {
             include: {
@@ -170,7 +195,8 @@ export class StationsService {
     if (opts?.stationId && stations.length === 0) {
       return serialize({
         label: 'DEMO',
-        city,
+        city: cityFilter ?? 'Bolivia',
+        departments: [] as string[],
         note: 'Sin estación asignada o no encontrada.',
         summary: {
           stations: 0,
@@ -224,10 +250,11 @@ export class StationsService {
         certificateStatus: latestDelivery?.loadCertificateStatus,
       });
 
-      return {
-        code: s.code,
-        name: s.name,
-        municipality: s.municipality,
+        return {
+          code: s.code,
+          name: s.name,
+          city: s.city,
+          municipality: s.municipality,
         address: s.address,
         latitude: s.latitude,
         longitude: s.longitude,
@@ -309,9 +336,12 @@ export class StationsService {
 
     return serialize({
       label: 'DEMO',
-      city,
+      city: cityFilter ?? 'Bolivia',
+      departments: [...new Set(data.map((d) => d.city))].sort((a, b) =>
+        a.localeCompare(b, 'es'),
+      ),
       note:
-        'Panel de supervisión FuelChain. ANH ve cantidad, calidad y cisternas por surtidor. No es el sistema oficial ANH.',
+        'Panel de supervisión FuelChain Bolivia. ANH ve cantidad, calidad y cisternas por surtidor. No es el sistema oficial ANH.',
       summary: {
         stations: data.length,
         lowStock,
@@ -388,9 +418,9 @@ export class StationsService {
   }
 
   /** DEMO: ventas diarias ~2% capacidad para que el stock no solo suba. */
-  private async applyIdleConsumption(city: string) {
+  private async applyIdleConsumption(city?: string) {
     const tanks = await this.prisma.storageTank.findMany({
-      where: { station: { city } },
+      where: city ? { station: { city } } : { stationId: { not: null } },
       include: { station: { select: { lastInventoryAt: true } } },
     });
     const now = new Date();

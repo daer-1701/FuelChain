@@ -11,7 +11,7 @@ export class StationsController {
 
   @Get('public')
   publicList(@Query('city') city?: string) {
-    return this.stations.listPublic(city || 'Cochabamba');
+    return this.stations.listPublic(city || 'all');
   }
 
   /** ANH / auditor: red completa. Estación: solo su EESS. */
@@ -32,12 +32,12 @@ export class StationsController {
           'Operador de estación sin EESS asignada',
         );
       }
-      return this.stations.listSupervision(city || 'Cochabamba', {
+      return this.stations.listSupervision(city || 'all', {
         stationId: user.stationId,
         includeFleet: false,
       });
     }
-    return this.stations.listSupervision(city || 'Cochabamba', {
+    return this.stations.listSupervision(city || 'all', {
       includeFleet: true,
     });
   }
