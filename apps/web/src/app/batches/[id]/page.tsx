@@ -32,6 +32,38 @@ type Passport = {
     measuredVolume: string | null;
     declaredVolume: string | null;
   }>;
+  journey?: {
+    note: string;
+    deliveries: Array<{
+      id: string;
+      status: string;
+      loadedLiters: string | number;
+      receivedLiters: string | number | null;
+      loadedAt: string;
+      deliveredAt: string | null;
+      batonTokenId: string | null;
+      cistern: { code: string; plate: string | null; carrier: string };
+      station: { code: string; name: string; city: string };
+    }>;
+    batons: Array<{
+      tokenId: string;
+      status: string;
+      volumeLiters: string | number;
+      cisternCode: string | null;
+      issuedAt: string;
+      consumedAt: string | null;
+    }>;
+    checkpoints: Array<{
+      id: string;
+      kind: string;
+      label: string | null;
+      volumeLiters: string | number;
+      latitude: number;
+      longitude: number;
+      capturedAt: string;
+      cistern?: { code: string } | null;
+    }>;
+  };
   anomalies: Array<{ type: string; severity: string; difference: string | null }>;
   quantity: {
     declared: number;
@@ -346,6 +378,100 @@ export default async function BatchDetailPage({
           ))}
         </ol>
       </section>
+
+      {passport.journey &&
+        (passport.journey.deliveries.length > 0 ||
+          passport.journey.checkpoints.length > 0 ||
+          passport.journey.batons.length > 0) && (
+          <section>
+            <h2 className="font-display mb-2 text-xl font-bold">
+              Camino completo (persistido)
+            </h2>
+            <p className="mb-5 text-sm text-[var(--mute)]">
+              {passport.journey.note}
+            </p>
+
+            {passport.journey.deliveries.length > 0 && (
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-semibold text-[var(--mute)]">
+                  Despachos / entregas
+                </h3>
+                <ul className="space-y-3">
+                  {passport.journey.deliveries.map((d) => (
+                    <li
+                      key={d.id}
+                      className="border border-[var(--rail)]/45 bg-white/40 px-4 py-3 text-sm"
+                    >
+                      <p className="font-medium">
+                        {d.cistern.code} → {d.station.code} ({d.station.name})
+                      </p>
+                      <p className="mt-1 tabular-nums text-[var(--mute)]">
+                        {labelEs(d.status)} · Carga {formatVolume(d.loadedLiters)}
+                        {d.receivedLiters != null
+                          ? ` · Recibido ${formatVolume(d.receivedLiters)}`
+                          : ''}
+                      </p>
+                      {d.batonTokenId && (
+                        <p className="mt-1 font-mono text-xs text-[var(--mute)]">
+                          QR {d.batonTokenId}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {passport.journey.checkpoints.length > 0 && (
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-semibold text-[var(--mute)]">
+                  Tramos GPS / checkpoints
+                </h3>
+                <ol className="space-y-2">
+                  {passport.journey.checkpoints.map((c) => (
+                    <li
+                      key={c.id}
+                      className="border-l-2 border-[var(--fuel)] pl-3 text-sm"
+                    >
+                      <p className="font-medium">
+                        {labelEs(c.kind)}
+                        {c.label ? ` · ${c.label}` : ''}
+                      </p>
+                      <p className="tabular-nums text-[var(--mute)]">
+                        {formatVolume(c.volumeLiters)} · {c.latitude.toFixed(4)},{' '}
+                        {c.longitude.toFixed(4)} ·{' '}
+                        {new Date(c.capturedAt).toLocaleString('es-BO')}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {passport.journey.batons.length > 0 && (
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-[var(--mute)]">
+                  Bastones QR
+                </h3>
+                <ul className="space-y-2 text-sm">
+                  {passport.journey.batons.map((b) => (
+                    <li key={b.tokenId} className="font-mono text-xs">
+                      <Link
+                        href={`/q/${b.tokenId}`}
+                        className="text-[var(--diesel)] underline-offset-2 hover:underline"
+                      >
+                        {b.tokenId}
+                      </Link>{' '}
+                      <span className="font-sans text-[var(--mute)]">
+                        {labelEs(b.status)} · {formatVolume(b.volumeLiters)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
 
       {passport.anomalies.length > 0 && (
         <section className="border-2 border-[var(--alarm)] bg-[var(--alarm-soft)] p-5">

@@ -140,10 +140,25 @@ export class BatchesService {
           include: { labAnalyses: true },
         },
         labAnalyses: { orderBy: { analysisDate: 'desc' } },
-        measurements: { orderBy: { timestamp: 'desc' }, take: 20 },
+        measurements: { orderBy: { timestamp: 'desc' }, take: 50 },
         anomalies: { orderBy: { createdAt: 'desc' } },
         auditCases: { orderBy: { createdAt: 'desc' } },
         blockchainAnchors: { orderBy: { timestamp: 'desc' } },
+        deliveries: {
+          orderBy: { loadedAt: 'asc' },
+          include: {
+            cistern: { select: { code: true, plate: true, carrier: true } },
+            station: { select: { code: true, name: true, city: true } },
+          },
+        },
+        custodyBatons: { orderBy: { issuedAt: 'asc' } },
+        routeCheckpoints: {
+          orderBy: { capturedAt: 'asc' },
+          include: {
+            cistern: { select: { code: true } },
+            actor: { select: { name: true, role: true } },
+          },
+        },
       },
     });
 
@@ -171,6 +186,25 @@ export class BatchesService {
           ? `${explorerBase}/tx/${a.transactionHash}`
           : null,
     }));
+
+    const journey = {
+      note: 'Camino completo persistido en PostgreSQL (despachos, QR, tramos GPS, mediciones).',
+      deliveries: full.deliveries,
+      batons: full.custodyBatons.map((b) => ({
+        tokenId: b.tokenId,
+        status: b.status,
+        eventType: b.eventType,
+        volumeLiters: b.volumeLiters,
+        cisternCode: b.cisternCode,
+        issuedByRole: b.issuedByRole,
+        consumedByRole: b.consumedByRole,
+        issuedAt: b.issuedAt,
+        consumedAt: b.consumedAt,
+        deliveryId: b.deliveryId,
+        payloadHash: b.payloadHash,
+      })),
+      checkpoints: full.routeCheckpoints,
+    };
 
     return serialize({
       label: 'DEMO',
@@ -207,6 +241,7 @@ export class BatchesService {
       },
       quantity,
       custody: full.custodyEvents,
+      journey,
       authorizations: full.authorizations,
       transports: full.transports,
       customs: full.customsEvents,

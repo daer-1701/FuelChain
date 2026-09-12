@@ -20,7 +20,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   const isPublicMap =
     pathname === '/mapa' || pathname.startsWith('/cochabamba');
   const isPublicBaton = pathname.startsWith('/q/');
-  const isPublicPreview = isPublicMap || isPublicBaton;
+  const isPublicUnlock = pathname === '/acceso' || pathname.startsWith('/acceso/');
+  const isPublicPreview = isPublicMap || isPublicBaton || isPublicUnlock;
   const showOperatorNav = Boolean(user) && !isLogin;
   const showPublicNav = !user && isPublicPreview;
 
@@ -108,7 +109,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
             className="fc-shell-nav mx-auto max-w-[var(--fc-max)] px-1 md:px-4"
             aria-label="Público"
           >
-            <Link href="/mapa" aria-current="page">
+            <Link
+              href="/mapa"
+              aria-current={isPublicMap ? 'page' : undefined}
+            >
               Surtidores Bolivia
             </Link>
             <Link href="/login">Acceso operadores</Link>

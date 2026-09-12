@@ -26,7 +26,8 @@
     "contracts:deploy:hsk-testnet": "pnpm --filter @fuelchain/contracts run deploy:hsk-testnet",
     "contracts:deploy:hsk-mainnet": "pnpm --filter @fuelchain/contracts run deploy:hsk-mainnet",
     "demo:up": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-demo.ps1",
-    "demo:up:seed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-demo.ps1 -Seed"
+    "demo:up:seed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-demo.ps1 -Seed",
+    "qr:cisternas": "pnpm --filter @fuelchain/web exec node ../../scripts/generate-cistern-qrs.cjs"
   },
   "devDependencies": {
     "prettier": "^3.5.3",

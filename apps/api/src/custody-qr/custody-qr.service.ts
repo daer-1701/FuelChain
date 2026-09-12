@@ -21,6 +21,15 @@ import {
   nextCisternLoad,
   remainingBatchLiters,
 } from '../common/delivery-accounting';
+import {
+  compactTrailForQr,
+  computeQualityChanges,
+  computeVolumeDrops,
+  decimalOrUndef,
+  normalizeCheckpointKind,
+  parseJourneyTrail,
+  type JourneySampleInput,
+} from '../common/journey-trail';
 import { serialize } from '../common/serialize';
 import { applyStockDelta, applyStockWithdraw } from '../common/tank-inventory';
 import { ReceivedFollowUpService } from '../custody/received-follow-up.service';
@@ -50,6 +59,8 @@ type AcceptBatonInput = {
   receivedDensity?: number;
   receivedTemperature?: number;
   receivedWaterDetected?: boolean;
+  /** Samples captured along the route (phone / sensor buffer). Uploaded on station scan. */
+  journeyTrail?: JourneySampleInput[];
 };
 
 type OfflineSyncItem = {
@@ -238,8 +249,54 @@ export class CustodyQrService {
     const tokenId = `BT-${randomBytes(4).toString('hex').toUpperCase()}`;
     const issuedAt = new Date();
     const exp = Math.floor(issuedAt.getTime() / 1000) + BATON_TTL_SEC;
+    const depotLat = -17.7833;
+    const depotLng = -63.1821;
+    const stLat = Number(st.latitude.toString());
+    const stLng = Number(st.longitude.toString());
+    // DEMO: camino completo en el QR (cantidad + calidad + GPS) para subir al escanear en estación
+    const trailPlan: JourneySampleInput[] = [
+      {
+        clientEventId: `${tokenId}-load`,
+        kind: 'LOAD_DEPARTURE',
+        label: `Carga ${cistern.code}`,
+        volumeLiters: input.volumeLiters,
+        density: loadDensity,
+        temperature: loadTemperature,
+        waterDetected: loadWaterDetected,
+        latitude: depotLat,
+        longitude: depotLng,
+        capturedAt: issuedAt.toISOString(),
+        note: 'Inicio de camino — despacho QR',
+      },
+      {
+        clientEventId: `${tokenId}-wp1`,
+        kind: 'ROUTE_WAYPOINT',
+        label: 'Control ruta DEMO',
+        volumeLiters: Number((input.volumeLiters - 1).toFixed(3)),
+        density: loadDensity,
+        temperature: loadTemperature + 0.3,
+        waterDetected: false,
+        latitude: depotLat + (stLat - depotLat) * 0.35,
+        longitude: depotLng + (stLng - depotLng) * 0.35,
+        capturedAt: new Date(issuedAt.getTime() + 2 * 3600_000).toISOString(),
+        note: 'Muestra en ruta (DEMO)',
+      },
+      {
+        clientEventId: `${tokenId}-wp2`,
+        kind: 'ROUTE_WAYPOINT',
+        label: 'Aproximación estación DEMO',
+        volumeLiters: Number((input.volumeLiters - 3).toFixed(3)),
+        density: Number((loadDensity - 0.002).toFixed(4)),
+        temperature: loadTemperature + 1.1,
+        waterDetected: false,
+        latitude: depotLat + (stLat - depotLat) * 0.75,
+        longitude: depotLng + (stLng - depotLng) * 0.75,
+        capturedAt: new Date(issuedAt.getTime() + 5 * 3600_000).toISOString(),
+        note: 'Bajó ~2 L y cambió densidad/temp (DEMO)',
+      },
+    ];
     const core = {
-      v: 1,
+      v: 2,
       t: 'baton',
       id: tokenId,
       batch: batch.batchCode,
@@ -258,6 +315,20 @@ export class CustodyQrService {
       ph: input.previousHash ?? null,
       city: 'Cochabamba',
       label: 'DEMO',
+      trail: compactTrailForQr(
+        trailPlan.map((s) => ({
+          clientEventId: s.clientEventId,
+          kind: String(s.kind ?? 'ROUTE_WAYPOINT'),
+          label: s.label,
+          volumeLiters: s.volumeLiters,
+          density: s.density,
+          temperature: s.temperature,
+          waterDetected: s.waterDetected,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          capturedAt: s.capturedAt ?? issuedAt.toISOString(),
+        })),
+      ),
     };
     const payloadHash = this.hashPayload(core);
     const signature = this.sign(payloadHash);
@@ -339,6 +410,92 @@ export class CustodyQrService {
         data: { batonTokenId: tokenId },
       });
 
+      // Persist full handoff trail: custody + checkpoint + depot measurement
+      await tx.custodyEvent.create({
+        data: {
+          batchId: batch.id,
+          eventType: 'LOADED',
+          actorId: actor.id,
+          location: `Depósito → cisterna ${cistern.code}`,
+          declaredVolume: new Prisma.Decimal(input.volumeLiters),
+          measuredVolume: new Prisma.Decimal(input.volumeLiters),
+          evidenceHash: payloadHash,
+          metadata: {
+            label: 'DEMO',
+            batonTokenId: tokenId,
+            deliveryId: delivery.id,
+            cisternCode: cistern.code,
+            stationCode: input.stationCode,
+            density: loadDensity,
+            temperature: loadTemperature,
+            waterDetected: loadWaterDetected,
+            actorRole: actor.role,
+          },
+          isDemo: true,
+        },
+      });
+      await tx.custodyEvent.create({
+        data: {
+          batchId: batch.id,
+          eventType: 'IN_TRANSIT',
+          actorId: actor.id,
+          location: `Cisterna ${cistern.code} → ${input.stationCode}`,
+          declaredVolume: new Prisma.Decimal(input.volumeLiters),
+          evidenceHash: payloadHash,
+          metadata: {
+            label: 'DEMO',
+            batonTokenId: tokenId,
+            deliveryId: delivery.id,
+            cisternCode: cistern.code,
+            stationCode: input.stationCode,
+            actorRole: actor.role,
+          },
+          isDemo: true,
+        },
+      });
+
+      // Depot + route samples (full journey travels in QR trail and DB)
+      for (const sample of trailPlan) {
+        await tx.routeCheckpoint.create({
+          data: {
+            kind: normalizeCheckpointKind(String(sample.kind)),
+            label: sample.label,
+            deliveryId: delivery.id,
+            cisternId: cistern.id,
+            batchId: batch.id,
+            actorId: actor.id,
+            volumeLiters: new Prisma.Decimal(sample.volumeLiters),
+            density: decimalOrUndef(sample.density),
+            temperature: decimalOrUndef(sample.temperature),
+            waterDetected: Boolean(sample.waterDetected),
+            latitude: sample.latitude,
+            longitude: sample.longitude,
+            clientEventId: sample.clientEventId,
+            capturedAt: sample.capturedAt
+              ? new Date(sample.capturedAt)
+              : issuedAt,
+            note: sample.note ?? 'Camino persistido en despacho QR',
+            isDemo: true,
+          },
+        });
+      }
+
+      await tx.measurement.create({
+        data: {
+          batchId: batch.id,
+          tankId: depot.id,
+          deviceId: 'QR-LOAD-DEMO',
+          volumeLiters: depotStock.nextStock,
+          temperature: new Prisma.Decimal(loadTemperature),
+          density: new Prisma.Decimal(loadDensity),
+          waterDetected: loadWaterDetected,
+          latitude: new Prisma.Decimal(depotLat),
+          longitude: new Prisma.Decimal(depotLng),
+          source: 'MANUAL',
+          isDemo: true,
+        },
+      });
+
       if (batch.status === BatchStatus.AUTHORIZED) {
         assertCanTransition(batch.status, BatchStatus.IN_TRANSIT);
         await tx.fuelBatch.update({
@@ -359,10 +516,28 @@ export class CustodyQrService {
     });
 
     const deepLinkPath = `/q/${tokenId}`;
+    const trailPoints = trailPlan.map((s) => ({
+      kind: String(s.kind),
+      label: s.label,
+      volumeLiters: s.volumeLiters,
+      density: s.density,
+      temperature: s.temperature,
+      waterDetected: s.waterDetected,
+      latitude: s.latitude,
+      longitude: s.longitude,
+      capturedAt: s.capturedAt ?? issuedAt.toISOString(),
+    }));
+    const volumeDrops = computeVolumeDrops(trailPoints);
+    const qualityChanges = computeQualityChanges(trailPoints);
     return serialize({
       label: 'DEMO',
-      note: 'Bastón QR firmado. Los datos viajan en ?p= para uso sin señal. El volumen es del movimiento, no del lote.',
+      note: 'Bastón QR firmado con trail del camino (cantidad/calidad/GPS). Al escanear en estación se sube todo el historial.',
       volumeLooksLikeLote,
+      journey: {
+        samples: trailPlan.length,
+        volumeDrops,
+        qualityChanges,
+      },
       transport: transport
         ? {
             id: transport.id,
@@ -403,10 +578,54 @@ export class CustodyQrService {
       }
     }
 
+    const checkpoints = row.deliveryId
+      ? await this.prisma.routeCheckpoint.findMany({
+          where: { deliveryId: row.deliveryId },
+          orderBy: { capturedAt: 'asc' },
+        })
+      : await this.prisma.routeCheckpoint.findMany({
+          where: {
+            OR: [
+              { clientEventId: { startsWith: `${tokenId}-` } },
+              { note: { contains: tokenId } },
+            ],
+          },
+          orderBy: { capturedAt: 'asc' },
+          take: 40,
+        });
+
+    // Prefer embedded trail when DB still empty (offline QR first open)
+    const embeddedTrail = parseJourneyTrail(
+      (row.payloadJson as Record<string, unknown>)?.trail,
+    );
+    const trailPoints =
+      checkpoints.length > 0
+        ? checkpoints
+        : embeddedTrail.map((s) => ({
+            kind: String(s.kind),
+            label: s.label,
+            volumeLiters: s.volumeLiters,
+            density: s.density,
+            temperature: s.temperature,
+            waterDetected: s.waterDetected,
+            latitude: s.latitude,
+            longitude: s.longitude,
+            capturedAt: s.capturedAt ?? row.issuedAt,
+          }));
+    const volumeDrops = computeVolumeDrops(trailPoints);
+    const qualityChanges = computeQualityChanges(trailPoints);
+
     return serialize({
       label: 'DEMO',
       data: row,
       deepLinkPath: `/q/${tokenId}`,
+      journey: {
+        note: 'Trail del camino (volumen/calidad/GPS). Al aceptar en estación se consolida en el servidor.',
+        checkpoints,
+        embeddedTrailSamples: embeddedTrail.length,
+        volumeDrops,
+        qualityChanges,
+      },
     });
   }
 
@@ -686,6 +905,9 @@ export class CustodyQrService {
       }
 
       if (stationId) {
+        const stationRow = await tx.station.findUnique({
+          where: { id: stationId },
+        });
         const tank = await tx.storageTank.findFirst({
           where: { stationId },
           orderBy: { createdAt: 'asc' },
@@ -716,12 +938,61 @@ export class CustodyQrService {
               temperature: qualityTemp,
               density: qualityDensity,
               waterDetected: qualityWater,
+              latitude: stationRow
+                ? new Prisma.Decimal(stationRow.latitude.toString())
+                : undefined,
+              longitude: stationRow
+                ? new Prisma.Decimal(stationRow.longitude.toString())
+                : undefined,
               source: 'MANUAL',
               isDemo: true,
             },
           });
         }
+
+        const cisternForCp = baton!.cisternId ?? delivery?.cisternId;
+        if (cisternForCp && stationRow) {
+          await tx.routeCheckpoint.create({
+            data: {
+              kind: 'ARRIVAL_STATION',
+              label: `Llegada ${stationRow.code}`,
+              deliveryId: delivery?.id,
+              cisternId: cisternForCp,
+              batchId: baton!.batchId,
+              actorId: actor.id,
+              volumeLiters: new Prisma.Decimal(received),
+              density: qualityDensity,
+              temperature: qualityTemp,
+              waterDetected: qualityWater,
+              latitude: Number(stationRow.latitude.toString()),
+              longitude: Number(stationRow.longitude.toString()),
+              note: 'Recepción QR — fin de camino persistido',
+              isDemo: true,
+            },
+          });
+        }
       }
+
+      await tx.custodyEvent.create({
+        data: {
+          batchId: baton!.batchId,
+          eventType: 'DELIVERED',
+          actorId: actor.id,
+          location: input.stationCode
+            ? `Estación ${input.stationCode} (Cochabamba)`
+            : 'Entrega DEMO Cochabamba',
+          declaredVolume: baton!.volumeLiters,
+          measuredVolume: new Prisma.Decimal(received),
+          metadata: {
+            label: 'DEMO',
+            batonTokenId: baton!.tokenId,
+            deliveryId: delivery?.id,
+            cisternCode: baton!.cisternCode,
+            actorRole: actor.role,
+          },
+          isDemo: true,
+        },
+      });
 
       const consumedBaton = await tx.custodyBaton.findUniqueOrThrow({
         where: { id: baton!.id },

@@ -69,16 +69,16 @@ El script **rechaza** mainnet salvo `ALLOW_HSK_MAINNET=1`.
 4. Opcional: `/liquidaciones` → liquidación DEMO del chofer (Bs).
 5. Frase cierre: *“Blockchain = evidencia verificable; no prueba el litro físico.”*
 
-## Checklist entrega track HSK
+## Checklist entrega track HSK (IRL 13 sep)
 
-- [ ] Contrato desplegado en la red pedida por el doc oficial
+- [ ] Contrato en HSK **testnet** (o mainnet si alcanza)
+- [ ] `GET /blockchain/status` → live
+- [ ] Flujo accept → txHash visible (ANH → Evidencia)
 - [ ] Repo GitHub público
-- [ ] URL demo pública
-- [ ] Video ≤ 3 min
-- [ ] README de integración (este archivo + `README.md`)
-- [ ] Registro en **Devfolio Ethereum Bolivia** (track HSK)
-- [ ] Registro en **Devfolio EAG Global** (doble postulación)
-- [ ] Dirección del contrato en la entrega
+- [ ] Devfolio: Bolivia + Real-World + HSK RWA
+- [ ] Doc: `docs/SUBMISSION-IRL.md`
+- [ ] Demo / video
+- [ ] Dirección del contrato en el formulario
 
 ## Seguridad
 

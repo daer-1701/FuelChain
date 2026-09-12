@@ -7,7 +7,7 @@ type Props = {
   onToken?: (tokenId: string) => void;
 };
 
-/** Escáner QR con cámara (BarcodeDetector) o foto. Extrae /q/TOKEN del contenido. */
+/** Escáner QR con cámara (BarcodeDetector) o foto. Extrae /c/TOKEN (cisterna) o /q/TOKEN (bastón). */
 export function QrScanButton({ onToken }: Props) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -56,7 +56,7 @@ export function QrScanButton({ onToken }: Props) {
               stop();
               setOpen(false);
               if (onToken) onToken(token);
-              else router.push(`/q/${token}`);
+              else router.push(routeForToken(token));
             }
           } catch {
             /* ignore frame errors */
@@ -99,7 +99,7 @@ export function QrScanButton({ onToken }: Props) {
         return;
       }
       if (onToken) onToken(token);
-      else router.push(`/q/${token}`);
+      else router.push(routeForToken(token));
     } catch {
       setMsg('No se pudo leer la imagen.');
     }
@@ -111,17 +111,17 @@ export function QrScanButton({ onToken }: Props) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="border-2 border-[var(--ink)] px-3 py-2 text-sm font-semibold"
+          className="fc-btn fc-btn-ghost"
         >
           {open ? 'Cerrar cámara' : 'Escanear QR'}
         </button>
-        <label className="cursor-pointer border border-[var(--rail)]/60 px-3 py-2 text-sm">
+        <label className="fc-btn fc-btn-ghost cursor-pointer">
           Subir foto QR
           <input
             type="file"
             accept="image/*"
             capture="environment"
-            className="hidden"
+            className="sr-only"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void onFile(f);
@@ -145,12 +145,25 @@ export function QrScanButton({ onToken }: Props) {
 function extractToken(raw: string): string | null {
   try {
     const u = new URL(raw, 'http://local');
+    const cistern = u.pathname.match(/\/c\/([^/?#]+)/);
+    if (cistern?.[1]) return decodeURIComponent(cistern[1]);
     const m = u.pathname.match(/\/q\/([^/?#]+)/);
     if (m?.[1]) return decodeURIComponent(m[1]);
   } catch {
     /* plain token */
   }
-  if (/^BT-[A-Z0-9]+$/i.test(raw.trim())) return raw.trim();
+  const trimmed = raw.trim();
+  if (/^CQ-[A-Z0-9-]+$/i.test(trimmed)) return trimmed;
+  if (/^GW-CIS-/i.test(trimmed)) return trimmed;
+  if (/^CIS-[A-Z0-9-]+$/i.test(trimmed)) return trimmed;
+  if (/^BT-[A-Z0-9]+$/i.test(trimmed)) return trimmed;
+  const c2 = raw.match(/\/c\/([A-Za-z0-9_-]+)/);
+  if (c2?.[1]) return c2[1];
   const m2 = raw.match(/\/q\/([A-Za-z0-9_-]+)/);
   return m2?.[1] ?? null;
+}
+
+function routeForToken(token: string): string {
+  if (/^(CQ-|GW-|CIS-)/i.test(token)) return `/c/${token}`;
+  return `/q/${token}`;
 }

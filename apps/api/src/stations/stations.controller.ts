@@ -21,6 +21,12 @@ export class StationsController {
     return this.stations.listPublic(city || 'all');
   }
 
+  /** Portal Unlock: informe de camino (gate en el cliente con Key). */
+  @Get('unlock-report')
+  unlockReport() {
+    return this.stations.listUnlockReport();
+  }
+
   /** ANH / auditor: red completa. Estación: solo su EESS. */
   @Get('supervision')
   @RequireRoles(

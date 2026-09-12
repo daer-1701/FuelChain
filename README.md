@@ -57,7 +57,9 @@ En `.env`: `CHAIN_RPC_URL=http://127.0.0.1:8545`, `CHAIN_ID=31337`, `FUELCHAIN_C
 Nunca uses una clave en `NEXT_PUBLIC_*`. Nunca despliegues a HSK Mainnet (177) con estos scripts.
 
 Valores oficiales de red: [HashKey Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart).  
-Guía feria / track HSK: **`docs/hsk-feria.md`**. Detalle demo: `docs/demo.md`.
+Guía feria / track HSK: **`docs/hsk-feria.md`**.  
+**Entrega IRL 13 sep:** **`docs/SUBMISSION-IRL.md`** + **`docs/ENTREGA-FERIA.md`**.  
+Detalle demo: `docs/demo.md`.
 
 **HSK Mainnet (solo si el track lo exige):**
 

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { labelEs } from '@/lib/es-labels';
 import { LiveAnchorPanel } from '@/components/live-anchor-panel';
+import { MetricRail, StatusPill, anchorToneFrom } from '@/components/ops';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,17 +33,60 @@ export default async function BlockchainPage() {
     error = e instanceof Error ? e.message : 'Error de API';
   }
 
+  const confirmed = rows.filter((r) => r.status === 'CONFIRMED').length;
+  const pending = rows.filter((r) => r.status === 'PENDING').length;
+  const failed = rows.filter((r) => r.status === 'FAILED').length;
+
   return (
     <div className="fc-page">
-      <header className="fc-page-header">
-        <h1 className="fc-title">
-          Evidencia en cadena
-        </h1>
-        <p className="fc-lede">
-          Registro a prueba de manipulación de eventos y hashes. No sustituye la
-          base operacional ni demuestra existencia física del combustible. {note}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5">
+        <div className="fc-page-header !max-w-2xl !border-0 !pb-0">
+          <p className="fc-stamp text-[var(--mute)]">
+            ANH · integridad del registro (HSK)
+          </p>
+          <h1 className="fc-title fc-title-lg mt-2">Evidencia en cadena</h1>
+          <p className="fc-lede">
+            Acá no ves litros ni el mapa del viaje. Ves si el{' '}
+            <strong>evento de recepción</strong> quedó anclado: un hash +
+            transacción verificable. No prueba el litro físico.
+          </p>
+          {note ? <p className="fc-meta mt-3">{note}</p> : null}
+        </div>
+        <nav className="flex flex-wrap gap-2" aria-label="Vistas relacionadas">
+          <Link href="/supervision" className="fc-btn fc-btn-ghost !text-xs">
+            Movimientos
+          </Link>
+          <Link href="/tramos" className="fc-btn fc-btn-ghost !text-xs">
+            Tramos GPS
+          </Link>
+        </nav>
       </header>
+
+      <MetricRail
+        items={[
+          {
+            label: 'Anclas',
+            value: String(rows.length),
+            hint: 'Eventos registrados',
+          },
+          {
+            label: 'Confirmadas',
+            value: String(confirmed),
+            tone: confirmed > 0 ? 'ok' : 'mute',
+          },
+          {
+            label: 'Pendientes',
+            value: String(pending),
+            tone: pending > 0 ? 'warn' : 'mute',
+            hint: pending > 0 ? 'Chain o reintento' : undefined,
+          },
+          {
+            label: 'Fallidas',
+            value: String(failed),
+            tone: failed > 0 ? 'danger' : 'ok',
+          },
+        ]}
+      />
 
       <LiveAnchorPanel />
 
@@ -52,7 +96,7 @@ export default async function BlockchainPage() {
         </p>
       )}
 
-      <section className="fc-surface overflow-x-auto">
+      <section className="overflow-x-auto border-2 border-[var(--ink)]">
         <table className="fc-table min-w-[880px]">
           <thead>
             <tr>
@@ -67,7 +111,7 @@ export default async function BlockchainPage() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} className="fc-ops-rise">
                 <td>
                   <Link
                     href={`/batches/${r.batch.batchCode}`}
@@ -77,7 +121,7 @@ export default async function BlockchainPage() {
                   </Link>
                 </td>
                 <td>{labelEs(r.eventKind)}</td>
-                <td className="max-w-[160px] truncate text-[var(--mute)]">
+                <td className="max-w-[160px] truncate font-mono text-xs text-[var(--mute)]">
                   {r.dataHash}
                 </td>
                 <td className="tabular-nums">{r.blockNumber ?? '—'}</td>
@@ -100,23 +144,23 @@ export default async function BlockchainPage() {
                     </span>
                   )}
                 </td>
-                <td
-                  className={
-                    r.status === 'CONFIRMED'
-                      ? 'text-[var(--seal)]'
-                      : r.status === 'FAILED'
-                        ? 'text-[var(--alarm)]'
-                        : r.status === 'PENDING'
-                          ? 'text-[var(--diesel)]'
-                          : 'text-[var(--mute)]'
-                  }
-                >
-                  {labelEs(r.status)}
+                <td>
+                  <StatusPill
+                    label={labelEs(r.status)}
+                    tone={anchorToneFrom(r.status)}
+                    pulse={r.status === 'PENDING'}
+                  />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {rows.length === 0 && !error ? (
+          <p className="px-4 py-8 text-sm text-[var(--mute)]">
+            Todavía no hay anclas. Aparecen cuando una recepción queda sellada
+            en HSK.
+          </p>
+        ) : null}
       </section>
     </div>
   );

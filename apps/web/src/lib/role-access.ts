@@ -26,7 +26,9 @@ export type NavItem = {
  */
 const ALL_NAV: NavItem[] = [
   { href: '/supervision', label: 'Movimientos' },
+  { href: '/acceso', label: 'Acceso Unlock' },
   { href: '/estacion', label: 'Mi estación' },
+  { href: '/qr-prueba', label: '50 QR cisterna' },
   { href: '/verify', label: 'Registrar viaje' },
   { href: '/tramos', label: 'Tramos del viaje' },
   { href: '/simular', label: 'Simular entrega' },
@@ -42,14 +44,14 @@ const ALL_NAV: NavItem[] = [
 
 const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
-  STATION_STAFF: ['/estacion', '/tramos', '/contratos', '/liquidaciones'],
-  TRANSPORTER: ['/verify', '/tramos', '/simular', '/contratos', '/liquidaciones'],
-  VERIFIER: ['/supervision', '/tramos'],
+  STATION_STAFF: ['/estacion', '/qr-prueba', '/tramos', '/contratos', '/liquidaciones'],
+  TRANSPORTER: ['/verify', '/qr-prueba', '/tramos', '/simular', '/contratos', '/liquidaciones'],
+  VERIFIER: ['/supervision', '/tramos', '/blockchain'],
   CITIZEN: ['/mapa'],
   DEPOT_OPERATOR: ['/verify', '/tramos', '/simular', '/contratos', '/liquidaciones'],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
   LAB: ['/batches'],
-  AUDITOR: ['/supervision', '/tramos', '/anomalies', '/audits'],
+  AUDITOR: ['/supervision', '/tramos', '/blockchain', '/anomalies', '/audits'],
 };
 
 export const HOME_BY_ROLE: Record<AppRole, string> = {
@@ -66,7 +68,7 @@ export const HOME_BY_ROLE: Record<AppRole, string> = {
 
 const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ['/'],
-  STATION_STAFF: ['/estacion', '/contratos', '/liquidaciones', '/tramos', '/q'],
+  STATION_STAFF: ['/estacion', '/contratos', '/liquidaciones', '/tramos', '/q', '/c', '/qr-prueba'],
   TRANSPORTER: [
     '/verify',
     '/simular',
@@ -74,9 +76,17 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
     '/liquidaciones',
     '/tramos',
     '/q',
+    '/c',
+    '/qr-prueba',
   ],
-  VERIFIER: ['/supervision', '/tramos', '/liquidaciones'],
-  CITIZEN: ['/mapa'],
+  VERIFIER: [
+    '/supervision',
+    '/tramos',
+    '/blockchain',
+    '/liquidaciones',
+    '/acceso',
+  ],
+  CITIZEN: ['/mapa', '/acceso'],
   DEPOT_OPERATOR: [
     '/verify',
     '/simular',
@@ -84,12 +94,16 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
     '/liquidaciones',
     '/tramos',
     '/q',
+    '/c',
+    '/qr-prueba',
   ],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
   LAB: ['/batches'],
   AUDITOR: [
     '/supervision',
     '/tramos',
+    '/blockchain',
+    '/acceso',
     '/anomalies',
     '/audits',
     '/mapa',

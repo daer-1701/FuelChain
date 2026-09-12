@@ -7,7 +7,7 @@ import { safeInternalPath } from '@/lib/safe-next';
 import { canAccessPath, homeForRole } from '@/lib/role-access';
 
 /** Visibles sin sesión. Con sesión, el rol debe poder acceder (salvo /login). */
-const PUBLIC = ['/login', '/mapa', '/cochabamba', '/q'];
+const PUBLIC = ['/login', '/mapa', '/cochabamba', '/q', '/acceso'];
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth();

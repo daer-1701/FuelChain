@@ -10,6 +10,12 @@ import {
   canWriteCheckpoint,
   homeForRole,
 } from '@/lib/role-access';
+import {
+  JourneyStepper,
+  MetricRail,
+  StatusPill,
+  TraceTimeline,
+} from '@/components/ops';
 
 type CheckpointRow = {
   id: string;
@@ -70,22 +76,47 @@ function when(iso: string) {
   });
 }
 
-type StationGroup = {
+type JourneyGroup = {
   key: string;
-  code: string;
-  name: string;
+  deliveryId: string | null;
+  cisternCode: string;
+  cisternPlate: string | null;
+  stationCode: string;
+  stationName: string;
+  batchCode: string;
+  product: string;
+  status: string | null;
   rows: CheckpointRow[];
 };
 
-function groupByStation(rows: CheckpointRow[]): StationGroup[] {
-  const map = new Map<string, StationGroup>();
+/** Un viaje = una cisterna (entrega). No mezclar camiones en el mismo bloque. */
+function groupByJourney(rows: CheckpointRow[]): JourneyGroup[] {
+  const map = new Map<string, JourneyGroup>();
   for (const r of rows) {
-    const code = r.delivery?.station.code ?? 'SIN-DESTINO';
-    const name = r.delivery?.station.name ?? 'Sin estación destino';
-    const key = code;
-    const g = map.get(key) ?? { key, code, name, rows: [] };
+    const deliveryId = r.delivery?.id ?? null;
+    const stationCode = r.delivery?.station.code ?? 'SIN-DESTINO';
+    const stationName =
+      r.delivery?.station.name ?? 'Sin estación destino';
+    const key = deliveryId
+      ? `del:${deliveryId}`
+      : `cis:${r.cistern.code}|st:${stationCode}|b:${r.batch.batchCode}`;
+    let g = map.get(key);
+    if (!g) {
+      g = {
+        key,
+        deliveryId,
+        cisternCode: r.cistern.code,
+        cisternPlate: r.cistern.plate,
+        stationCode,
+        stationName,
+        batchCode: r.batch.batchCode,
+        product: r.batch.product,
+        status: r.delivery?.status ?? null,
+        rows: [],
+      };
+      map.set(key, g);
+    }
     g.rows.push(r);
-    map.set(key, g);
   }
   for (const g of map.values()) {
     g.rows.sort(
@@ -93,45 +124,23 @@ function groupByStation(rows: CheckpointRow[]): StationGroup[] {
         new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime(),
     );
   }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  return [...map.values()].sort((a, b) => {
+    const ta = new Date(a.rows[a.rows.length - 1]?.capturedAt ?? 0).getTime();
+    const tb = new Date(b.rows[b.rows.length - 1]?.capturedAt ?? 0).getTime();
+    return tb - ta;
+  });
 }
 
 function JourneyProgress({ rows }: { rows: CheckpointRow[] }) {
   const kinds = new Set(rows.map((r) => r.kind));
   return (
-    <ol className="grid grid-cols-3 gap-2" aria-label="Progreso del viaje">
-      {KINDS.map((k, i) => {
-        const done = kinds.has(k.value);
-        return (
-          <li key={k.value} className="relative text-center">
-            {i < KINDS.length - 1 && (
-              <span
-                aria-hidden
-                className={`absolute left-[calc(50%+14px)] right-[-50%] top-3 h-0.5 ${
-                  done ? 'bg-[var(--diesel)]' : 'bg-[var(--rail)]/50'
-                }`}
-              />
-            )}
-            <span
-              className={`relative z-[1] mx-auto flex h-6 w-6 items-center justify-center border-2 text-xs font-bold ${
-                done
-                  ? 'border-[var(--diesel)] bg-[var(--diesel)] text-[var(--paper)]'
-                  : 'border-[var(--rail)] bg-[var(--paper)] text-[var(--mute)]'
-              }`}
-            >
-              {k.step}
-            </span>
-            <p
-              className={`mt-2 text-xs font-semibold ${
-                done ? 'text-[var(--ink)]' : 'text-[var(--mute)]'
-              }`}
-            >
-              {k.short}
-            </p>
-          </li>
-        );
-      })}
-    </ol>
+    <JourneyStepper
+      steps={KINDS.map((k) => ({
+        id: k.value,
+        label: k.short,
+        done: kinds.has(k.value),
+      }))}
+    />
   );
 }
 
@@ -190,22 +199,48 @@ function VolumeChart({ rows }: { rows: CheckpointRow[] }) {
   );
 }
 
-function StationBlock({ group }: { group: StationGroup }) {
+function JourneyBlock({ group }: { group: JourneyGroup }) {
   const last = group.rows[group.rows.length - 1];
   const waterAlerts = group.rows.filter((r) => r.waterDetected).length;
-  const cisterns = [...new Set(group.rows.map((r) => r.cistern.code))];
+  const stationLabel = group.stationName.replace(/\s*\(DEMO\)\s*/gi, ' ').trim();
+  const arrived = group.rows.some((r) => r.kind === 'ARRIVAL_STATION');
 
   return (
-    <section className="fc-sheet space-y-5 border-2 border-[var(--ink)]">
+    <section className="space-y-5 border-2 border-[var(--ink)] p-5 md:p-6 fc-ops-rise">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="fc-stamp text-[var(--mute)]">{group.code}</p>
-          <h3 className="mt-1 font-display text-2xl font-black leading-tight">
-            {group.name}
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="fc-stamp text-[var(--mute)]">
+              {group.cisternCode}
+              {group.cisternPlate ? ` · ${group.cisternPlate}` : ''}
+            </p>
+            {group.status ? (
+              <StatusPill
+                label={group.status}
+                tone={arrived ? 'ok' : 'warn'}
+                pulse={!arrived}
+              />
+            ) : null}
+            {waterAlerts > 0 ? (
+              <StatusPill
+                label={`${waterAlerts} agua`}
+                tone="danger"
+                pulse
+              />
+            ) : null}
+          </div>
+          <h3 className="mt-2 font-display text-2xl font-black leading-tight">
+            {group.cisternCode} → {stationLabel}
           </h3>
           <p className="mt-1 text-sm text-[var(--mute)]">
-            {group.rows.length} tramo{group.rows.length === 1 ? '' : 's'} ·{' '}
-            cisterna{cisterns.length === 1 ? '' : 's'} {cisterns.join(', ')}
+            {group.rows.length} tramo{group.rows.length === 1 ? '' : 's'} · lote{' '}
+            <span className="fc-batch-code text-[var(--diesel)]">
+              {group.batchCode}
+            </span>{' '}
+            · {group.product}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--mute)]">
+            Destino {group.stationCode}
           </p>
         </div>
         {last && (
@@ -223,61 +258,32 @@ function StationBlock({ group }: { group: StationGroup }) {
 
       <VolumeChart rows={group.rows} />
 
-      {waterAlerts > 0 && (
-        <p className="border border-[var(--alarm)] px-3 py-2 text-sm text-[var(--alarm)]">
-          {waterAlerts} tramo{waterAlerts === 1 ? '' : 's'} con agua detectada.
+      <div>
+        <p className="mb-2 fc-meta uppercase tracking-wide">
+          Trazabilidad del camino
         </p>
-      )}
-
-      <ol className="relative space-y-0 border-l-2 border-[var(--ink)] pl-5">
-        {group.rows.map((r) => {
-          const meta = kindMeta(r.kind);
-          return (
-            <li key={r.id} className="relative pb-5 last:pb-0">
-              <span
-                aria-hidden
-                className={`absolute -left-[1.55rem] top-1 h-3 w-3 border-2 border-[var(--ink)] ${
-                  r.waterDetected
-                    ? 'bg-[var(--alarm)]'
-                    : 'bg-[var(--diesel)]'
-                }`}
-              />
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-display text-base font-bold">
-                  {meta?.label ?? r.kind}
-                  {r.label ? (
-                    <span className="font-normal text-[var(--mute)]">
-                      {' '}
-                      · {r.label}
-                    </span>
-                  ) : null}
-                </p>
-                <time className="text-xs text-[var(--mute)]">
-                  {when(r.capturedAt)}
-                </time>
-              </div>
-              <p className="mt-1 text-sm tabular-nums">
-                <strong>{liters(r.volumeLiters)} L</strong>
-                {r.density != null ? ` · densidad ${r.density}` : ''}
-                {r.temperature != null ? ` · ${r.temperature} °C` : ''}
-                {r.waterDetected ? ' · agua detectada' : ''}
-              </p>
-              <p className="mt-1 text-xs text-[var(--mute)]">
-                {r.cistern.code}
-                {r.cistern.plate ? ` · ${r.cistern.plate}` : ''} · lote{' '}
-                <span className="fc-batch-code text-[var(--diesel)]">
-                  {r.batch.batchCode}
-                </span>{' '}
-                · {r.batch.product}
-              </p>
-              <p className="mt-0.5 text-xs text-[var(--mute)]">
-                GPS {r.latitude.toFixed(4)}, {r.longitude.toFixed(4)}
-                {r.accuracyMeters != null ? ` · ±${r.accuracyMeters} m` : ''}
-              </p>
-            </li>
-          );
-        })}
-      </ol>
+        <TraceTimeline
+          steps={group.rows.map((r) => {
+            const meta = kindMeta(r.kind);
+            const dens =
+              r.density != null ? ` · dens. ${r.density}` : '';
+            const temp =
+              r.temperature != null ? ` · ${r.temperature} °C` : '';
+            return {
+              id: r.id,
+              title: `${meta?.label ?? r.kind}${r.label ? ` · ${r.label}` : ''}`,
+              meta: `${liters(r.volumeLiters)} L${dens}${temp}${
+                r.waterDetected ? ' · agua detectada' : ''
+              }`,
+              detail: `GPS ${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}${
+                r.accuracyMeters != null ? ` · ±${r.accuracyMeters} m` : ''
+              }`,
+              at: when(r.capturedAt),
+              alert: r.waterDetected,
+            };
+          })}
+        />
+      </div>
     </section>
   );
 }
@@ -305,22 +311,36 @@ export default function TramosPage() {
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [geoMsg, setGeoMsg] = useState<string | null>(null);
 
-  const groups = useMemo(() => groupByStation(rows), [rows]);
+  const groups = useMemo(() => groupByJourney(rows), [rows]);
+  const stationOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of groups) {
+      if (!map.has(g.stationCode)) {
+        map.set(
+          g.stationCode,
+          g.stationName.replace(/\s*\(DEMO\)\s*/gi, ' ').trim(),
+        );
+      }
+    }
+    return [...map.entries()]
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }, [groups]);
   const visibleGroups = useMemo(() => {
     if (stationFilter === 'all') return groups;
-    return groups.filter((g) => g.key === stationFilter);
+    return groups.filter((g) => g.stationCode === stationFilter);
   }, [groups, stationFilter]);
   const waterTotal = rows.filter((r) => r.waterDetected).length;
 
   useEffect(() => {
     if (
       stationFilter !== 'all' &&
-      groups.length > 0 &&
-      !groups.some((g) => g.key === stationFilter)
+      stationOptions.length > 0 &&
+      !stationOptions.some((s) => s.code === stationFilter)
     ) {
       setStationFilter('all');
     }
-  }, [groups, stationFilter]);
+  }, [stationOptions, stationFilter]);
 
   function loadList() {
     if (!user || !canRead) return;
@@ -440,75 +460,94 @@ export default function TramosPage() {
 
   return (
     <div className="fc-page">
-      <header className="fc-page-header">
-        <p className="fc-stamp text-[var(--mute)]">
-          Camino del combustible · cantidad y calidad
-        </p>
-        <h1 className="fc-title mt-2">
-          Tramos del viaje
-        </h1>
-        <p className="fc-lede">
-          El núcleo de FuelChain: en cada tramo registrás litros, densidad,
-          temperatura y GPS. Así se verifica el camino completo — salida,
-          control en ruta y llegada — antes de la recepción en estación.
-        </p>
-        {user.cisternCode && (
-          <p className="mt-2 text-sm">
-            Tu cisterna: <strong>{user.cisternCode}</strong>
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5">
+        <div className="fc-page-header !max-w-2xl !border-0 !pb-0">
+          <p className="fc-stamp text-[var(--mute)]">
+            {canWrite
+              ? 'Camino del combustible · registrar tramos'
+              : 'ANH · verificación del camino'}
           </p>
-        )}
+          <h1 className="fc-title fc-title-lg mt-2">Tramos del viaje</h1>
+          <p className="fc-lede">
+            {canWrite
+              ? 'En cada tramo registrás litros, densidad, temperatura y GPS — salida, control en ruta y llegada — antes de la recepción en estación.'
+              : 'Cada bloque es un viaje de una cisterna: salida → ruta → llegada, con cantidad y calidad. La decisión regulatoria sigue siendo humana.'}
+          </p>
+          {user.cisternCode && (
+            <p className="mt-2 text-sm">
+              Tu cisterna: <strong>{user.cisternCode}</strong>
+            </p>
+          )}
+        </div>
+        {!canWrite ? (
+          <nav className="flex flex-wrap gap-2" aria-label="Vistas ANH">
+            <Link href="/supervision" className="fc-btn fc-btn-ghost !text-xs">
+              Movimientos
+            </Link>
+            <Link href="/blockchain" className="fc-btn fc-btn-ghost !text-xs">
+              Evidencia HSK
+            </Link>
+          </nav>
+        ) : null}
       </header>
 
-      <div className="flex flex-wrap gap-3 text-sm">
-        <span className="border border-[var(--rail)]/50 px-3 py-1.5">
-          <strong className="tabular-nums">{groups.length}</strong> estación
-          {groups.length === 1 ? '' : 'es'}
-        </span>
-        <span className="border border-[var(--rail)]/50 px-3 py-1.5">
-          <strong className="tabular-nums">{rows.length}</strong> tramos
-        </span>
-        {waterTotal > 0 && (
-          <span className="border border-[var(--alarm)] px-3 py-1.5 text-[var(--alarm)]">
-            <strong className="tabular-nums">{waterTotal}</strong> con agua
-          </span>
-        )}
-      </div>
+      <MetricRail
+        items={[
+          {
+            label: 'Viajes',
+            value: String(groups.length),
+            hint: stationFilter === 'all' ? 'Todos' : 'Filtro activo',
+          },
+          {
+            label: 'Tramos',
+            value: String(rows.length),
+          },
+          {
+            label: 'Con agua',
+            value: String(waterTotal),
+            tone: waterTotal > 0 ? 'danger' : 'ok',
+            hint: waterTotal > 0 ? 'Señal de calidad' : 'Sin alertas',
+          },
+          {
+            label: 'Visibles',
+            value: String(visibleGroups.length),
+            tone: 'info',
+          },
+        ]}
+      />
 
-      {groups.length > 0 && (
+      {stationOptions.length > 0 && (
         <nav
           className="flex flex-wrap gap-2"
-          aria-label="Seleccionar estación"
+          aria-label="Filtrar por estación destino"
         >
           <button
             type="button"
             onClick={() => setStationFilter('all')}
             aria-pressed={stationFilter === 'all'}
-            className={`border px-3 py-1.5 text-sm font-semibold ${
-              stationFilter === 'all'
-                ? 'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]'
-                : 'border-[var(--rail)]/60 hover:border-[var(--ink)]'
-            }`}
+            className="fc-filter-chip"
           >
-            Todas
+            Todos los viajes
           </button>
-          {groups.map((g) => (
-            <button
-              key={g.key}
-              type="button"
-              onClick={() => setStationFilter(g.key)}
-              aria-pressed={stationFilter === g.key}
-              className={`border px-3 py-1.5 text-sm ${
-                stationFilter === g.key
-                  ? 'border-[var(--diesel)] bg-[var(--diesel-soft)] font-semibold text-[var(--ink)]'
-                  : 'border-[var(--rail)]/60 hover:border-[var(--ink)]'
-              }`}
-            >
-              <span className="font-semibold">{g.name.replace(/ \(DEMO\)$/, '')}</span>
-              <span className="ml-1.5 text-xs text-[var(--mute)]">
-                {g.rows.length}
-              </span>
-            </button>
-          ))}
+          {stationOptions.map((s) => {
+            const count = groups.filter((g) => g.stationCode === s.code).length;
+            return (
+              <button
+                key={s.code}
+                type="button"
+                onClick={() => setStationFilter(s.code)}
+                aria-pressed={stationFilter === s.code}
+                className={`fc-filter-chip ${
+                  stationFilter === s.code ? 'fc-filter-chip-accent' : ''
+                }`}
+              >
+                <span className="font-semibold">{s.name}</span>
+                <span className="ml-1.5 text-xs text-[var(--mute)]">
+                  {count} viaje{count === 1 ? '' : 's'}
+                </span>
+              </button>
+            );
+          })}
         </nav>
       )}
 
@@ -655,7 +694,7 @@ export default function TramosPage() {
       ) : (
         <div className="space-y-6">
           {visibleGroups.map((g) => (
-            <StationBlock key={g.key} group={g} />
+            <JourneyBlock key={g.key} group={g} />
           ))}
         </div>
       )}

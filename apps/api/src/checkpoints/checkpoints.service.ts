@@ -168,7 +168,7 @@ export class CheckpointsService {
     const rows = await this.prisma.routeCheckpoint.findMany({
       where,
       orderBy: { capturedAt: 'desc' },
-      take: 40,
+        take: 200,
       include: {
         batch: { select: { batchCode: true, product: true } },
         cistern: { select: { code: true, plate: true } },
