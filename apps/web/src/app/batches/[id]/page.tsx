@@ -1,9 +1,17 @@
 import Link from 'next/link';
 import { EvidenceVerify } from '@/components/evidence-verify';
 import { LiveAnchorPanel } from '@/components/live-anchor-panel';
+import {
+  MetricRail,
+  OpsPageHeader,
+  SpecGrid,
+  StatusPill,
+  TraceTimeline,
+  riskToneFrom,
+} from '@/components/ops';
 import { apiGet } from '@/lib/api';
 import { explorerTxUrl } from '@/lib/explorer';
-import { formatStatus, formatVolume, riskClass } from '@/lib/types';
+import { formatStatus, formatVolume } from '@/lib/types';
 import { labelEs, riskLabel } from '@/lib/es-labels';
 
 export const dynamic = 'force-dynamic';
@@ -161,7 +169,7 @@ export default async function BatchDetailPage({
   const q = passport.quantity;
 
   return (
-    <div className="space-y-10">
+    <div className="fc-page">
       <div>
         <Link
           href="/batches"
@@ -169,49 +177,60 @@ export default async function BatchDetailPage({
         >
           Volver a lotes
         </Link>
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5">
-          <div>
-            <p className="text-sm text-[var(--mute)]">
-              Pasaporte DEMO · consignación del lote, no de un viaje
-            </p>
-            <h1 className="fc-batch-code mt-2 text-3xl text-[var(--diesel)] md:text-5xl">
-              {idn.batchCode}
-            </h1>
-            <p className="mt-3 text-lg">
-              {idn.product}
-              <span className="text-[var(--mute)]">
-                {' '}
-                · {formatVolume(idn.declaredVolumeLiters)} consignados
-              </span>
-            </p>
-          </div>
-          <div className="text-right">
-            <span className={`fc-stamp ${riskClass(idn.riskLevel)}`}>
-              Riesgo {riskLabel(idn.riskLevel)}
-            </span>
-            <p className="font-display mt-2 text-3xl font-black tabular-nums">
-              {idn.riskScore}
-            </p>
-          </div>
-        </div>
+        <OpsPageHeader
+          className="mt-5"
+          stamp="Pasaporte DEMO · consignación del lote, no de un viaje"
+          title={idn.batchCode}
+          lede={`${idn.product} · ${formatVolume(idn.declaredVolumeLiters)} consignados`}
+          actions={
+            <StatusPill
+              label={`Riesgo ${riskLabel(idn.riskLevel)} · ${idn.riskScore}`}
+              tone={riskToneFrom(idn.riskLevel)}
+              pulse={idn.riskLevel === 'HIGH'}
+            />
+          }
+        />
       </div>
 
-      <section className="grid gap-x-6 gap-y-5 border border-[var(--rail)]/45 bg-[var(--paper)] p-5 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          ['Origen', idn.originCountry],
-          ['Destino', idn.destination],
-          ['Proveedor', idn.supplier],
-          ['Importador', idn.importer],
-          ['Estado', formatStatus(idn.status)],
-          ['Calidad', formatStatus(idn.qualityStatus)],
-          ['Ubicación', idn.currentLocation ?? '—'],
-          ['Creado', new Date(idn.createdAt).toLocaleString('es-BO')],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <p className="text-sm text-[var(--mute)]">{label}</p>
-            <p className="mt-1 capitalize">{value}</p>
-          </div>
-        ))}
+      <MetricRail
+        items={[
+          {
+            label: 'Estado',
+            value: formatStatus(idn.status),
+          },
+          {
+            label: 'Calidad',
+            value: formatStatus(idn.qualityStatus),
+          },
+          {
+            label: 'Gap total',
+            value: `${q.totalGapLiters > 0 ? '+' : ''}${q.totalGapLiters.toLocaleString('es-BO')} L`,
+            tone: q.totalGapLiters === 0 ? 'ok' : 'danger',
+          },
+          {
+            label: 'Discrepancias',
+            value: String(passport.anomalies.length),
+            tone: passport.anomalies.length > 0 ? 'warn' : 'ok',
+          },
+        ]}
+      />
+
+      <section className="border-2 border-[var(--ink)] p-5">
+        <SpecGrid
+          items={[
+            { label: 'Origen', value: idn.originCountry },
+            { label: 'Destino', value: idn.destination },
+            { label: 'Proveedor', value: idn.supplier },
+            { label: 'Importador', value: idn.importer },
+            { label: 'Estado', value: formatStatus(idn.status) },
+            { label: 'Calidad', value: formatStatus(idn.qualityStatus) },
+            { label: 'Ubicación', value: idn.currentLocation ?? '—' },
+            {
+              label: 'Creado',
+              value: new Date(idn.createdAt).toLocaleString('es-BO'),
+            },
+          ]}
+        />
       </section>
 
       {(passport.transports ?? []).length > 0 && (
@@ -427,24 +446,15 @@ export default async function BatchDetailPage({
                 <h3 className="mb-3 text-sm font-semibold text-[var(--mute)]">
                   Tramos GPS / checkpoints
                 </h3>
-                <ol className="space-y-2">
-                  {passport.journey.checkpoints.map((c) => (
-                    <li
-                      key={c.id}
-                      className="border-l-2 border-[var(--fuel)] pl-3 text-sm"
-                    >
-                      <p className="font-medium">
-                        {labelEs(c.kind)}
-                        {c.label ? ` · ${c.label}` : ''}
-                      </p>
-                      <p className="tabular-nums text-[var(--mute)]">
-                        {formatVolume(c.volumeLiters)} · {c.latitude.toFixed(4)},{' '}
-                        {c.longitude.toFixed(4)} ·{' '}
-                        {new Date(c.capturedAt).toLocaleString('es-BO')}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
+                <TraceTimeline
+                  steps={passport.journey.checkpoints.map((c) => ({
+                    id: c.id,
+                    title: `${labelEs(c.kind)}${c.label ? ` · ${c.label}` : ''}`,
+                    meta: formatVolume(c.volumeLiters),
+                    detail: `GPS ${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}`,
+                    at: new Date(c.capturedAt).toLocaleString('es-BO'),
+                  }))}
+                />
               </div>
             )}
 

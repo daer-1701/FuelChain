@@ -14,6 +14,12 @@ import {
   unlockDashboardLockUrl,
 } from '@/lib/unlock';
 import { useUnlockMembership } from '@/lib/use-unlock-membership';
+import {
+  MetricRail,
+  OpsPageHeader,
+  StatusPill,
+  TraceTimeline,
+} from '@/components/ops';
 
 type PathReport = {
   label: string;
@@ -103,21 +109,28 @@ export function UnlockAccessPortal() {
   const checkout = redirectUri ? unlockCheckoutUrl(redirectUri) : '#';
 
   return (
-    <div className="space-y-10">
-      <header className="max-w-2xl">
-        <p className="fc-stamp text-[var(--mute)]">
-          Unlock Protocol · portal token-gated DEMO
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
-          Acceso verificador
-        </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          {PRODUCT_FOCUS} Este portal desbloquea el informe de{' '}
-          <strong>cantidad y calidad por tramo</strong> ({PATH_STEPS}) con una
-          Key Unlock (membresía ERC-721). Sin Key no hay acceso al contenido
-          regulatorio.
-        </p>
-      </header>
+    <div className="fc-page">
+      <OpsPageHeader
+        stamp="Unlock Protocol · portal token-gated DEMO"
+        title="Acceso verificador"
+        lede={
+          <>
+            {PRODUCT_FOCUS} Este portal desbloquea el informe de{' '}
+            <strong>cantidad y calidad por tramo</strong> ({PATH_STEPS}) con una
+            Key Unlock (membresía ERC-721). Sin Key no hay acceso al contenido
+            regulatorio.
+          </>
+        }
+        actions={
+          membership.hasKey ? (
+            <StatusPill label="Key válida" tone="ok" pulse />
+          ) : membership.configured ? (
+            <StatusPill label="Sin Key" tone="warn" />
+          ) : (
+            <StatusPill label="Sin Lock" tone="mute" />
+          )
+        }
+      />
 
       <section className="fc-sheet space-y-4 border-2 border-[var(--ink)]">
         <h2 className="font-display text-xl font-bold">Membresía Unlock</h2>
@@ -265,39 +278,56 @@ NEXT_PUBLIC_UNLOCK_RPC_URL=https://sepolia.base.org`}
 
           {report && (
             <>
-              <div className="grid gap-3 sm:grid-cols-4">
-                <Stat label="EESS" value={String(report.data.summary.stations)} />
-                <Stat
-                  label="Entregas abiertas"
-                  value={String(report.data.summary.openDeliveries)}
-                />
-                <Stat
-                  label="Tramos"
-                  value={String(report.data.summary.checkpoints)}
-                />
-                <Stat
-                  label="Alertas calidad"
-                  value={String(report.data.summary.qualityAlerts)}
-                />
-              </div>
+              <MetricRail
+                items={[
+                  {
+                    label: 'EESS',
+                    value: String(report.data.summary.stations),
+                  },
+                  {
+                    label: 'Entregas abiertas',
+                    value: String(report.data.summary.openDeliveries),
+                    tone:
+                      report.data.summary.openDeliveries > 0 ? 'warn' : 'ok',
+                  },
+                  {
+                    label: 'Tramos',
+                    value: String(report.data.summary.checkpoints),
+                  },
+                  {
+                    label: 'Alertas calidad',
+                    value: String(report.data.summary.qualityAlerts),
+                    tone:
+                      report.data.summary.qualityAlerts > 0 ? 'danger' : 'ok',
+                  },
+                ]}
+              />
 
               <ul className="divide-y divide-[var(--rail)]/40 border-y-2 border-[var(--ink)]">
                 {report.data.journeys.map((j) => (
-                  <li key={j.deliveryId} className="space-y-3 py-5">
+                  <li key={j.deliveryId} className="space-y-3 py-5 fc-ops-rise">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="font-display text-lg font-bold">
-                          {j.cisternCode} → {j.stationName || j.stationCode}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-display text-lg font-bold">
+                            {j.cisternCode} → {j.stationName || j.stationCode}
+                          </p>
+                          <StatusPill
+                            label={labelEs(j.status)}
+                            tone={
+                              j.status === 'DELIVERED' ? 'ok' : 'warn'
+                            }
+                          />
+                        </div>
                         <p className="mt-1 text-sm text-[var(--mute)]">
                           Lote{' '}
                           <span className="fc-batch-code text-[var(--diesel)]">
                             {j.batchCode}
                           </span>{' '}
-                          · {j.product} · {labelEs(j.status)}
+                          · {j.product}
                         </p>
                       </div>
-                      <p className="text-sm tabular-nums">
+                      <p className="text-sm tabular-nums font-semibold">
                         {liters(j.loadedLiters)}
                         {j.receivedLiters != null
                           ? ` → ${liters(j.receivedLiters)}`
@@ -321,17 +351,22 @@ NEXT_PUBLIC_UNLOCK_RPC_URL=https://sepolia.base.org`}
                       {j.receivedWaterDetected ? ' · agua' : ''}
                     </p>
                     {j.checkpoints.length > 0 && (
-                      <ol className="space-y-1 text-sm">
-                        {j.checkpoints.map((c, i) => (
-                          <li key={`${j.deliveryId}-${i}`}>
-                            <strong>{checkpointKindLabel(c.kind)}</strong>
-                            {c.label ? ` · ${c.label}` : ''} —{' '}
-                            {liters(c.volumeLiters)}
-                            {c.density != null ? ` · ρ ${c.density}` : ''}
-                            {c.waterDetected ? ' · agua' : ''}
-                          </li>
-                        ))}
-                      </ol>
+                      <TraceTimeline
+                        steps={j.checkpoints.map((c, i) => ({
+                          id: `${j.deliveryId}-${i}`,
+                          title: `${checkpointKindLabel(c.kind)}${
+                            c.label ? ` · ${c.label}` : ''
+                          }`,
+                          meta: `${liters(c.volumeLiters)}${
+                            c.density != null ? ` · ρ ${c.density}` : ''
+                          }${c.waterDetected ? ' · agua' : ''}`,
+                          at: new Date(c.capturedAt).toLocaleString('es-BO', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          }),
+                          alert: c.waterDetected,
+                        }))}
+                      />
                     )}
                   </li>
                 ))}
@@ -346,17 +381,6 @@ NEXT_PUBLIC_UNLOCK_RPC_URL=https://sepolia.base.org`}
           )}
         </section>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-[var(--rail)]/50 px-3 py-3">
-      <p className="text-xs text-[var(--mute)]">{label}</p>
-      <p className="mt-1 font-display text-2xl font-black tabular-nums">
-        {value}
-      </p>
     </div>
   );
 }

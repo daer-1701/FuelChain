@@ -16,6 +16,7 @@ import {
   FillGauge,
   MetricRail,
   OpsBoard,
+  OpsPageHeader,
   OpsSignalRow,
   StatusPill,
   TraceTimeline,
@@ -159,40 +160,25 @@ export function SupervisionPanel({
 
   return (
     <div className="fc-page">
-      <header className="fc-page-header">
-        <p className="fc-stamp text-[var(--mute)]">Estación · tu surtidor DEMO</p>
-        <h1 className="fc-title fc-title-lg mt-2">Tanque y cisternas</h1>
-        <p className="fc-lede">
-          Controlás el combustible de tu EESS: estado del tanque y el camino de
-          las cisternas que llegan aquí. Al recibir, escaneás el QR pegado en la
-          cisterna: se sube solo el historial del dispositivo (litros, calidad,
-          GPS). {data.note}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <p>
-            Sesión: <strong>{user?.name}</strong>
-            {user?.stationCode ? ` · ${user.stationCode}` : ''}.
-          </p>
-          <Link
-            href="/c/CQ-CBB-01"
-            className="font-semibold text-[var(--diesel)] underline"
-          >
-            Escanear QR cisterna DEMO (CIS-CBB-01)
-          </Link>
-          <Link
-            href="/tramos"
-            className="font-semibold text-[var(--diesel)] underline"
-          >
-            Ver tramos del viaje
-          </Link>
-          <Link
-            href="/contratos"
-            className="font-semibold text-[var(--diesel)] underline"
-          >
-            Contratos con choferes
-          </Link>
-        </div>
-      </header>
+      <OpsPageHeader
+        stamp="Estación · tu surtidor DEMO"
+        title="Tanque y cisternas"
+        lede={`Controlás el combustible de tu EESS: estado del tanque y el camino de las cisternas que llegan aquí. Al recibir, escaneás el QR pegado en la cisterna. ${data.note}`}
+        actions={
+          <>
+            <Link href="/escanear" className="fc-btn fc-btn-ghost !text-xs">
+              Escanear QR
+            </Link>
+            <Link href="/tramos" className="fc-btn fc-btn-ghost !text-xs">
+              Tramos del viaje
+            </Link>
+          </>
+        }
+      />
+      <p className="text-sm text-[var(--mute)]">
+        Sesión: <strong className="text-[var(--ink)]">{user?.name}</strong>
+        {user?.stationCode ? ` · ${user.stationCode}` : ''}.
+      </p>
 
       <MetricRail
         items={[
@@ -218,9 +204,7 @@ export function SupervisionPanel({
           {
             label: 'Calidad',
             value: station?.quality.label ?? '—',
-            tone: station
-              ? qualityToneFrom(station.quality.tone)
-              : 'mute',
+            tone: station ? qualityToneFrom(station.quality.tone) : 'mute',
           },
           {
             label: 'Entregas / en ruta',
@@ -229,7 +213,7 @@ export function SupervisionPanel({
         ]}
       />
 
-      {station ? <StationDetail station={station} /> : null}
+      {station ? <StationDetail station={station} anh={false} /> : null}
     </div>
   );
 }
@@ -260,29 +244,21 @@ function AnhControlRoom({
 
   return (
     <div className="fc-page">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5">
-        <div className="fc-page-header !max-w-xl">
-          <p className="fc-stamp text-[var(--mute)]">
-            ANH · centro de verificación DEMO
-          </p>
-          <h1 className="fc-title fc-title-lg mt-2">Red en monitoreo</h1>
-          <p className="fc-lede">
-            Cantidad, calidad y recorrido de cada cisterna. La decisión
-            regulatoria sigue siendo humana. {data.note}
-          </p>
-        </div>
-        <nav
-          className="flex flex-wrap gap-2"
-          aria-label="Vistas de verificación"
-        >
-          <Link href="/tramos" className="fc-btn fc-btn-ghost !text-xs">
-            Tramos GPS
-          </Link>
-          <Link href="/blockchain" className="fc-btn fc-btn-ghost !text-xs">
-            Evidencia HSK
-          </Link>
-        </nav>
-      </header>
+      <OpsPageHeader
+        stamp="ANH · centro de verificación DEMO"
+        title="Red en monitoreo"
+        lede={`Cantidad, calidad y recorrido de cada cisterna. La decisión regulatoria sigue siendo humana. ${data.note}`}
+        actions={
+          <>
+            <Link href="/tramos" className="fc-btn fc-btn-ghost !text-xs">
+              Tramos GPS
+            </Link>
+            <Link href="/blockchain" className="fc-btn fc-btn-ghost !text-xs">
+              Evidencia HSK
+            </Link>
+          </>
+        }
+      />
 
       <MetricRail
         items={[
@@ -527,22 +503,20 @@ function StationDetail({
         </DataPair>
       </div>
 
-      {anh && (
-        <div className="flex flex-wrap gap-2 border-y border-[var(--rail)]/40 py-3">
-          <StatusPill
-            label={`${inbound.length} en ruta`}
-            tone={inbound.length ? 'warn' : 'mute'}
-          />
-          <StatusPill
-            label={`${received.length} recibidas`}
-            tone={received.length ? 'ok' : 'mute'}
-          />
-          <StatusPill
-            label={`${station.tanks.length} tanques`}
-            tone="info"
-          />
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2 border-y border-[var(--rail)]/40 py-3">
+        <StatusPill
+          label={`${inbound.length} en ruta`}
+          tone={inbound.length ? 'warn' : 'mute'}
+        />
+        <StatusPill
+          label={`${received.length} recibidas`}
+          tone={received.length ? 'ok' : 'mute'}
+        />
+        <StatusPill
+          label={`${station.tanks.length} tanques`}
+          tone="info"
+        />
+      </div>
 
       <section>
         <h3 className="fc-section-title">Tanques</h3>
@@ -687,16 +661,19 @@ function StationDetail({
   }
 
   return (
-    <article className="space-y-6 border-2 border-[var(--ink)] p-5 md:p-6">
-      <div>
-        <p className="fc-stamp text-[var(--mute)]">{station.code}</p>
-        <h2 className="mt-1 font-display text-2xl font-black">{station.name}</h2>
-        <p className="mt-1 text-sm text-[var(--mute)]">
-          {[station.city, station.municipality].filter(Boolean).join(' · ')}
-          {station.address ? ` · ${station.address}` : ''}
-        </p>
-      </div>
+    <ContextPanel
+      code={station.code}
+      title={station.name.replace(' (DEMO)', '')}
+      subtitle={[station.city, station.municipality, station.address]
+        .filter(Boolean)
+        .join(' · ')}
+      actions={
+        <Link href="/escanear" className="fc-btn fc-btn-ghost !text-xs">
+          Recibir QR
+        </Link>
+      }
+    >
       {body}
-    </article>
+    </ContextPanel>
   );
 }

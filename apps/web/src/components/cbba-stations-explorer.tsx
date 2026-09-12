@@ -3,6 +3,12 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { CbbaLeafletMap } from '@/components/cbba-map';
 import type { PublicStation } from '@/components/station-types';
+import {
+  DataPair,
+  FillGauge,
+  StatusPill,
+  qualityToneFrom,
+} from '@/components/ops';
 
 const AVAIL_META: Record<
   PublicStation['availability'],
@@ -98,12 +104,16 @@ function StationDetail({
 
   return (
     <aside
-      className="fc-sheet sticky top-4 space-y-5 border-2 border-[var(--ink)]"
+      className="sticky top-4 space-y-5 border-2 border-[var(--ink)] bg-[var(--paper)] p-5 fc-ops-rise"
       aria-labelledby={titleId}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 id={titleId} className="font-display text-2xl font-black leading-tight">
+          <p className="fc-stamp text-[var(--mute)]">{station.code}</p>
+          <h2
+            id={titleId}
+            className="mt-1 font-display text-2xl font-black leading-tight"
+          >
             {stripDemo(station.name)}
           </h2>
           <p className="mt-1 text-sm text-[var(--mute)]">
@@ -115,61 +125,64 @@ function StationDetail({
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 border border-[var(--ink)] px-2 py-1 text-xs font-semibold"
+          className="fc-btn fc-btn-ghost !px-2 !py-1 !text-xs"
           aria-label="Cerrar detalle"
         >
           Cerrar
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="border border-[var(--rail)]/60 p-3">
-          <p className="text-xs text-[var(--mute)]">Cantidad</p>
-          <p className={`mt-1 font-display text-xl font-black ${avail.text}`}>
-            {avail.label}
-          </p>
+      <div className="flex flex-wrap gap-2">
+        <StatusPill
+          label={avail.label}
+          tone={
+            station.availability === 'EMPTY'
+              ? 'danger'
+              : station.availability === 'LOW'
+                ? 'warn'
+                : station.availability === 'FULL'
+                  ? 'ok'
+                  : 'info'
+          }
+          pulse={
+            station.availability === 'EMPTY' ||
+            station.availability === 'LOW'
+          }
+        />
+        <StatusPill
+          label={station.qualityLabel ?? quality.label}
+          tone={qualityToneFrom(station.qualityTone ?? 'SIN_DATO')}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <DataPair label="Cantidad">
           {station.stockLiters != null ? (
-            <p className="mt-2 font-display text-2xl font-black tabular-nums">
+            <p className="font-display text-2xl font-black tabular-nums">
               {station.stockLiters.toLocaleString('es-BO')}{' '}
               <span className="text-base font-bold text-[var(--mute)]">L</span>
             </p>
           ) : (
-            <p className="mt-1 text-xs text-[var(--mute)]">{avail.hint}</p>
+            <p className={`font-display text-xl font-black ${avail.text}`}>
+              {avail.label}
+            </p>
           )}
           {station.fillPercent != null && (
-            <div className="mt-3">
-              <div className="flex items-baseline justify-between gap-2 text-xs">
-                <span className="text-[var(--mute)]">Nivel del tanque</span>
-                <span className="font-semibold tabular-nums">
-                  {station.fillPercent}%
-                </span>
-              </div>
-              <div className="mt-1.5 h-2.5 w-full border border-[var(--ink)] bg-[var(--haze)]">
-                <div
-                  className={`h-full ${AVAIL_META[station.availability].dot}`}
-                  style={{
-                    width: `${Math.min(100, Math.max(0, station.fillPercent))}%`,
-                  }}
-                  role="progressbar"
-                  aria-valuenow={station.fillPercent}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={`Nivel del tanque ${station.fillPercent}%`}
-                />
-              </div>
-              {station.capacityLiters != null && (
-                <p className="mt-1 text-xs text-[var(--mute)]">
-                  de {station.capacityLiters.toLocaleString('es-BO')} L de
-                  capacidad
-                </p>
-              )}
-            </div>
+            <FillGauge
+              className="mt-3"
+              percent={station.fillPercent}
+              label="Nivel del tanque"
+            />
           )}
-        </div>
-        <div className="border border-[var(--rail)]/60 p-3">
-          <p className="text-xs text-[var(--mute)]">Calidad</p>
+          {station.capacityLiters != null && (
+            <p className="mt-1 text-xs text-[var(--mute)]">
+              de {station.capacityLiters.toLocaleString('es-BO')} L
+            </p>
+          )}
+        </DataPair>
+        <DataPair label="Calidad">
           <p
-            className={`mt-1 font-display text-xl font-black ${
+            className={`font-display text-xl font-black ${
               station.qualityTone === 'OK'
                 ? 'text-[var(--seal)]'
                 : station.qualityTone === 'ALERTA'
@@ -182,14 +195,13 @@ function StationDetail({
             {station.qualityLabel ?? quality.label}
           </p>
           <p className="mt-1 text-xs text-[var(--mute)]">{quality.hint}</p>
-        </div>
+        </DataPair>
       </div>
 
       {station.products.length > 0 && (
-        <div>
-          <p className="text-xs text-[var(--mute)]">Productos</p>
-          <p className="mt-1 text-sm font-medium">{station.products.join(' · ')}</p>
-        </div>
+        <DataPair label="Productos">
+          <p className="text-sm font-medium">{station.products.join(' · ')}</p>
+        </DataPair>
       )}
 
       {updated && (

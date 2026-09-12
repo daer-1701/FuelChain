@@ -1,15 +1,23 @@
 import Link from 'next/link';
+import { StatusPill, riskToneFrom } from '@/components/ops';
 import {
   formatStatus,
   formatVolume,
-  riskClass,
   type BatchesList,
 } from '@/lib/types';
 import { riskLabel } from '@/lib/es-labels';
 
+function statusTone(status: string) {
+  const s = status.toUpperCase();
+  if (s === 'AUDIT_REQUIRED') return 'danger' as const;
+  if (s === 'IN_TRANSIT') return 'warn' as const;
+  if (s === 'COMPLETED' || s === 'CERTIFIED') return 'ok' as const;
+  return 'mute' as const;
+}
+
 export function BatchesTable({ list }: { list: BatchesList }) {
   return (
-    <section className="fc-surface overflow-hidden">
+    <section className="overflow-hidden border-2 border-[var(--ink)]">
       <div className="overflow-x-auto">
         <table className="fc-table min-w-[920px]">
           <thead>
@@ -27,7 +35,7 @@ export function BatchesTable({ list }: { list: BatchesList }) {
           </thead>
           <tbody>
             {list.data.map((b) => (
-              <tr key={b.id}>
+              <tr key={b.id} className="fc-ops-rise">
                 <td>
                   <Link
                     href={`/batches/${encodeURIComponent(b.batchCode)}`}
@@ -38,17 +46,24 @@ export function BatchesTable({ list }: { list: BatchesList }) {
                 </td>
                 <td>{b.product}</td>
                 <td>{b.originCountry}</td>
-                <td className="tabular-nums">
+                <td className="tabular-nums font-semibold">
                   {formatVolume(b.declaredVolumeLiters)}
                 </td>
-                <td className="capitalize text-[var(--mute)]">
-                  {formatStatus(b.status)}
+                <td>
+                  <StatusPill
+                    label={formatStatus(b.status)}
+                    tone={statusTone(b.status)}
+                    pulse={b.status === 'AUDIT_REQUIRED'}
+                  />
                 </td>
                 <td className="capitalize text-[var(--mute)]">
                   {formatStatus(b.qualityStatus)}
                 </td>
-                <td className={`font-medium ${riskClass(b.riskLevel)}`}>
-                  {riskLabel(b.riskLevel)} · {b.riskScore}
+                <td>
+                  <StatusPill
+                    label={`${riskLabel(b.riskLevel)} · ${b.riskScore}`}
+                    tone={riskToneFrom(b.riskLevel)}
+                  />
                 </td>
                 <td className="max-w-[160px] truncate text-[var(--mute)]">
                   {b.currentLocation ?? '—'}
@@ -61,7 +76,7 @@ export function BatchesTable({ list }: { list: BatchesList }) {
           </tbody>
         </table>
       </div>
-      <div className="border-t border-[var(--rail)]/40 px-4 py-3 text-sm text-[var(--mute)]">
+      <div className="border-t border-[var(--ink)] px-4 py-3 text-sm text-[var(--mute)]">
         {list.meta.total} lotes · página {list.meta.page} de {list.meta.pageCount}
       </div>
     </section>

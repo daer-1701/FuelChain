@@ -10,9 +10,8 @@ import {
 import {
   RecentAnomalies,
   RecentBatches,
-  StatStrip,
-  VolumeHero,
 } from '@/components/dashboard-widgets';
+import { MetricRail, OpsPageHeader, StatusPill } from '@/components/ops';
 import { useEffect, useState } from 'react';
 import { API_URL } from '@/lib/api';
 import { friendlyError } from '@/lib/api-error';
@@ -63,13 +62,10 @@ export default function DashboardPage() {
   if (user && !showKpis) {
     const home = homeForRole(user.role);
     return (
-      <div className="space-y-4">
-        <h1 className="font-display text-3xl font-black">Tu panel</h1>
-        <p className="text-[var(--mute)]">{roleBlurb(user.role)}</p>
-        <Link
-          href={home}
-          className="inline-block bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)]"
-        >
+      <div className="fc-page">
+        <h1 className="fc-title">Tu panel</h1>
+        <p className="fc-lede">{roleBlurb(user.role)}</p>
+        <Link href={home} className="fc-btn fc-btn-ink">
           Ir a {home}
         </Link>
       </div>
@@ -77,10 +73,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-10">
-      {user && isAppRole(user.role) && (
-        <p className="text-sm text-[var(--mute)]">{roleBlurb(user.role)}</p>
-      )}
+    <div className="fc-page">
+      <OpsPageHeader
+        stamp="Resumen operativo DEMO"
+        title="Vista agregada"
+        lede={
+          user && isAppRole(user.role)
+            ? roleBlurb(user.role)
+            : 'Vista agregada de lotes, riesgo y discrepancias. No es el panel operativo del chofer ni de la estación.'
+        }
+      />
+
       {error && (
         <div
           role="alert"
@@ -92,18 +95,37 @@ export default function DashboardPage() {
       )}
       {data && (
         <>
-          <div className="fc-sheet space-y-6">
-            <p className="max-w-md text-sm leading-relaxed text-[var(--mute)]">
-              Vista agregada de lotes, riesgo y discrepancias. No es el panel
-              operativo del chofer ni de la estación.
-            </p>
-            <VolumeHero
-              totalVolumeLiters={data.kpis.totalVolumeLiters}
-              highRisk={data.kpis.highRisk}
-              discrepancies={data.kpis.discrepancies}
-            />
+          <MetricRail
+            items={[
+              {
+                label: 'Volumen total',
+                value: `${Math.round(Number(data.kpis.totalVolumeLiters)).toLocaleString('es-BO')} L`,
+              },
+              {
+                label: 'Riesgo alto',
+                value: String(data.kpis.highRisk),
+                tone: data.kpis.highRisk > 0 ? 'danger' : 'ok',
+              },
+              {
+                label: 'Discrepancias',
+                value: String(data.kpis.discrepancies),
+                tone: data.kpis.discrepancies > 0 ? 'warn' : 'ok',
+              },
+              {
+                label: 'Lotes recientes',
+                value: String(data.recentBatches.length),
+                tone: 'info',
+              },
+            ]}
+          />
+          <div className="flex flex-wrap gap-2">
+            {data.kpis.highRisk > 0 && (
+              <StatusPill label="Atención riesgo" tone="danger" pulse />
+            )}
+            {data.kpis.discrepancies > 0 && (
+              <StatusPill label="Hay discrepancias" tone="warn" />
+            )}
           </div>
-          <StatStrip kpis={data.kpis} />
           <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
             <RecentBatches batches={data.recentBatches} />
             <RecentAnomalies anomalies={data.recentAnomalies} />

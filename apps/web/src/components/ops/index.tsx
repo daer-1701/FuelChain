@@ -399,3 +399,76 @@ export function DataPair({
     </div>
   );
 }
+
+export function severityToneFrom(severity: string): StatusTone {
+  const s = severity.toUpperCase();
+  if (s === 'HIGH' || s === 'CRITICAL' || s === 'ALTA') return 'danger';
+  if (s === 'MEDIUM' || s === 'MEDIO' || s === 'WARN') return 'warn';
+  if (s === 'LOW' || s === 'BAJA') return 'ok';
+  return 'mute';
+}
+
+export function riskToneFrom(risk: string): StatusTone {
+  const s = risk.toUpperCase();
+  if (s === 'HIGH' || s === 'ALTO') return 'danger';
+  if (s === 'MEDIUM' || s === 'MEDIO') return 'warn';
+  if (s === 'LOW' || s === 'BAJO') return 'ok';
+  return 'mute';
+}
+
+export function OpsPageHeader({
+  stamp,
+  title,
+  lede,
+  actions,
+  className = '',
+}: {
+  stamp?: string;
+  title: string;
+  lede?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header
+      className={`flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5 ${className}`}
+    >
+      <div className="fc-page-header !max-w-2xl !border-0 !pb-0">
+        {stamp ? (
+          <p className="fc-stamp text-[var(--mute)]">{stamp}</p>
+        ) : null}
+        <h1 className="fc-title fc-title-lg mt-2">{title}</h1>
+        {lede ? <div className="fc-lede">{lede}</div> : null}
+      </div>
+      {actions ? (
+        <nav className="flex flex-wrap gap-2" aria-label="Acciones de vista">
+          {actions}
+        </nav>
+      ) : null}
+    </header>
+  );
+}
+
+/** Dense key/value grid — replaces ad-hoc dl cards. */
+export function SpecGrid({
+  items,
+  className = '',
+}: {
+  items: Array<{ label: string; value: ReactNode }>;
+  className?: string;
+}) {
+  return (
+    <dl
+      className={`grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3 ${className}`}
+    >
+      {items.map((item) => (
+        <div key={item.label} className="min-w-0 border-t border-[var(--rail)]/35 pt-2">
+          <dt className="fc-meta uppercase tracking-wide">{item.label}</dt>
+          <dd className="mt-1 break-words font-medium text-[var(--ink)]">
+            {item.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}

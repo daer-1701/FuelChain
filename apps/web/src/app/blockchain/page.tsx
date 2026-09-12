@@ -2,7 +2,12 @@ import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { labelEs } from '@/lib/es-labels';
 import { LiveAnchorPanel } from '@/components/live-anchor-panel';
-import { MetricRail, StatusPill, anchorToneFrom } from '@/components/ops';
+import {
+  MetricRail,
+  OpsPageHeader,
+  StatusPill,
+  anchorToneFrom,
+} from '@/components/ops';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,28 +44,33 @@ export default async function BlockchainPage() {
 
   return (
     <div className="fc-page">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5">
-        <div className="fc-page-header !max-w-2xl !border-0 !pb-0">
-          <p className="fc-stamp text-[var(--mute)]">
-            ANH · integridad del registro (HSK)
-          </p>
-          <h1 className="fc-title fc-title-lg mt-2">Evidencia en cadena</h1>
-          <p className="fc-lede">
+      <OpsPageHeader
+        stamp="Integridad del registro (HSK)"
+        title="Evidencia en cadena"
+        lede={
+          <>
             Acá no ves litros ni el mapa del viaje. Ves si el{' '}
             <strong>evento de recepción</strong> quedó anclado: un hash +
             transacción verificable. No prueba el litro físico.
-          </p>
-          {note ? <p className="fc-meta mt-3">{note}</p> : null}
-        </div>
-        <nav className="flex flex-wrap gap-2" aria-label="Vistas relacionadas">
-          <Link href="/supervision" className="fc-btn fc-btn-ghost !text-xs">
-            Movimientos
-          </Link>
-          <Link href="/tramos" className="fc-btn fc-btn-ghost !text-xs">
-            Tramos GPS
-          </Link>
-        </nav>
-      </header>
+            {note ? (
+              <>
+                {' '}
+                <span className="fc-meta">{note}</span>
+              </>
+            ) : null}
+          </>
+        }
+        actions={
+          <>
+            <Link href="/supervision" className="fc-btn fc-btn-ghost !text-xs">
+              Movimientos
+            </Link>
+            <Link href="/tramos" className="fc-btn fc-btn-ghost !text-xs">
+              Tramos GPS
+            </Link>
+          </>
+        }
+      />
 
       <MetricRail
         items={[

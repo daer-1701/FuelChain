@@ -11,6 +11,11 @@ import { canAcceptCustody, homeForRole } from '@/lib/role-access';
 import { labelEs, roleLabel } from '@/lib/es-labels';
 import { useDispatchOptions } from '@/lib/use-dispatch-options';
 import { QrScanButton } from '@/components/qr-scan-button';
+import {
+  OpsPageHeader,
+  SpecGrid,
+  StatusPill,
+} from '@/components/ops';
 
 type BatonData = {
   tokenId: string;
@@ -262,20 +267,19 @@ function QrBatonInner() {
 
   return (
     <div className="mx-auto max-w-lg fc-page">
-      <header className="fc-page-header">
-        <p className="fc-stamp text-[var(--mute)]">Bastón QR · DEMO</p>
-        <h1 className="fc-title mt-2">
-          Recepción en estación
-        </h1>
-        <p className="fc-lede">
-          Token <code className="fc-batch-code text-[0.8em]">{token}</code>. Cierre
-          del camino trazable: el encargado de la EESS verifica litros y calidad
-          al recibir (no inventa la calidad de carga).
-        </p>
-        <div className="mt-4">
-          <QrScanButton />
-        </div>
-      </header>
+      <OpsPageHeader
+        stamp="Bastón QR · DEMO"
+        title="Recepción en estación"
+        lede={
+          <>
+            Token{' '}
+            <code className="fc-batch-code text-[0.8em]">{token}</code>. Cierre
+            del camino trazable: el encargado de la EESS verifica litros y
+            calidad al recibir (no inventa la calidad de carga).
+          </>
+        }
+        actions={<QrScanButton />}
+      />
 
       {error && !baton && (
         <p role="alert" className="text-[var(--alarm)]">
@@ -284,31 +288,34 @@ function QrBatonInner() {
       )}
 
       {baton && (
-        <section className="fc-sheet space-y-3">
-          <p>
-            Lote{' '}
-            <span className="fc-batch-code text-[var(--diesel)]">
-              {baton.batch.batchCode}
-            </span>
-          </p>
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <dt className="text-[var(--mute)]">Estado</dt>
-            <dd className="font-semibold">{labelEs(baton.status)}</dd>
-            <dt className="text-[var(--mute)]">Evento</dt>
-            <dd>{labelEs(baton.eventType)}</dd>
-            <dt className="text-[var(--mute)]">Cisterna</dt>
-            <dd>{baton.cisternCode ?? '—'}</dd>
-            <dt className="text-[var(--mute)]">Volumen</dt>
-            <dd className="tabular-nums">{baton.volumeLiters} L</dd>
-            <dt className="text-[var(--mute)]">Emitió</dt>
-            <dd>{roleLabel(baton.issuedByRole)}</dd>
-            {baton.expiresAt && (
-              <>
-                <dt className="text-[var(--mute)]">Expira</dt>
-                <dd className="text-xs">{baton.expiresAt}</dd>
-              </>
-            )}
-          </dl>
+        <section className="space-y-4 border-2 border-[var(--ink)] p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <p>
+              Lote{' '}
+              <span className="fc-batch-code text-[var(--diesel)]">
+                {baton.batch.batchCode}
+              </span>
+            </p>
+            <StatusPill
+              label={labelEs(baton.status)}
+              tone={baton.status === 'ACTIVE' ? 'warn' : baton.status === 'CONSUMED' ? 'ok' : 'mute'}
+              pulse={baton.status === 'ACTIVE'}
+            />
+          </div>
+          <SpecGrid
+            items={[
+              { label: 'Evento', value: labelEs(baton.eventType) },
+              { label: 'Cisterna', value: baton.cisternCode ?? '—' },
+              {
+                label: 'Volumen',
+                value: `${baton.volumeLiters} L`,
+              },
+              { label: 'Emitió', value: roleLabel(baton.issuedByRole) },
+              ...(baton.expiresAt
+                ? [{ label: 'Expira', value: baton.expiresAt }]
+                : []),
+            ]}
+          />
 
           {baton.status === 'ACTIVE' && !user && ready && (
             <div className="space-y-3 border-t border-[var(--rail)]/40 pt-4">

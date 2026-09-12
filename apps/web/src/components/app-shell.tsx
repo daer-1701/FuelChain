@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider';
 import { navForRole, homeForRole, roleBlurb } from '@/lib/role-access';
 import { roleLabel } from '@/lib/es-labels';
 import { PRODUCT_TAGLINE } from '@/lib/product-copy';
+import { StatusPill } from '@/components/ops';
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -50,9 +51,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                     <span className="font-semibold text-[var(--ink)]">
                       {user.name}
                     </span>
-                    {' · '}
-                    {roleLabel(user.role)}
                   </span>
+                  <StatusPill label={roleLabel(user.role)} tone="info" />
                   <button
                     type="button"
                     onClick={handleLogout}
