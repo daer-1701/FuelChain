@@ -59,6 +59,10 @@ function prismaHarness() {
       update: jest.fn(),
       aggregate: jest.fn().mockResolvedValue({ _sum: { loadedLiters: null } }),
     },
+    driverSettlement: {
+      upsert: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
     qualityCertificate: { findFirst: jest.fn().mockResolvedValue(null) },
     measurement: { create: jest.fn() },
     offlineSyncEvent: {
@@ -367,9 +371,10 @@ describe('CustodyQrService', () => {
         }),
       }),
     );
+    // Entrega parcial del lote → DISTRIBUTING (no RECEIVED hasta completar litros).
     expect(prisma.fuelBatch.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: 'RECEIVED' }),
+        data: expect.objectContaining({ status: 'DISTRIBUTING' }),
       }),
     );
     expect(prisma.custodyEvent.create).toHaveBeenCalledWith(
@@ -488,8 +493,13 @@ describe('CustodyQrService', () => {
       batchCode: 'FC-BO-2026-000182',
       status: 'IN_TRANSIT',
       currentLocation: 'ruta',
+      declaredVolumeLiters: new Prisma.Decimal(150000),
+      deliveredLiters: new Prisma.Decimal(0),
+      qualityStatus: 'PASSED',
     });
     prisma.custodyBaton.create.mockImplementation(async ({ data }) => data);
+    prisma.fuelBatch.update.mockResolvedValue({});
+    prisma.delivery.create.mockResolvedValue({ id: 'del1' });
     const issued = await service.issue(
       {
         batchCode: 'FC-BO-2026-000182',

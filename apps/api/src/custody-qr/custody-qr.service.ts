@@ -118,6 +118,7 @@ export class CustodyQrService {
   }
 
   async issue(input: IssueBatonInput, actor: AuthUser) {
+    this.secret(); // fail-fast antes de cupo / DB pesada
     const batch = await this.prisma.fuelBatch.findFirst({
       where: {
         OR: [{ batchCode: input.batchCode }, { id: input.batchCode }],
