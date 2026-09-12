@@ -1,316 +1,207 @@
-# Guía FuelChain Bolivia — usar la web y explicar el producto
+# Guía FuelChain Bolivia — demo pitch (4 actores)
 
 **Tagline:** Cada litro. Cada movimiento. Cada evidencia.  
-**Importante:** todo el contenido actual es **DEMO / FUELCHAIN ABSTRACTION**. No es un sistema de YPFB, ANH ni Aduana.
+**Importante:** contenido **DEMO / FUELCHAIN ABSTRACTION**. No es un sistema de YPFB, ANH ni Aduana.
+
+Producto confirmado: **Estación · Chofer · ANH · Ciudadano**.  
+Legacy (importador / depósito / lab / auditor) existe en DB pero **no** se promociona en el pitch.
 
 ---
 
-## 1. Arrancar (antes de mostrar)
-
-### 1a. App + base de datos
+## 1. Arrancar
 
 ```powershell
 docker compose up -d postgres
 pnpm db:seed
-
-# Un comando (abre ventanas API / Web / Hardhat)
 pnpm demo:up
-
-# O manual:
-pnpm --filter @fuelchain/api dev
-pnpm --filter @fuelchain/web dev
 ```
 
 | Servicio | URL |
 |----------|-----|
 | Web | http://localhost:3000 |
 | API | http://localhost:3001 |
-| Health | http://localhost:3001/health → debe decir `"database":"up"` |
+| Health | http://localhost:3001/health → `"database":"up"` |
 
-Si la web muestra error de API: confirma que Nest está en `:3001` y que `NEXT_PUBLIC_API_URL` en `.env` apunta ahí.
-
-### 1b. Blockchain local (para demo en vivo)
-
-Incluido si usas `pnpm demo:up`. Si arrancas a mano:
+Blockchain local (incluido en `demo:up`):
 
 ```powershell
-# Terminal A — deja corriendo
-pnpm contracts:node
-
-# Terminal B — una vez (con el nodo ya arriba)
+pnpm contracts:node          # Terminal A
 pnpm contracts:compile
 pnpm --filter @fuelchain/contracts run deploy
 ```
 
-Copia la dirección impresa a `.env` (o deja que la API lea `contracts/deployments/localhost.json`):
+Comprobar: http://localhost:3001/blockchain/status → `"live": true`.
 
-```env
-CHAIN_RPC_URL=http://127.0.0.1:8545
-CHAIN_ID=31337
-FUELCHAIN_CONTRACT_ADDRESS=<address del deploy>
-BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-```
+Credenciales DEMO (`demo123`):
 
-Reinicia la API tras cambiar `.env`. Comprueba:
+| Actor | Email | Home |
+|-------|-------|------|
+| Chofer | `chofer@fuelchain.bo` | `/verify` |
+| Estación | `estacion@fuelchain.bo` → ST-CBB-01 | `/estacion` |
+| ANH | `anh@fuelchain.bo` | `/supervision` |
+| Ciudadano | mapa público | `/mapa` (botón **Ver surtidores** en login) |
 
-- http://localhost:3001/blockchain/status → `"live": true`
-- UI **Evidencia** → chips verdes → **Anclar ahora**
-
-**Nota DEMO:** la private key es la cuenta #0 de Hardhat (solo local). Nunca uses una clave con fondos reales.
+Lotes seed: `FC-BO-2026-000181` · `000182` · `000184`.
 
 ---
 
-## 2. Mapa de la interfaz
+## 2. Recorrido pitch (6–8 min)
 
-Menú izquierdo (o superior en móvil):
+### A — Ciudadano / mapa (45 s)
 
-| Pantalla | Para qué sirve |
-|----------|----------------|
-| **Resumen** | Visión global: volumen en custodia, KPIs, lotes recientes, discrepancias |
-| **Lotes** | Tabla de FuelBatch + filtros (código, estado, riesgo) |
-| **Discrepancias** | Anomaly Center — señales de diferencia de volumen/documentos |
-| **Auditorías** | Casos humanos abiertos a partir de anomalías |
-| **Evidencia** | Hashes / txs indexados (capa tamper-evident, no DB operacional) |
+1. En login → **Ver surtidores** → `/mapa`.
+2. Mostrá cantidad + calidad por EESS (no menús de operador).
+3. Frase: *“El ciudadano ve disponibilidad y calidad; no opera la cadena.”*
 
-Al hacer clic en un código `FC-BO-…` entras al **pasaporte digital del lote**.
+### B — Chofer registra el viaje (2 min)
 
----
+1. Login `chofer@` → **Registrar viaje** (`/verify`).
+2. Elegí lote `000182` (en tránsito) → **Generar QR**.
+3. El QR se genera **en el navegador** (sin CDN).
+4. Opcional: **Tramos GPS** (`/tramos`) → registrar waypoint con GPS del celular.
+5. Opcional: **Simular** entrega CBBA si no hay escáner.
+6. Frase: *“El chofer registra el despacho: litros y calidad salen aquí; la estación no inventa calidad al aceptar.”*
 
-## 3. Recorrido recomendado para la demo (5–8 min)
+### C — Estación recibe (2 min)
 
-### Paso A — Resumen (30 s)
-1. Abre **Resumen**.
-2. Señala el número grande de **volumen declarado en custodia**.
-3. Menciona: *“Aquí el operador ve de un vistazo cuánto combustible está bajo seguimiento y cuántas señales de riesgo hay.”*
+1. Login `estacion@` → **Mi estación**.
+2. Mostrá tanque Cala Cala + cisternas hacia **esta** EESS (no mapa de toda CBBA).
+3. Abrí el deep link del QR (`/q/BT-…`) → **Aceptar** con sesión de estación.
+4. Inventario suma el volumen recibido (delta).
+5. **Contratos** = acuerdos DEMO estación ↔ chofer derivados de entregas.
+6. Frase: *“La estación controla su surtidor; no ve la red completa.”*
 
-### Paso B — Los 3 lotes (1 min)
-1. Ve a **Lotes**.
-2. Muestra la tabla:
+### D — ANH verifica la red (1–2 min)
 
-| Código | Historia |
-|--------|----------|
-| `FC-BO-2026-000181` | Bajo riesgo, completado (camino “feliz”) |
-| `FC-BO-2026-000182` | Medio riesgo, en tránsito |
-| `FC-BO-2026-000184` | **Alto riesgo / auditoría** — el caso estrella |
+1. Login `anh@` → **Movimientos** (`/supervision`).
+2. Mostrá entregas de toda la red + tramos GPS bajo cisternas.
+3. Frase: *“ANH verifica todos los movimientos; discrepancia ≠ robo.”*
 
-3. Filtra por riesgo **Alto** o busca `000184`.
+### E — Evidencia blockchain (1 min, opcional)
 
-### Paso C — Pasaporte del lote 184 (2–3 min)
-1. Entra a `FC-BO-2026-000184`.
-2. Explica el **header**: producto, volumen, score de riesgo.
-3. Baja a **Reconciliación por movimiento**: esperado vs recibido de cada RECEIVED (no lote 150k vs una cisterna).
-4. Señala la **diferencia del movimiento** y las discrepancias (señal, no sentencia). Umbral DEMO: 0,5% o 20 L. **Discrepancia ≠ robo.**
-5. Revisa documentos, calidad, mediciones y anclas indexadas.
-6. Frase clave: *“No decimos ‘robo’. Decimos ANOMALY / DISCREPANCY.”*
-
-### Paso D — Auditoría (1 min)
-1. **Auditorías** → abre el caso del lote 184.
-2. Muestra score, explicación asistida (mock) y notas.
-3. Frase: *“La IA explica patrones; no decide fraude. La decisión es humana.”*
-
-### Paso E — Evidencia en vivo (1–2 min)
-1. **Evidencia** (o el pasaporte del lote 184).
-2. Confirma chips verdes: RPC ok · Contrato · Clave DEMO.
-3. Pulsa **Anclar ahora** → aparece `txHash` + número de bloque reales.
-4. Señala la nueva fila (CONFIRMED / PENDING / FAILED). Una recepción válida también ancla sola (best-effort).
-5. Frase: *“La evidencia almacenada coincide con el hash anclado.”* Nunca: *“Blockchain demuestra que los litros son reales.”*
-
-Si los chips están en rojo, arranca la cadena local (sección 1b abajo) y reinicia la API.
-
-### Paso F — QR Cochabamba (opcional, 1 min)
-
-1. Login `chofer@fuelchain.bo` → **QR custodia** → generar bastón.
-2. El QR apunta a `/q/BT-…?p=` (payload firmado, no solo la URL).
-3. Escaneo: la ficha es pública. **Aceptar** pide `estacion@fuelchain.bo` y vuelve al mismo token.
-4. El inventario del tanque suma el volumen recibido (delta), no lo trata como nivel absoluto.
-5. El rol del body no cuenta: lo decide la sesión.
+1. Pasaporte `FC-BO-2026-000184` o panel Evidencia.
+2. Ancla = **evidencia de integridad**, no prueba de litros físicos.
+3. Frase: *“La evidencia almacenada coincide con el hash anclado.”*
 
 ---
 
-## 4. Cómo explicar el “por qué” (jurado)
+## 3. Mapa de pantallas (4 actores)
 
-### ¿Qué problema resuelve?
-Convertir la logística de combustible importado en una **cadena de custodia digital verificable**: origen, documentos, quién lo tuvo, cuánto debía / cuánto midió, calidad, ubicación y si hay discrepancia.
+| Pantalla | Quién | Para qué |
+|----------|-------|----------|
+| `/mapa` | Ciudadano / ANH | Cantidad + calidad pública |
+| `/verify` | Chofer | Emitir QR / registrar viaje |
+| `/simular` | Chofer | Simular entrega CBBA |
+| `/tramos` | Chofer, estación, ANH | Checkpoints GPS (salida / tramo / llegada) |
+| `/contratos` | Chofer, estación | Acuerdos DEMO estación ↔ chofer |
+| `/estacion` | Estación | Tanque + cisternas de **su** EESS |
+| `/supervision` | ANH | Todos los movimientos |
+| `/q/[token]` | Estación (accept) | Aceptar QR de custodia |
 
-### ¿Por qué no solo Excel / una DB?
-Varios actores (importador, transporte, depósito, lab, auditor). Hace falta una capa de **evidencia compartida** además de la base operacional.
+SoT menús: `apps/web/src/lib/role-access.ts`.
 
-### ¿Por qué blockchain?
-> Porque múltiples actores participan en la cadena de custodia y necesitamos una capa de evidencia compartida y resistente a modificaciones para demostrar que un evento y su evidencia digital existían de determinada manera en un momento determinado.
+---
+
+## 4. Cómo explicar el “por qué”
+
+### Problema
+Última milla de combustible: quién llevó qué, a qué estación, con qué calidad, y qué midió el tanque — con evidencia compartida.
+
+### Por qué no solo Excel
+Varios actores (chofer, estación, regulador, ciudadano) necesitan la misma verdad operacional + una capa de evidencia resistente a cambios.
+
+### Por qué blockchain
+> Capa de evidencia compartida: demostrar que un evento y su evidencia digital existían de cierta forma en un momento dado.
 
 **No digas:** “Blockchain evita que roben gasolina.”
 
-### ¿Por qué IA?
-> La IA ayuda a interpretar patrones de riesgo y convertir varias señales técnicas en una explicación comprensible para un auditor.
+### Por qué checkpoints GPS
+> El chofer registra tramos (salida, peaje, llegada) con GPS del celular — no tracking continuo. Cantidad/calidad proxy en cada punto.
 
-**No digas:** “La IA detecta corrupción sola.”
-
-### ¿Por qué medición / IoT (hoy simulador)?
-> Demuestra cómo una medición física (o simulada) entra al sistema y se compara con los registros digitales del lote.
-
-**No digas:** “El ESP32 es un medidor industrial certificado.”  
-Hoy: `SIMULATOR`. ESP32 físico = futuro.
-
-### Separación de capas (diagrama verbal)
-```text
-Evento real
-  → Registro digital (FuelBatch + custodia)
-  → Medición (simulador / manual / IoT futuro)
-  → Reconciliación de volúmenes
-  → Anomalía / discrepancia
-  → Riesgo explicable
-  → Auditoría humana
-  → Prueba en blockchain (hash + tx)
-```
+### Discrepancia
+> Señal para auditoría humana. **Discrepancia ≠ robo.**
 
 ---
 
-## 5. Frases útiles (elevator)
+## 5. Frases útiles
 
-- *“FuelChain no afirma que la blockchain demuestre físicamente que el combustible existe.”*
+- *“Cuatro actores: chofer registra, estación controla su tanque, ANH verifica la red, ciudadano consulta el mapa.”*
 - *“Cada litro. Cada movimiento. Cada evidencia.”*
-- *“El lote `FC-BO-2026-000184` es el recorrido completo: documentos, custodia, medición, discrepancia, riesgo, auditoría y ancla.”*
-- *“Los datos son DEMO; el modelo es una abstracción FuelChain, no una copia de sistemas estatales.”*
+- *“La calidad viaja con el despacho; la estación no la inventa al aceptar.”*
+- *“Los datos son DEMO; el modelo es abstracción FuelChain.”*
 
 ---
 
-## 6. Qué evitar en la explicación
+## 6. Qué evitar
 
 | Evitar | Preferir |
 |--------|----------|
-| “Robo / corrupción detectados” | “Discrepancia / anomalía para auditoría” |
-| “Integramos YPFB/ANH vía API oficial” | “Abstracción; sin inventar endpoints gubernamentales” |
-| “El sensor prueba los litros” | “El sensor/simulador aporta una medición a reconciliar” |
-| “La IA decide el fraude” | “La IA explica; el auditor decide” |
+| Pitch centrado en importador / lotes / auditor | Arco chofer → estación → ANH → mapa |
+| “Robo detectado” | “Discrepancia / anomalía para auditoría” |
+| “API oficial ANH/YPFB” | “Abstracción DEMO” |
+| Estación con mapa de toda Cochabamba | Estación scoped a su EESS |
+| “El sensor prueba los litros” | “Medición a reconciliar (hoy simulador)” |
 
 ---
 
-## 7. Atajos de URL
+## 7. Atajos
 
 | Destino | URL |
 |---------|-----|
-| Resumen | http://localhost:3000/ |
-| Lotes | http://localhost:3000/batches |
-| Lote 184 | http://localhost:3000/batches/FC-BO-2026-000184 |
-| Discrepancias | http://localhost:3000/anomalies |
-| Auditorías | http://localhost:3000/audits |
-| Evidencia | http://localhost:3000/blockchain |
-| Passport API | http://localhost:3001/batches/FC-BO-2026-000184/passport |
+| Login | http://localhost:3000/login |
+| Mapa | http://localhost:3000/mapa |
+| Chofer QR | http://localhost:3000/verify |
+| Tramos GPS | http://localhost:3000/tramos |
+| Estación | http://localhost:3000/estacion |
+| ANH | http://localhost:3000/supervision |
+| Lote 184 (evidencia) | http://localhost:3000/batches/FC-BO-2026-000184 |
+| Health | http://localhost:3001/health |
 
 ---
 
 ## 8. Si algo falla en vivo
 
-1. `http://localhost:3001/health` → DB up?  
-2. `docker compose ps` → postgres healthy?  
-3. `pnpm db:seed` de nuevo (recrea los 3 lotes DEMO).  
-4. Reinicia API y web.
-5. Blockchain en vivo: `http://localhost:3001/blockchain/status` → `"live": true`? Si no:
-   - ¿`pnpm contracts:node` sigue corriendo?
-   - ¿Corriste `pnpm --filter @fuelchain/contracts run deploy` después de levantar el nodo?
-   - ¿`.env` tiene `BLOCKCHAIN_PRIVATE_KEY` (cuenta #0 Hardhat) y reiniciaste la API?
+1. `http://localhost:3001/health` → DB up?
+2. `docker compose ps` → postgres healthy?
+3. `pnpm db:seed`
+4. Reiniciá API y web.
+5. Blockchain: `blockchain/status` → `"live": true`? Nodo Hardhat + deploy + `.env` + reinicio API.
 
-Guion corto de emergencia (30 s):
+Guion de emergencia (20 s):
 
-> “FuelChain es una plataforma de integridad de la cadena de combustible. El lote es el centro. Comparamos cantidades declaradas vs medidas, generamos una señal de discrepancia —no una sentencia—, calculamos riesgo explicable, asistimos al auditor y anclamos evidencia digital en blockchain.”
+> “FuelChain Bolivia sigue el combustible en la última milla: el chofer registra el viaje, la estación recibe con QR, ANH ve todos los movimientos y el ciudadano consulta cantidad y calidad. La blockchain ancla evidencia; no afirma litros físicos.”
 
 ---
 
-## 9. FASE 2 / 3 — reglas DEMO (sin cambiar Prisma)
+## 9. Reglas DEMO (custodia + ancla)
 
-**Lote ≠ viaje.** `FuelBatch.declaredVolumeLiters` es la consignación. El volumen de un QR / `CustodyEvent.declaredVolume` es el movimiento. `Transport` / `Vehicle` describen el viaje si ya existen.
+**Lote ≠ viaje.** El QR / Delivery es el movimiento; el lote es la consignación.
 
-**Reconciliación del movimiento**
+Reconciliación del movimiento: esperado vs recibido → MATCH | WITHIN_TOLERANCE | ANOMALY.  
+Umbral DEMO: `max(0.5% del esperado, 20 L)`.
 
-```text
-esperado (batón / declaredVolume del RECEIVED)
-- recibido (measuredVolume)
-= diferencia
-→ MATCH | WITHIN_TOLERANCE | ANOMALY
-```
-
-Umbral DEMO (no es norma industrial): `max(0.5% del esperado, 20 L)`.  
-**Discrepancia ≠ robo.** Una ANOMALY abre `Anomaly` `VOLUME_DISCREPANCY` en `OPEN` para revisión humana. Reejecutar la misma recepción no duplica: se busca `expected = movement:<custodyEventId>`.
-
-**Ancla automática (negocio primero)**
-
-```text
-RECEIVED válido → evidencia canónica fuelchain.custody.received.v1
-→ keccak256 → FuelChain.sol#anchorEvidence
-```
-
-Si el RPC/Hardhat falla, la recepción ya quedó grabada. El índice queda `PENDING` (sin contrato/clave) o `FAILED` (`actorWallet = 'FAILED'`). Reintento: `POST /blockchain/anchor-custody/:custodyEventId`.
-
-**Idempotencia:** a nivel aplicación (mismo `eventId` + `dataHash`). No hay unique constraint en Prisma.
-
-**Outbox real:** BLOQUEADO POR RESTRICCIÓN DE PRISMA. No hay tabla de outbox; el best-effort corre in-process después del commit.
-
-**Verificar:** `GET /blockchain/verify-evidence/:custodyEventId` → MATCH / MISMATCH. Copy: *“La evidencia almacenada coincide con el hash anclado.”*
+Ancla automática (best-effort): RECEIVED → hash canónico → `FuelChain.sol#anchorEvidence`. Si el RPC falla, la recepción ya quedó grabada.
 
 ---
 
 ## 10. Blockchain: localhost vs HSK Testnet
 
-El flujo de negocio no cambia. Solo cambian variables de entorno.
-
-### Localhost (default)
+### Localhost
 
 ```env
 CHAIN_RPC_URL=http://127.0.0.1:8545
 CHAIN_ID=31337
-NEXT_PUBLIC_CHAIN_ID=31337
-NEXT_PUBLIC_BLOCK_EXPLORER_URL=
-BLOCKCHAIN_PRIVATE_KEY=<cuenta #0 Hardhat — solo local>
+BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-```powershell
-pnpm contracts:node
-pnpm contracts:compile
-pnpm contracts:deploy
-```
+Private key = cuenta #0 Hardhat (**solo local**).
 
-El script escribe `contracts/deployments/localhost.json` y pide que copies `FUELCHAIN_CONTRACT_ADDRESS` a `.env`. Reiniciá la API.
+### HSK Testnet
 
-### HSK Testnet (red pública de prueba)
-
-Fuente oficial: [Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart).
-
-| | |
-|---|---|
-| Red | HashKey Chain Testnet |
-| Chain ID | 133 |
-| RPC | `https://testnet.hsk.xyz` |
-| Explorer | `https://testnet-explorer.hsk.xyz` |
-
-No uses HSK Mainnet (chain 177). El script de deploy lo rechaza.
-
-1. En `.env` (nunca commitear la clave):
-
-```env
-HSK_TESTNET_RPC_URL=https://testnet.hsk.xyz
-HSK_TESTNET_CHAIN_ID=133
-BLOCKCHAIN_PRIVATE_KEY=0x<clave testnet con HSK de prueba>
-```
-
-2. Deploy (vos lo ejecutás; no corre solo):
+Fuente: [Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart). Chain ID `133`. No uses Mainnet (177).
 
 ```powershell
 pnpm contracts:deploy:hsk-testnet
 ```
 
-3. El script escribe `contracts/deployments/hsk-testnet.json` (no toca `localhost.json`) e imprime qué copiar. Ejemplo:
-
-```env
-CHAIN_RPC_URL=https://testnet.hsk.xyz
-CHAIN_ID=133
-FUELCHAIN_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_CHAIN_ID=133
-NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://testnet-explorer.hsk.xyz
-```
-
-4. Reiniciá API y web. Recibí un bastón → ancla → pasaporte → **Ver en explorador** → **Recalcular hash** → MATCH.
-
-Si `NEXT_PUBLIC_BLOCK_EXPLORER_URL` está vacío, la UI oculta el link; no se rompe.
-
-Gas: necesitás HSK de testnet en el deployer (bridge desde Sepolia según la doc oficial). No pongas la private key en el frontend.
+Copiá `FUELCHAIN_CONTRACT_ADDRESS` y RPC a `.env`; reiniciá API/web. Gas: HSK de testnet en el deployer. Nunca pongas la private key en el frontend.

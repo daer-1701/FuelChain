@@ -21,10 +21,11 @@ Importador, depósito, lab, auditor: fuera del núcleo. No promocionar en login.
 ## Modelo
 
 - `Cistern` + `Delivery` + contratos derivados del despacho.
+- `RouteCheckpoint` (tramos GPS): salida / waypoint / llegada — chofer escribe.
 - Calidad del viaje en el despacho; estación no inventa calidad al aceptar.
 - Accept QR: solo estación (+ admin), scoped a su `stationCode`.
 - Issue/simular: chofer (+ depósito legacy / admin).
 
 ## UI
 
-`apps/web/src/lib/role-access.ts` es la fuente de menús. Blockchain = evidencia, no litro físico.
+`apps/web/src/lib/role-access.ts` es la fuente de menús (`/tramos` para chofer, estación, ANH). Blockchain = evidencia, no litro físico.

@@ -61,8 +61,8 @@ export const RolesAllowed = {
     ActorRole.DEPOT_OPERATOR,
     ActorRole.STATION_STAFF,
   ],
-  anomalyStatus: [ActorRole.ADMIN, ActorRole.AUDITOR],
-  auditWrite: [ActorRole.ADMIN, ActorRole.AUDITOR],
+  anomalyStatus: [ActorRole.ADMIN, ActorRole.AUDITOR, ActorRole.VERIFIER],
+  auditWrite: [ActorRole.ADMIN, ActorRole.AUDITOR, ActorRole.VERIFIER],
   authorizationWrite: [ActorRole.ADMIN, ActorRole.IMPORTER],
   transportWrite: [
     ActorRole.ADMIN,

@@ -10,15 +10,17 @@ Fuente: `apps/web/src/lib/role-access.ts`.
 
 | Rol | Home | Menú |
 |-----|------|------|
-| STATION_STAFF | `/estacion` | Mi estación, Contratos |
-| TRANSPORTER | `/verify` | Registrar viaje, Simular, Contratos |
-| VERIFIER | `/supervision` | Movimientos, Cochabamba |
+| STATION_STAFF | `/estacion` | Mi estación, Contratos, Tramos GPS |
+| TRANSPORTER | `/verify` | Registrar viaje, Tramos GPS, Simular, Contratos |
+| VERIFIER | `/supervision` | Movimientos, Tramos GPS, Cochabamba |
 | CITIZEN | `/mapa` | Cochabamba |
+
+Ciudadano entra por **Ver surtidores** → `/mapa` (no necesita preset de login).
 
 ## Antipatrones
 
 - Estación con mapa de toda Cochabamba o menú Simular/emitir QR.
-- Login promocionando importador / depósito / lab / auditor.
+- Login promocionando importador / depósito / lab / auditor / ciudadano como operador.
 - ANH sin acceso a supervisión de red.
 - Contratos visibles a ciudadano.
 

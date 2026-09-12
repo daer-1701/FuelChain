@@ -27,13 +27,14 @@ Language: the station **receives / controls fuel at the EESS**. Do not call the 
 
 | Role | Home | Nav |
 |------|------|-----|
-| STATION_STAFF | `/estacion` | Mi estación, Contratos (+ `/q` accept) |
-| TRANSPORTER | `/verify` | Registrar viaje, Simular, Contratos |
-| VERIFIER | `/supervision` | Movimientos, Cochabamba mapa |
+| STATION_STAFF | `/estacion` | Mi estación, Contratos, Tramos GPS (+ `/q` accept) |
+| TRANSPORTER | `/verify` | Registrar viaje, Tramos GPS, Simular, Contratos |
+| VERIFIER | `/supervision` | Movimientos, Tramos GPS, Cochabamba mapa |
 | CITIZEN | `/mapa` | Cochabamba |
 
 Source of truth: `apps/web/src/lib/role-access.ts`.
 
+Checkpoints GPS (`RouteCheckpoint`): salida / tramo / llegada — chofer escribe; estación y ANH leen.
 ---
 
 # Domain

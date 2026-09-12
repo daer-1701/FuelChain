@@ -8,7 +8,7 @@ import { safeInternalPath } from '@/lib/safe-next';
 import { canAccessPath, homeForRole } from '@/lib/role-access';
 import { friendlyError } from '@/lib/api-error';
 
-/** Solo los 4 actores del producto. */
+/** Operadores DEMO (ciudadano entra por Ver surtidores / mapa). */
 const PRESETS = [
   {
     email: 'chofer@fuelchain.bo',
@@ -24,11 +24,6 @@ const PRESETS = [
     email: 'anh@fuelchain.bo',
     role: 'ANH',
     blurb: 'Verificá todos los movimientos',
-  },
-  {
-    email: 'ciudadano@fuelchain.bo',
-    role: 'Ciudadano',
-    blurb: 'Mapa cantidad + calidad',
   },
 ];
 
@@ -84,7 +79,7 @@ export default function LoginPage() {
           href="/mapa"
           className="mt-8 inline-flex w-full items-center justify-center bg-[var(--diesel)] px-5 py-4 text-center font-display text-lg font-bold text-[var(--paper)] transition-opacity hover:opacity-90 sm:w-auto"
         >
-          Ver surtidores (sin login)
+          Ver surtidores
         </Link>
         <p className="mt-2 text-sm text-[var(--mute)]">
           Mapa público · cantidad y calidad DEMO

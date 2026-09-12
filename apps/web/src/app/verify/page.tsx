@@ -25,6 +25,7 @@ export default function VerifyPage() {
   const [cistern, setCistern] = useState(user?.cisternCode ?? 'CIS-CBB-01');
   const [stationCode, setStationCode] = useState('ST-CBB-01');
   const [issued, setIssued] = useState<IssueResult['data'] | null>(null);
+  const [qrImg, setQrImg] = useState<string | null>(null);
   const [queueLen, setQueueLen] = useState(0);
   const [log, setLog] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -34,6 +35,33 @@ export default function VerifyPage() {
   useEffect(() => {
     if (user?.cisternCode) setCistern(user.cisternCode);
   }, [user?.cisternCode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!issued) {
+      setQrImg(null);
+      return;
+    }
+    const target =
+      typeof window !== 'undefined'
+        ? batonDeepLink(
+            window.location.origin,
+            issued.tokenId,
+            issued.qrPayload,
+          )
+        : issued.deepLinkPath;
+    void import('qrcode')
+      .then((QR) => QR.toDataURL(target, { width: 220, margin: 1 }))
+      .then((url) => {
+        if (!cancelled) setQrImg(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrImg(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [issued]);
 
   useEffect(() => {
     try {
@@ -102,21 +130,6 @@ export default function VerifyPage() {
       }
     });
   }
-
-  const qrTarget = issued
-    ? typeof window !== 'undefined'
-      ? batonDeepLink(
-          window.location.origin,
-          issued.tokenId,
-          issued.qrPayload,
-        )
-      : issued.deepLinkPath
-    : null;
-  const qrImg = qrTarget
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-        qrTarget,
-      )}`
-    : null;
 
   if (user && !canIssue) {
     return (

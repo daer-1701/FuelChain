@@ -151,8 +151,19 @@ export class AuthService {
   }
 
   async listDemoAccounts() {
+    /** Solo los 4 actores del producto (no promocionar legacy). */
+    const productRoles: ActorRole[] = [
+      ActorRole.TRANSPORTER,
+      ActorRole.STATION_STAFF,
+      ActorRole.VERIFIER,
+      ActorRole.CITIZEN,
+    ];
     const users = await this.prisma.user.findMany({
-      where: { isDemo: true, passwordHash: { not: null } },
+      where: {
+        isDemo: true,
+        passwordHash: { not: null },
+        role: { in: productRoles },
+      },
       orderBy: { role: 'asc' },
       select: { email: true, name: true, role: true },
     });
