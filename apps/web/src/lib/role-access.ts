@@ -22,18 +22,17 @@ export type NavItem = {
  * - Chofer: emite viaje + registra tramos (litros/calidad/GPS)
  * - ANH: verifica movimientos y el camino completo
  * - Ciudadano: mapa (resultado en surtidor)
- * Contratos/liquidaciones quedan secundarios. Legacy no en login DEMO.
+ * Legacy no en login DEMO.
  */
 const ALL_NAV: NavItem[] = [
   { href: '/supervision', label: 'Movimientos' },
   { href: '/acceso', label: 'Acceso Unlock' },
   { href: '/estacion', label: 'Mi estación' },
+  { href: '/escanear', label: 'Escanear QR' },
   { href: '/qr-prueba', label: '50 QR cisterna' },
   { href: '/verify', label: 'Registrar viaje' },
   { href: '/tramos', label: 'Tramos del viaje' },
   { href: '/simular', label: 'Simular entrega' },
-  { href: '/contratos', label: 'Contratos' },
-  { href: '/liquidaciones', label: 'Liquidaciones' },
   { href: '/mapa', label: 'Bolivia' },
   { href: '/', label: 'Resumen' },
   { href: '/batches', label: 'Lotes' },
@@ -44,11 +43,11 @@ const ALL_NAV: NavItem[] = [
 
 const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
-  STATION_STAFF: ['/estacion', '/qr-prueba', '/tramos', '/contratos', '/liquidaciones'],
-  TRANSPORTER: ['/verify', '/qr-prueba', '/tramos', '/simular', '/contratos', '/liquidaciones'],
+  STATION_STAFF: ['/estacion', '/escanear', '/tramos'],
+  TRANSPORTER: ['/verify', '/qr-prueba', '/tramos', '/simular'],
   VERIFIER: ['/supervision', '/tramos', '/blockchain'],
   CITIZEN: ['/mapa'],
-  DEPOT_OPERATOR: ['/verify', '/tramos', '/simular', '/contratos', '/liquidaciones'],
+  DEPOT_OPERATOR: ['/verify', '/tramos', '/simular'],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
   LAB: ['/batches'],
   AUDITOR: ['/supervision', '/tramos', '/blockchain', '/anomalies', '/audits'],
@@ -68,12 +67,16 @@ export const HOME_BY_ROLE: Record<AppRole, string> = {
 
 const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ['/'],
-  STATION_STAFF: ['/estacion', '/contratos', '/liquidaciones', '/tramos', '/q', '/c', '/qr-prueba'],
+  STATION_STAFF: [
+    '/estacion',
+    '/escanear',
+    '/tramos',
+    '/q',
+    '/c',
+  ],
   TRANSPORTER: [
     '/verify',
     '/simular',
-    '/contratos',
-    '/liquidaciones',
     '/tramos',
     '/q',
     '/c',
@@ -83,15 +86,12 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
     '/supervision',
     '/tramos',
     '/blockchain',
-    '/liquidaciones',
     '/acceso',
   ],
   CITIZEN: ['/mapa', '/acceso'],
   DEPOT_OPERATOR: [
     '/verify',
     '/simular',
-    '/contratos',
-    '/liquidaciones',
     '/tramos',
     '/q',
     '/c',
@@ -114,7 +114,7 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
 export const ROLE_BLURB: Record<AppRole, string> = {
   ADMIN: 'Acceso completo DEMO.',
   STATION_STAFF:
-    'Recibís y verificás litros y calidad al llegar; seguís los tramos hacia tu EESS.',
+    'Tu EESS: tanque, escanear QR de cisterna y verificar litros/calidad al recibir.',
   TRANSPORTER:
     'Registrás el camino: QR con litros/calidad de carga y tramos GPS hasta la estación.',
   VERIFIER:
@@ -179,15 +179,6 @@ export function canDispatchFuel(role: string | undefined | null): boolean {
 
 export function canAcceptCustody(role: string | undefined | null): boolean {
   return role === 'ADMIN' || role === 'STATION_STAFF';
-}
-
-export function canManageContracts(role: string | undefined | null): boolean {
-  return (
-    role === 'ADMIN' ||
-    role === 'STATION_STAFF' ||
-    role === 'TRANSPORTER' ||
-    role === 'DEPOT_OPERATOR'
-  );
 }
 
 export function canWriteCheckpoint(role: string | undefined | null): boolean {

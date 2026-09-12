@@ -113,22 +113,6 @@ export function SupervisionPanel({
     filteredStations[0] ??
     null;
 
-  const receivedCount =
-    station?.cisterns.filter(
-      (c) =>
-        c.status === 'DELIVERED' ||
-        c.status === 'CONSUMED' ||
-        Boolean(c.consumedAt),
-    ).length ?? 0;
-  const inboundCount =
-    station?.cisterns.filter(
-      (c) =>
-        (c.status === 'IN_TRANSIT' ||
-          c.status === 'LOADED' ||
-          c.status === 'ACTIVE') &&
-        !c.consumedAt,
-    ).length ?? 0;
-
   return (
     <div className="fc-page">
       <header className="fc-page-header">
@@ -155,22 +139,16 @@ export function SupervisionPanel({
               {user?.stationCode ? ` · ${user.stationCode}` : ''}.
             </p>
             <Link
-              href="/c/CQ-CBB-01"
+              href="/escanear"
               className="font-semibold text-[var(--diesel)] underline"
             >
-              Escanear QR cisterna DEMO (CIS-CBB-01)
+              Escanear / subir QR
             </Link>
             <Link
               href="/tramos"
               className="font-semibold text-[var(--diesel)] underline"
             >
               Ver tramos del viaje
-            </Link>
-            <Link
-              href="/contratos"
-              className="font-semibold text-[var(--diesel)] underline"
-            >
-              Contratos con choferes
             </Link>
           </div>
         )}
@@ -261,7 +239,7 @@ export function SupervisionPanel({
           />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-3">
           <Stat
             label="Stock actual"
             value={
@@ -290,10 +268,6 @@ export function SupervisionPanel({
               station?.quality.tone === 'ALERTA' ||
               station?.quality.tone === 'RECHAZADO'
             }
-          />
-          <Stat
-            label="Entregas / en ruta"
-            value={`${receivedCount} / ${inboundCount}`}
           />
         </div>
       )}

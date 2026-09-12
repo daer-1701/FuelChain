@@ -2,35 +2,40 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import jsQR from '@/vendor/jsqr';
 
 type Props = {
   onToken?: (tokenId: string) => void;
 };
 
-/** Escáner QR con cámara (BarcodeDetector) o foto. Extrae /c/TOKEN (cisterna) o /q/TOKEN (bastón). */
+/**
+ * Escáner QR multi-navegador (cámara + foto).
+ * Usa BarcodeDetector si existe; si no, jsQR sobre canvas (Firefox, Safari, etc.).
+ * Extrae /c/TOKEN (cisterna) o /q/TOKEN (bastón).
+ */
 export function QrScanButton({ onToken }: Props) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [open, setOpen] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const handledRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    let timer: ReturnType<typeof setInterval> | null = null;
+    handledRef.current = false;
 
     async function start() {
       setMsg(null);
+      const video = videoRef.current;
+      if (!video) return;
+
       try {
-        if (!('BarcodeDetector' in window)) {
-          setMsg(
-            'Este navegador no lee QR por cámara. Usá el link del chofer o subí una foto.',
-          );
-          return;
-        }
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: { facingMode: { ideal: 'environment' } },
           audio: false,
         });
         if (cancelled) {
@@ -38,70 +43,118 @@ export function QrScanButton({ onToken }: Props) {
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const Detector = (window as any).BarcodeDetector;
-        const detector = new Detector({ formats: ['qr_code'] });
-        timer = setInterval(async () => {
-          if (!videoRef.current || videoRef.current.readyState < 2) return;
-          try {
-            const codes = await detector.detect(videoRef.current);
-            const raw = codes?.[0]?.rawValue as string | undefined;
-            if (!raw) return;
-            const token = extractToken(raw);
-            if (token) {
-              stop();
-              setOpen(false);
-              if (onToken) onToken(token);
-              else router.push(routeForToken(token));
+        video.srcObject = stream;
+        await video.play();
+
+        if ('BarcodeDetector' in window) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const Detector = (window as any).BarcodeDetector;
+          const detector = new Detector({ formats: ['qr_code'] });
+          const tick = async () => {
+            if (cancelled || handledRef.current) return;
+            if (video.readyState >= 2) {
+              try {
+                const codes = await detector.detect(video);
+                const raw = codes?.[0]?.rawValue as string | undefined;
+                if (raw) acceptRaw(raw);
+              } catch {
+                /* ignore frame errors */
+              }
             }
-          } catch {
-            /* ignore frame errors */
+            if (!cancelled && !handledRef.current) {
+              rafRef.current = window.setTimeout(() => void tick(), 350);
+            }
+          };
+          void tick();
+          return;
+        }
+
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          setMsg('No se pudo iniciar el decodificador QR.');
+          return;
+        }
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          setMsg('No se pudo iniciar el decodificador QR.');
+          return;
+        }
+
+        const tickJs = () => {
+          if (cancelled || handledRef.current) return;
+          if (video.readyState >= 2) {
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            if (w > 0 && h > 0) {
+              canvas.width = w;
+              canvas.height = h;
+              ctx.drawImage(video, 0, 0, w, h);
+              const image = ctx.getImageData(0, 0, w, h);
+              const code = jsQR(image.data, image.width, image.height, {
+                inversionAttempts: 'attemptBoth',
+              });
+              if (code?.data) acceptRaw(code.data);
+            }
           }
-        }, 500);
+          if (!cancelled && !handledRef.current) {
+            rafRef.current = window.setTimeout(tickJs, 250);
+          }
+        };
+        tickJs();
       } catch {
-        setMsg('No se pudo abrir la cámara. Revisá permisos del navegador.');
+        if (!cancelled) {
+          setMsg(
+            'No se pudo abrir la cámara. Revisá permisos del navegador o subí una foto.',
+          );
+        }
       }
     }
 
-    function stop() {
-      if (timer) clearInterval(timer);
+    function acceptRaw(raw: string) {
+      if (handledRef.current) return;
+      const token = extractToken(raw);
+      if (!token) {
+        setMsg('QR leído, pero no es un código FuelChain válido.');
+        return;
+      }
+      handledRef.current = true;
+      stopCamera();
+      setOpen(false);
+      if (onToken) onToken(token);
+      else router.push(routeForToken(token));
+    }
+
+    function stopCamera() {
+      if (rafRef.current != null) {
+        clearTimeout(rafRef.current);
+        rafRef.current = null;
+      }
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
     }
 
     void start();
+
     return () => {
       cancelled = true;
-      stop();
+      stopCamera();
     };
   }, [open, onToken, router]);
 
   async function onFile(file: File) {
     setMsg(null);
     try {
-      if (!('BarcodeDetector' in window)) {
-        setMsg('Este navegador no decodifica QR desde foto.');
-        return;
-      }
-      const bmp = await createImageBitmap(file);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const Detector = (window as any).BarcodeDetector;
-      const detector = new Detector({ formats: ['qr_code'] });
-      const codes = await detector.detect(bmp);
-      const raw = codes?.[0]?.rawValue as string | undefined;
+      const raw = await decodeQrFromFile(file);
       const token = raw ? extractToken(raw) : null;
       if (!token) {
-        setMsg('No se encontró un QR de bastón en la imagen.');
+        setMsg('No se encontró un QR de cisterna o bastón en la imagen.');
         return;
       }
       if (onToken) onToken(token);
       else router.push(routeForToken(token));
     } catch {
-      setMsg('No se pudo leer la imagen.');
+      setMsg('No se pudo leer la imagen. Probá otra foto más nítida.');
     }
   }
 
@@ -125,21 +178,54 @@ export function QrScanButton({ onToken }: Props) {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void onFile(f);
+              e.target.value = '';
             }}
           />
         </label>
       </div>
       {open && (
-        <video
-          ref={videoRef}
-          className="max-h-64 w-full border border-[var(--ink)] bg-black object-cover"
-          muted
-          playsInline
-        />
+        <>
+          <video
+            ref={videoRef}
+            className="max-h-64 w-full border border-[var(--ink)] bg-black object-cover"
+            muted
+            playsInline
+          />
+          <canvas ref={canvasRef} className="hidden" aria-hidden />
+        </>
       )}
       {msg && <p className="text-sm text-[var(--mute)]">{msg}</p>}
     </div>
   );
+}
+
+async function decodeQrFromFile(file: File): Promise<string | null> {
+  if ('BarcodeDetector' in window) {
+    try {
+      const bmp = await createImageBitmap(file);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const Detector = (window as any).BarcodeDetector;
+      const detector = new Detector({ formats: ['qr_code'] });
+      const codes = await detector.detect(bmp);
+      const raw = codes?.[0]?.rawValue as string | undefined;
+      if (raw) return raw;
+    } catch {
+      /* fall through to jsQR */
+    }
+  }
+
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(bitmap, 0, 0);
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(image.data, image.width, image.height, {
+    inversionAttempts: 'attemptBoth',
+  });
+  return code?.data ?? null;
 }
 
 function extractToken(raw: string): string | null {

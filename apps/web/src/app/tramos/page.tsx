@@ -325,6 +325,7 @@ export default function TramosPage() {
   const [pending, start] = useTransition();
   const [showForm, setShowForm] = useState(false);
   const [stationFilter, setStationFilter] = useState<string>('all');
+  const [cisternQuery, setCisternQuery] = useState('');
 
   const [kind, setKind] = useState<string>('ROUTE_WAYPOINT');
   const [label, setLabel] = useState('Control ruta DEMO');
@@ -353,9 +354,18 @@ export default function TramosPage() {
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   }, [groups]);
   const visibleGroups = useMemo(() => {
-    if (stationFilter === 'all') return groups;
-    return groups.filter((g) => g.stationCode === stationFilter);
-  }, [groups, stationFilter]);
+    const q = cisternQuery.trim().toUpperCase();
+    return groups.filter((g) => {
+      if (stationFilter !== 'all' && g.stationCode !== stationFilter) {
+        return false;
+      }
+      if (!q) return true;
+      return (
+        g.cisternCode.toUpperCase().includes(q) ||
+        (g.cisternPlate?.toUpperCase().includes(q) ?? false)
+      );
+    });
+  }, [groups, stationFilter, cisternQuery]);
   const waterTotal = rows.filter((r) => r.waterDetected).length;
 
   useEffect(() => {
@@ -561,6 +571,19 @@ export default function TramosPage() {
         </nav>
       )}
 
+      <label className="block max-w-md text-sm">
+        Buscar cisterna
+        <input
+          type="search"
+          value={cisternQuery}
+          onChange={(e) => setCisternQuery(e.target.value)}
+          placeholder="Ej. CIS-CBB-06"
+          className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 font-mono uppercase"
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </label>
+
       {canWrite && (
         <div className="space-y-3">
           <button
@@ -698,8 +721,9 @@ export default function TramosPage() {
 
       {visibleGroups.length === 0 ? (
         <p className="text-[var(--mute)]">
-          Todavía no hay tramos. El chofer registra salida, control en ruta y
-          llegada.
+          {cisternQuery.trim()
+            ? `No hay viajes con cisterna «${cisternQuery.trim()}».`
+            : 'Todavía no hay tramos. El chofer registra salida, control en ruta y llegada.'}
         </p>
       ) : (
         <div className="space-y-6">

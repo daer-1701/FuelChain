@@ -9,6 +9,7 @@ import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canAcceptCustody, homeForRole } from '@/lib/role-access';
 import { checkpointKindLabel, labelEs, roleLabel } from '@/lib/es-labels';
+import { rememberStationScan } from '@/lib/station-scan-history';
 
 type VolumeDrop = {
   deltaLiters: number;
@@ -120,6 +121,23 @@ function CisternQrInner() {
       const json = (await res.json()) as CisternPayload;
       setPayload(json.data);
       setNote(json.note ?? null);
+      if (user?.role === 'STATION_STAFF' && json.data?.cistern) {
+        rememberStationScan({
+          token: json.data.cistern.qrToken || token,
+          path: `/c/${json.data.cistern.qrToken || token}`,
+          cisternCode: json.data.cistern.code,
+          deviceId: json.data.cistern.deviceId,
+          batchCode:
+            json.data.delivery?.batch.batchCode ??
+            json.data.cistern.currentBatch?.batchCode ??
+            null,
+          product:
+            json.data.delivery?.batch.product ??
+            json.data.cistern.currentBatch?.product ??
+            null,
+          status: json.data.delivery?.status ?? json.data.cistern.status,
+        });
+      }
     } catch (e) {
       setError(friendlyError(e));
       setPayload(null);
@@ -128,7 +146,8 @@ function CisternQrInner() {
 
   useEffect(() => {
     void load();
-  }, [token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.role]);
 
   function scanUpload() {
     if (!user) return;
@@ -205,7 +224,17 @@ function CisternQrInner() {
           {payload?.cistern.code ?? token}
         </h1>
         {note && <p className="text-sm text-[var(--mute)]">{note}</p>}
-        <QrScanButton />
+        <div className="flex flex-wrap items-center gap-3">
+          <QrScanButton />
+          {user?.role === 'STATION_STAFF' && (
+            <Link
+              href="/escanear"
+              className="text-sm font-semibold text-[var(--diesel)] underline"
+            >
+              Volver al historial de escaneos
+            </Link>
+          )}
+        </div>
       </header>
 
       {error && (
