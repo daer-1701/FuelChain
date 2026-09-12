@@ -35,15 +35,28 @@ pnpm --filter @fuelchain/api dev    # :3001
 pnpm --filter @fuelchain/web dev    # :3000
 ```
 
-### Blockchain en vivo
+### Blockchain
+
+**Localhost (desarrollo)**
 
 ```powershell
 pnpm contracts:node
 pnpm contracts:compile
-pnpm --filter @fuelchain/contracts run deploy
+pnpm contracts:deploy
 ```
 
-Configura `FUELCHAIN_CONTRACT_ADDRESS` y `BLOCKCHAIN_PRIVATE_KEY` (cuenta #0 Hardhat) en `.env`. Ver `.env.example`.
+En `.env`: `CHAIN_RPC_URL=http://127.0.0.1:8545`, `CHAIN_ID=31337`, `FUELCHAIN_CONTRACT_ADDRESS` del script, `BLOCKCHAIN_PRIVATE_KEY` = cuenta #0 Hardhat (solo local).
+
+**HSK Testnet (demo pública)**
+
+1. Poné en `.env` (no commitear): `HSK_TESTNET_RPC_URL`, `HSK_TESTNET_CHAIN_ID=133` y una `BLOCKCHAIN_PRIVATE_KEY` de testnet con HSK de prueba.
+2. Compilá y desplegá vos: `pnpm contracts:deploy:hsk-testnet`
+3. Copiá a `.env` lo que imprime el script: `FUELCHAIN_CONTRACT_ADDRESS`, `CHAIN_RPC_URL`, `CHAIN_ID=133`, `NEXT_PUBLIC_*` y `NEXT_PUBLIC_BLOCK_EXPLORER_URL`.
+4. Reiniciá la API. El flujo QR → RECEIVED → ancla no cambia.
+
+Nunca uses una clave en `NEXT_PUBLIC_*`. Nunca despliegues a HSK Mainnet (177) con estos scripts.
+
+Valores oficiales de red: [HashKey Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart). Detalle en `docs/demo.md`.
 
 Secretos **obligatorios** (fail-fast, sin fallback):
 

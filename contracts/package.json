@@ -8,6 +8,7 @@
     "node": "hardhat node",
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:hsk-testnet": "hardhat run scripts/deploy.ts --network hskTestnet",
     "build": "pnpm compile",
     "lint": "echo \"@fuelchain/contracts: lint stub\"",
     "typecheck": "echo \"@fuelchain/contracts: typecheck stub\""

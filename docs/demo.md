@@ -246,3 +246,71 @@ Si el RPC/Hardhat falla, la recepción ya quedó grabada. El índice queda `PEND
 **Outbox real:** BLOQUEADO POR RESTRICCIÓN DE PRISMA. No hay tabla de outbox; el best-effort corre in-process después del commit.
 
 **Verificar:** `GET /blockchain/verify-evidence/:custodyEventId` → MATCH / MISMATCH. Copy: *“La evidencia almacenada coincide con el hash anclado.”*
+
+---
+
+## 10. Blockchain: localhost vs HSK Testnet
+
+El flujo de negocio no cambia. Solo cambian variables de entorno.
+
+### Localhost (default)
+
+```env
+CHAIN_RPC_URL=http://127.0.0.1:8545
+CHAIN_ID=31337
+NEXT_PUBLIC_CHAIN_ID=31337
+NEXT_PUBLIC_BLOCK_EXPLORER_URL=
+BLOCKCHAIN_PRIVATE_KEY=<cuenta #0 Hardhat — solo local>
+```
+
+```powershell
+pnpm contracts:node
+pnpm contracts:compile
+pnpm contracts:deploy
+```
+
+El script escribe `contracts/deployments/localhost.json` y pide que copies `FUELCHAIN_CONTRACT_ADDRESS` a `.env`. Reiniciá la API.
+
+### HSK Testnet (red pública de prueba)
+
+Fuente oficial: [Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart).
+
+| | |
+|---|---|
+| Red | HashKey Chain Testnet |
+| Chain ID | 133 |
+| RPC | `https://testnet.hsk.xyz` |
+| Explorer | `https://testnet-explorer.hsk.xyz` |
+
+No uses HSK Mainnet (chain 177). El script de deploy lo rechaza.
+
+1. En `.env` (nunca commitear la clave):
+
+```env
+HSK_TESTNET_RPC_URL=https://testnet.hsk.xyz
+HSK_TESTNET_CHAIN_ID=133
+BLOCKCHAIN_PRIVATE_KEY=0x<clave testnet con HSK de prueba>
+```
+
+2. Deploy (vos lo ejecutás; no corre solo):
+
+```powershell
+pnpm contracts:deploy:hsk-testnet
+```
+
+3. El script escribe `contracts/deployments/hsk-testnet.json` (no toca `localhost.json`) e imprime qué copiar. Ejemplo:
+
+```env
+CHAIN_RPC_URL=https://testnet.hsk.xyz
+CHAIN_ID=133
+FUELCHAIN_CONTRACT_ADDRESS=0x...
+NEXT_PUBLIC_CHAIN_ID=133
+NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS=0x...
+NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://testnet-explorer.hsk.xyz
+```
+
+4. Reiniciá API y web. Recibí un bastón → ancla → pasaporte → **Ver en explorador** → **Recalcular hash** → MATCH.
+
+Si `NEXT_PUBLIC_BLOCK_EXPLORER_URL` está vacío, la UI oculta el link; no se rompe.
+
+Gas: necesitás HSK de testnet en el deployer (bridge desde Sepolia según la doc oficial). No pongas la private key en el frontend.

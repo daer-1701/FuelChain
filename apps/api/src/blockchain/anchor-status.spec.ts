@@ -1,6 +1,7 @@
 import {
   ANCHOR_FAILED_MARKER,
   deriveAnchorStatus,
+  networkLabel,
   selectReusableAnchor,
 } from './anchor-status';
 
@@ -27,6 +28,13 @@ describe('deriveAnchorStatus', () => {
     expect(deriveAnchorStatus({ transactionHash: null, actorWallet: null })).toBe(
       'PENDING',
     );
+  });
+});
+
+describe('networkLabel', () => {
+  it('labels local Hardhat and HSK testnet', () => {
+    expect(networkLabel(31337)).toBe('hardhat (DEMO local)');
+    expect(networkLabel(133)).toBe('HashKey Chain Testnet');
   });
 });
 

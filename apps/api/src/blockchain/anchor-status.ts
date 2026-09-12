@@ -15,6 +15,7 @@ export function deriveAnchorStatus(row: {
 
 export function networkLabel(chainId: number | null | undefined): string {
   if (chainId === 31337) return 'hardhat (DEMO local)';
+  if (chainId === 133) return 'HashKey Chain Testnet';
   if (chainId == null) return 'unknown';
   return `chain ${chainId}`;
 }

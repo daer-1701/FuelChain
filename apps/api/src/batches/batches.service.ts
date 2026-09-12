@@ -155,12 +155,21 @@ export class BatchesService {
 
     const contractAddress =
       process.env.FUELCHAIN_CONTRACT_ADDRESS?.trim() || null;
+    const explorerBase = (
+      process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL ||
+      process.env.BLOCK_EXPLORER_URL ||
+      ''
+    ).replace(/\/$/, '');
 
     const blockchain = full.blockchainAnchors.map((a) => ({
       ...a,
       status: deriveAnchorStatus(a),
       network: networkLabel(a.chainId),
       contractAddress,
+      explorerUrl:
+        explorerBase && a.transactionHash
+          ? `${explorerBase}/tx/${a.transactionHash}`
+          : null,
     }));
 
     return serialize({

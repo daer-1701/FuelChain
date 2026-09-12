@@ -23,6 +23,7 @@
     "contracts:test": "pnpm --filter @fuelchain/contracts test",
     "contracts:node": "pnpm --filter @fuelchain/contracts run node",
     "contracts:deploy": "pnpm --filter @fuelchain/contracts run deploy",
+    "contracts:deploy:hsk-testnet": "pnpm --filter @fuelchain/contracts run deploy:hsk-testnet",
     "demo:up": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-demo.ps1",
     "demo:up:seed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-demo.ps1 -Seed"
   },

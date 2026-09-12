@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { EvidenceVerify } from '@/components/evidence-verify';
 import { LiveAnchorPanel } from '@/components/live-anchor-panel';
 import { apiGet } from '@/lib/api';
+import { explorerTxUrl } from '@/lib/explorer';
 import { formatStatus, formatVolume, riskClass } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -89,6 +90,7 @@ type Passport = {
     network: string;
     contractAddress: string | null;
     chainId: number | null;
+    explorerUrl?: string | null;
   }>;
 };
 
@@ -451,7 +453,7 @@ export default async function BatchDetailPage({
         {passport.blockchain.length === 0 ? (
           <p className="text-sm text-[var(--mute)]">
             Sin anclas. Tras una recepción, el estado puede quedar PENDING si
-            Hardhat no está arriba.
+            el RPC no está configurado.
           </p>
         ) : (
           <div className="fc-surface overflow-x-auto">
@@ -461,6 +463,7 @@ export default async function BatchDetailPage({
                   <th>Estado</th>
                   <th>Hash</th>
                   <th>Tx</th>
+                  <th>Explorador</th>
                   <th>Bloque</th>
                   <th>Contrato</th>
                   <th>Red</th>
@@ -486,6 +489,20 @@ export default async function BatchDetailPage({
                     </td>
                     <td className="max-w-[160px] truncate font-mono text-xs text-[var(--mute)]">
                       {a.transactionHash ?? '—'}
+                    </td>
+                    <td>
+                      {explorerTxUrl(a.transactionHash, a.explorerUrl) ? (
+                        <a
+                          href={explorerTxUrl(a.transactionHash, a.explorerUrl)!}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[var(--diesel)] hover:underline"
+                        >
+                          Ver en explorador
+                        </a>
+                      ) : (
+                        <span className="text-[var(--mute)]">—</span>
+                      )}
                     </td>
                     <td className="tabular-nums">{a.blockNumber ?? '—'}</td>
                     <td className="max-w-[140px] truncate font-mono text-xs text-[var(--mute)]">

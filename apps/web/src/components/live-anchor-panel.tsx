@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { explorerTxUrl } from '@/lib/explorer';
 
 type ChainStatus = {
   live: boolean;
@@ -12,6 +13,8 @@ type ChainStatus = {
   hasPrivateKey: boolean;
   blockNumber: string | null;
   onChainAnchorCount: string | null;
+  chainId: number | null;
+  network?: string;
   note: string;
   error: string | null;
 };
@@ -65,6 +68,7 @@ export function LiveAnchorPanel({
             hasPrivateKey: false,
             blockNumber: null,
             onChainAnchorCount: null,
+            chainId: null,
             note: 'No se pudo consultar el estado de la cadena.',
             error: e instanceof Error ? e.message : 'error',
           });
@@ -113,9 +117,8 @@ export function LiveAnchorPanel({
             Anclar evidencia ahora
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--mute)]">
-            Escribe un evento on-chain en Hardhat local y guarda el txHash en el
-            índice. No prueba litros físicos: prueba que el hash quedó
-            registrado.
+            Escribe un evento on-chain y guarda el txHash en el índice. Hash
+            verificable. No prueba litros físicos ni que no hubo robo.
           </p>
         </div>
         <span className="fc-stamp text-[var(--diesel)]">Demo en vivo</span>
@@ -139,8 +142,18 @@ export function LiveAnchorPanel({
           }
         />
         <StatusLine
+          ok={Boolean(status?.network || status?.chainId)}
+          label={
+            status?.network
+              ? `Red ${status.network}`
+              : status?.chainId
+                ? `chain ${status.chainId}`
+                : 'Red desconocida'
+          }
+        />
+        <StatusLine
           ok={Boolean(status?.hasPrivateKey)}
-          label={status?.hasPrivateKey ? 'Clave DEMO lista' : 'Sin private key'}
+          label={status?.hasPrivateKey ? 'Clave de escritura lista' : 'Sin private key'}
         />
         {status?.onChainAnchorCount != null && (
           <StatusLine ok label={`${status.onChainAnchorCount} anclas on-chain`} />
@@ -149,8 +162,8 @@ export function LiveAnchorPanel({
 
       {!ready && (
         <p className="mt-4 text-sm text-[var(--mute)]">
-          {status?.note ?? 'Preparando…'} Arranca el nodo Hardhat y despliega
-          (ver guía demo).
+          {status?.note ?? 'Preparando…'} Si usás localhost, arrancá Hardhat y
+          desplegá. Si usás HSK, revisá CHAIN_RPC_URL (guía demo).
         </p>
       )}
 
@@ -220,6 +233,16 @@ export function LiveAnchorPanel({
               <dd className="inline break-all">{result.data.dataHash}</dd>
             </div>
           </dl>
+          {explorerTxUrl(result.data.transactionHash) && (
+            <a
+              href={explorerTxUrl(result.data.transactionHash)!}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-block text-sm text-[var(--diesel)] hover:underline"
+            >
+              Ver en explorador
+            </a>
+          )}
         </div>
       )}
     </section>

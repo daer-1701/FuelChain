@@ -19,7 +19,6 @@ import {
   type WalletClient,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { hardhat } from 'viem/chains';
 import { canonicalJson } from '../common/canonical-json';
 import { serialize } from '../common/serialize';
 import {
@@ -36,6 +35,7 @@ import {
 } from './anchor-status';
 import type { AnchorEvidenceDto } from './dto/anchor-evidence.dto';
 import { fuelChainAbi } from './fuelchain.abi';
+import { chainFromEnv, deploymentFileForChainId } from './viem-chain';
 
 type DeploymentFile = {
   address: string;
@@ -82,7 +82,7 @@ export class BlockchainService {
 
     return serialize({
       label: 'DEMO',
-      note: 'Índice de evidencia tamper-evident. Tx reales requieren Hardhat local + deploy.',
+      note: 'Índice de evidencia tamper-evident. El hash anclado no prueba litros físicos.',
       data: rows.map((r) => ({
         ...r,
         explorerUrl:
@@ -134,10 +134,8 @@ export class BlockchainService {
       contractAddress,
       hasPrivateKey: hasKey,
       onChainAnchorCount,
-      network: networkLabel(chainId ?? 31337),
-      note: rpcReachable
-        ? 'Nodo local listo. La recepción ancla sola; POST /blockchain/anchor sigue disponible.'
-        : 'Arranca Hardhat node + deploy (ver docs/demo.md sección blockchain en vivo).',
+      network: networkLabel(chainId),
+      note: this.statusNote(rpcReachable, chainId),
       error,
     };
   }
@@ -170,7 +168,7 @@ export class BlockchainService {
     return serialize({
       label: 'DEMO',
       live: true,
-      note: 'Evidencia anclada on-chain (Hardhat local). No prueba litros físicos.',
+      note: 'Evidencia anclada on-chain. Hash verificable; no prueba litros físicos.',
       data: {
         ...written,
         status: deriveAnchorStatus(written),
@@ -324,7 +322,7 @@ export class BlockchainService {
         transactionHash: stored?.transactionHash ?? null,
         blockNumber: stored?.blockNumber?.toString() ?? null,
         contractAddress: this.contractAddress(),
-        network: networkLabel(stored?.chainId ?? 31337),
+        network: networkLabel(stored?.chainId),
         evidence,
         canonical,
       },
@@ -438,13 +436,13 @@ export class BlockchainService {
     if (!this.contractAddress()) {
       return {
         ok: false,
-        reason: 'FUELCHAIN_CONTRACT_ADDRESS missing (Hardhat local DEMO)',
+        reason: 'FUELCHAIN_CONTRACT_ADDRESS missing',
       };
     }
     if (!this.privateKey()) {
       return {
         ok: false,
-        reason: 'BLOCKCHAIN_PRIVATE_KEY missing (Hardhat account #0 DEMO)',
+        reason: 'BLOCKCHAIN_PRIVATE_KEY missing',
       };
     }
     return { ok: true };
@@ -466,7 +464,7 @@ export class BlockchainService {
     }
     if (!key) {
       throw new ServiceUnavailableException(
-        'BLOCKCHAIN_PRIVATE_KEY missing (use Hardhat account #0 for local DEMO)',
+        'BLOCKCHAIN_PRIVATE_KEY missing',
       );
     }
 
@@ -541,6 +539,18 @@ export class BlockchainService {
     });
   }
 
+  private statusNote(rpcReachable: boolean, chainId: number | null): string {
+    const hsk = chainId === 133 || Number(process.env.CHAIN_ID) === 133;
+    if (rpcReachable) {
+      return hsk
+        ? 'RPC HSK Testnet listo. La recepción ancla sola. Hash verificable; no prueba litros físicos.'
+        : 'Nodo local listo. La recepción ancla sola; POST /blockchain/anchor sigue disponible.';
+    }
+    return hsk
+      ? 'No se alcanzó el RPC HSK. Revisa CHAIN_RPC_URL (docs/demo.md).'
+      : 'Arranca Hardhat node + deploy (ver docs/demo.md sección blockchain en vivo).';
+  }
+
   private rpcUrl() {
     return process.env.CHAIN_RPC_URL || 'http://127.0.0.1:8545';
   }
@@ -570,7 +580,7 @@ export class BlockchainService {
 
   private publicClient(): PublicClient {
     return createPublicClient({
-      chain: hardhat,
+      chain: chainFromEnv(),
       transport: http(this.rpcUrl()),
     });
   }
@@ -578,16 +588,18 @@ export class BlockchainService {
   private walletClient(account: ReturnType<typeof privateKeyToAccount>): WalletClient {
     return createWalletClient({
       account,
-      chain: hardhat,
+      chain: chainFromEnv(),
       transport: http(this.rpcUrl()),
     });
   }
 
   private readDeployment(): DeploymentFile | null {
+    const chainId = Number(process.env.CHAIN_ID || 31337);
+    const file = deploymentFileForChainId(chainId);
     const candidates = [
-      join(process.cwd(), '..', '..', 'contracts', 'deployments', 'localhost.json'),
-      join(process.cwd(), 'contracts', 'deployments', 'localhost.json'),
-      join(__dirname, '..', '..', '..', '..', 'contracts', 'deployments', 'localhost.json'),
+      join(process.cwd(), '..', '..', 'contracts', 'deployments', file),
+      join(process.cwd(), 'contracts', 'deployments', file),
+      join(__dirname, '..', '..', '..', '..', 'contracts', 'deployments', file),
     ];
     for (const p of candidates) {
       if (!existsSync(p)) continue;
