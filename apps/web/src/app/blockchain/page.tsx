@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import { labelEs } from '@/lib/es-labels';
 import { LiveAnchorPanel } from '@/components/live-anchor-panel';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ export default async function BlockchainPage() {
     rows = res.data;
     note = res.note;
   } catch (e) {
-    error = e instanceof Error ? e.message : 'API error';
+    error = e instanceof Error ? e.message : 'Error de API';
   }
 
   return (
@@ -38,8 +39,8 @@ export default async function BlockchainPage() {
           Evidencia en cadena
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Registro tamper-evident de eventos y hashes. No sustituye la base
-          operacional ni demuestra existencia física del combustible. {note}
+          Registro a prueba de manipulación de eventos y hashes. No sustituye la
+          base operacional ni demuestra existencia física del combustible. {note}
         </p>
       </header>
 
@@ -75,7 +76,7 @@ export default async function BlockchainPage() {
                     {r.batch.batchCode}
                   </Link>
                 </td>
-                <td>{r.eventKind}</td>
+                <td>{labelEs(r.eventKind)}</td>
                 <td className="max-w-[160px] truncate text-[var(--mute)]">
                   {r.dataHash}
                 </td>
@@ -110,7 +111,7 @@ export default async function BlockchainPage() {
                           : 'text-[var(--mute)]'
                   }
                 >
-                  {r.status}
+                  {labelEs(r.status)}
                 </td>
               </tr>
             ))}

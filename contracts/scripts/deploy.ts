@@ -17,6 +17,9 @@ function deploymentFileName(networkName: string, chainId: number): string {
   if (networkName === 'hskTestnet' || chainId === HSK_TESTNET_CHAIN_ID) {
     return 'hsk-testnet.json';
   }
+  if (networkName === 'hskMainnet' || chainId === HSK_MAINNET_CHAIN_ID) {
+    return 'hsk-mainnet.json';
+  }
   return `${networkName}.json`;
 }
 
@@ -27,8 +30,13 @@ async function main() {
   const rpcUrl = (hre.network.config as { url?: string }).url ?? '';
 
   if (chainId === HSK_MAINNET_CHAIN_ID || /mainnet\.hsk\.xyz/i.test(rpcUrl)) {
-    throw new Error(
-      'Refusing to deploy to HashKey Chain Mainnet. Use --network hskTestnet (chain 133).',
+    if (process.env.ALLOW_HSK_MAINNET !== '1') {
+      throw new Error(
+        'Refusing HashKey Chain Mainnet without ALLOW_HSK_MAINNET=1 (feria track). Prefer testnet 133 for local demos.',
+      );
+    }
+    console.warn(
+      '[DEMO] Deploying to HSK Mainnet (177) — ensure the key has funds and is NOT Hardhat #0.',
     );
   }
 

@@ -55,7 +55,7 @@ export default function LoginPage() {
             : homeForRole(sessionUser.role);
         router.replace(dest);
       } catch (err) {
-        setError(friendlyError(err, 'Error de login'));
+        setError(friendlyError(err, 'No se pudo iniciar sesión'));
       }
     });
   }

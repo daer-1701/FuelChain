@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
 import type { AuthUser } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { RolesAllowed } from '../auth/permissions';
@@ -21,9 +21,8 @@ class IssueBatonDto {
   @IsString()
   cisternCode?: string;
 
-  @IsOptional()
   @IsString()
-  stationCode?: string;
+  stationCode!: string;
 
   /** @deprecated Ignored — issuer role comes from the session. */
   @IsOptional()
@@ -33,6 +32,18 @@ class IssueBatonDto {
   @IsOptional()
   @IsString()
   previousHash?: string;
+
+  @IsOptional()
+  @IsNumber()
+  loadDensity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  loadTemperature?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  loadWaterDetected?: boolean;
 }
 
 class AcceptBatonDto {
@@ -60,6 +71,18 @@ class AcceptBatonDto {
   @IsOptional()
   @IsString()
   clientEventId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  receivedDensity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  receivedTemperature?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  receivedWaterDetected?: boolean;
 }
 
 class SyncOfflineDto {
@@ -90,6 +113,9 @@ export class CustodyQrController {
         cisternCode: dto.cisternCode,
         stationCode: dto.stationCode,
         previousHash: dto.previousHash,
+        loadDensity: dto.loadDensity,
+        loadTemperature: dto.loadTemperature,
+        loadWaterDetected: dto.loadWaterDetected,
       },
       user,
     );
@@ -110,6 +136,9 @@ export class CustodyQrController {
         stationCode: dto.stationCode,
         receivedVolumeLiters: dto.receivedVolumeLiters,
         clientEventId: dto.clientEventId,
+        receivedDensity: dto.receivedDensity,
+        receivedTemperature: dto.receivedTemperature,
+        receivedWaterDetected: dto.receivedWaterDetected,
       },
       user,
     );

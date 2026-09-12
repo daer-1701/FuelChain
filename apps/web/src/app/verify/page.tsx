@@ -7,6 +7,8 @@ import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { batonDeepLink } from '@/lib/baton-qr';
 import { canDispatchFuel, homeForRole } from '@/lib/role-access';
+import { roleLabel } from '@/lib/es-labels';
+import { useDispatchOptions } from '@/lib/use-dispatch-options';
 
 type IssueResult = {
   data: {
@@ -20,10 +22,14 @@ type IssueResult = {
 
 export default function VerifyPage() {
   const { authHeaders, user } = useAuth();
+  const { batches, stations } = useDispatchOptions(authHeaders);
   const [batchCode, setBatchCode] = useState('FC-BO-2026-000182');
   const [volume, setVolume] = useState('8000');
   const [cistern, setCistern] = useState(user?.cisternCode ?? 'CIS-CBB-01');
   const [stationCode, setStationCode] = useState('ST-CBB-01');
+  const [density, setDensity] = useState('0.745');
+  const [temperature, setTemperature] = useState('22');
+  const [water, setWater] = useState(false);
   const [issued, setIssued] = useState<IssueResult['data'] | null>(null);
   const [qrImg, setQrImg] = useState<string | null>(null);
   const [queueLen, setQueueLen] = useState(0);
@@ -35,6 +41,18 @@ export default function VerifyPage() {
   useEffect(() => {
     if (user?.cisternCode) setCistern(user.cisternCode);
   }, [user?.cisternCode]);
+
+  useEffect(() => {
+    if (batches[0] && !batches.some((b) => b.code === batchCode)) {
+      setBatchCode(batches[0].code);
+    }
+  }, [batches, batchCode]);
+
+  useEffect(() => {
+    if (stations[0] && !stations.some((s) => s.code === stationCode)) {
+      setStationCode(stations[0].code);
+    }
+  }, [stations, stationCode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +106,9 @@ export default function VerifyPage() {
             volumeLiters: Number(volume),
             cisternCode: cistern,
             stationCode,
+            loadDensity: Number(density),
+            loadTemperature: Number(temperature),
+            loadWaterDetected: water,
           }),
         });
         if (!res.ok) throw await errorFromResponse(res, 'No se pudo emitir el QR.');
@@ -124,9 +145,9 @@ export default function VerifyPage() {
         const json = await res.json();
         localStorage.setItem('fc-offline-queue', '[]');
         setQueueLen(0);
-        setLog('Sincronización OK.');
+        setLog('Sincronización lista.');
       } catch (e) {
-        setLog(friendlyError(e, 'Sync falló'));
+        setLog(friendlyError(e, 'No se pudo sincronizar'));
       }
     });
   }
@@ -136,8 +157,9 @@ export default function VerifyPage() {
       <div className="space-y-4">
         <h1 className="font-display text-3xl font-black">QR custodia</h1>
         <p className="text-[var(--mute)]">
-          Emitir QR es trabajo del chofer o depósito. Tu rol ({user.role}) no
-          despacha. Si sos estación, escaneá el QR que te muestra el chofer.
+          Emitir QR es trabajo del chofer o depósito. Tu rol (
+          {roleLabel(user.role)}) no despacha. Si sos estación, escaneá el QR
+          que te muestra el chofer.
         </p>
         <Link
           href={homeForRole(user.role)}
@@ -170,21 +192,17 @@ export default function VerifyPage() {
         <div className="fc-sheet space-y-4">
           <h2 className="font-display text-xl font-bold">Emitir bastón</h2>
           <label className="block text-sm">
-            Lote DEMO
+            Lote
             <select
               className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
               value={batchCode}
               onChange={(e) => setBatchCode(e.target.value)}
             >
-              <option value="FC-BO-2026-000182">
-                FC-BO-2026-000182 · Diésel (en tránsito)
-              </option>
-              <option value="FC-BO-2026-000184">
-                FC-BO-2026-000184 · Gasolina (auditoría)
-              </option>
-              <option value="FC-BO-2026-000181">
-                FC-BO-2026-000181 · Gasolina (completado)
-              </option>
+              {batches.map((b) => (
+                <option key={b.code} value={b.code}>
+                  {b.label}
+                </option>
+              ))}
             </select>
           </label>
           <label className="block text-sm">
@@ -198,20 +216,52 @@ export default function VerifyPage() {
           </label>
           <label className="block text-sm">
             Estación destino
-            <input
+            <select
               className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
               value={stationCode}
               onChange={(e) => setStationCode(e.target.value)}
-            />
+            >
+              {stations.map((s) => (
+                <option key={s.code} value={s.code}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block text-sm">
-            Litros
+            Litros del viaje
             <input
               className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
               value={volume}
               onChange={(e) => setVolume(e.target.value)}
             />
           </label>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="block text-sm">
+              Densidad
+              <input
+                className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                value={density}
+                onChange={(e) => setDensity(e.target.value)}
+              />
+            </label>
+            <label className="block text-sm">
+              Temp. °C
+              <input
+                className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                value={temperature}
+                onChange={(e) => setTemperature(e.target.value)}
+              />
+            </label>
+            <label className="flex items-end gap-2 pb-2 text-sm">
+              <input
+                type="checkbox"
+                checked={water}
+                onChange={(e) => setWater(e.target.checked)}
+              />
+              Agua detectada
+            </label>
+          </div>
           <button
             type="button"
             disabled={pending}
@@ -242,7 +292,7 @@ export default function VerifyPage() {
                 </Link>
               </p>
               <p className="break-all text-xs text-[var(--mute)]">
-                Payload compacto (offline): {issued.qrText.slice(0, 120)}…
+                Datos del QR (sin señal): {issued.qrText.slice(0, 120)}…
               </p>
             </div>
           )}
@@ -250,7 +300,7 @@ export default function VerifyPage() {
 
         <div className="space-y-6">
           <div className="fc-sheet space-y-3">
-            <h2 className="font-display text-xl font-bold">Cola offline</h2>
+            <h2 className="font-display text-xl font-bold">Cola sin señal</h2>
             <p className="text-sm text-[var(--mute)]">
               Eventos en este teléfono: <strong>{queueLen}</strong>
             </p>

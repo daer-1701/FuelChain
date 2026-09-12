@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canResolveAnomaly } from '@/lib/role-access';
+import { labelEs } from '@/lib/es-labels';
 
 const STATUSES = [
   'OPEN',
@@ -29,7 +30,9 @@ export function AnomalyStatusControl({
   const [err, setErr] = useState<string | null>(null);
 
   if (!canResolve) {
-    return <span className="capitalize text-[var(--mute)]">{currentStatus}</span>;
+    return (
+      <span className="text-[var(--mute)]">{labelEs(currentStatus)}</span>
+    );
   }
 
   function save() {
@@ -60,7 +63,7 @@ export function AnomalyStatusControl({
       >
         {STATUSES.map((s) => (
           <option key={s} value={s}>
-            {s}
+            {labelEs(s)}
           </option>
         ))}
       </select>

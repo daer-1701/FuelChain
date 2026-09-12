@@ -4,6 +4,7 @@ import { LiveAnchorPanel } from '@/components/live-anchor-panel';
 import { apiGet } from '@/lib/api';
 import { explorerTxUrl } from '@/lib/explorer';
 import { formatStatus, formatVolume, riskClass } from '@/lib/types';
+import { labelEs, riskLabel } from '@/lib/es-labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,7 +109,7 @@ export default async function BatchDetailPage({
       `/batches/${encodeURIComponent(id)}/passport`,
     );
   } catch (e) {
-    error = e instanceof Error ? e.message : 'Not found';
+    error = e instanceof Error ? e.message : 'No encontrado';
   }
 
   if (error || !passport) {
@@ -154,7 +155,7 @@ export default async function BatchDetailPage({
           </div>
           <div className="text-right">
             <span className={`fc-stamp ${riskClass(idn.riskLevel)}`}>
-              Riesgo {idn.riskLevel.toLowerCase()}
+              Riesgo {riskLabel(idn.riskLevel)}
             </span>
             <p className="font-display mt-2 text-3xl font-black tabular-nums">
               {idn.riskScore}
@@ -185,7 +186,8 @@ export default async function BatchDetailPage({
         <section className="fc-sheet space-y-3">
           <h2 className="font-display text-xl font-bold">Transporte del movimiento</h2>
           <p className="text-sm text-[var(--mute)]">
-            Entidad Transport/Vehicle existente. No es el volumen total del lote.
+            Datos del vehículo / cisterna del movimiento. No es el volumen total
+            del lote.
           </p>
           <ul className="space-y-3">
             {passport.transports.map((t) => (
@@ -259,7 +261,7 @@ export default async function BatchDetailPage({
                         ? '—'
                         : `${m.differenceLiters > 0 ? '+' : ''}${m.differenceLiters.toLocaleString('es-BO')} L`}
                     </td>
-                    <td>{m.status}</td>
+                    <td>{labelEs(m.status)}</td>
                     <td>
                       {m.custodyEventId ? (
                         <EvidenceVerify custodyEventId={m.custodyEventId} />
@@ -274,7 +276,7 @@ export default async function BatchDetailPage({
           </div>
         ) : (
           <p className="text-sm text-[var(--mute)]">
-            Todavía no hay una recepción RECEIVED para reconciliar.
+            Todavía no hay una recepción registrada para reconciliar.
           </p>
         )}
 
@@ -357,7 +359,7 @@ export default async function BatchDetailPage({
             {passport.anomalies.map((a, idx) => (
               <li key={idx} className="text-sm text-[var(--mute)]">
                 <span className="font-medium text-[var(--alarm)]">
-                  {a.severity.toLowerCase()} · {formatStatus(a.type)}
+                  {riskLabel(a.severity)} · {formatStatus(a.type)}
                 </span>
                 {a.difference ? ` — ${a.difference}` : ''}
               </li>
@@ -389,7 +391,9 @@ export default async function BatchDetailPage({
         </section>
 
         <section>
-          <h2 className="font-display mb-3 text-xl font-bold">Calidad / lab</h2>
+          <h2 className="font-display mb-3 text-xl font-bold">
+            Calidad / laboratorio
+          </h2>
           {passport.quality.certificates.length === 0 &&
           passport.quality.labAnalyses.length === 0 ? (
             <p className="text-sm text-[var(--mute)]">Sin registros de calidad.</p>
@@ -445,15 +449,15 @@ export default async function BatchDetailPage({
       )}
 
       <section>
-        <h2 className="font-display mb-3 text-xl font-bold">Blockchain</h2>
+        <h2 className="font-display mb-3 text-xl font-bold">Evidencia en cadena</h2>
         <p className="mb-4 max-w-2xl text-sm text-[var(--mute)]">
           Estado del ancla de recepción. No afirma que los litros físicos sean
           reales; solo si el hash quedó registrado.
         </p>
         {passport.blockchain.length === 0 ? (
           <p className="text-sm text-[var(--mute)]">
-            Sin anclas. Tras una recepción, el estado puede quedar PENDING si
-            el RPC no está configurado.
+            Sin anclas. Tras una recepción, el estado puede quedar pendiente si
+            la conexión a la cadena no está configurada.
           </p>
         ) : (
           <div className="fc-surface overflow-x-auto">
@@ -482,7 +486,7 @@ export default async function BatchDetailPage({
                             : 'text-[var(--diesel)]'
                       }
                     >
-                      {a.status}
+                      {labelEs(a.status)}
                     </td>
                     <td className="max-w-[140px] truncate font-mono text-xs text-[var(--mute)]">
                       {a.dataHash}

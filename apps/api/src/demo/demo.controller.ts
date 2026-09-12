@@ -11,7 +11,6 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { RolesAllowed } from '../auth/permissions';
 import { RequireRoles } from '../auth/require-roles';
 import { CustodyQrService } from '../custody-qr/custody-qr.service';
-import { StationsService } from '../stations/stations.service';
 
 class SimulateCbbaDto {
   @IsOptional()
@@ -30,18 +29,26 @@ class SimulateCbbaDto {
   @IsNumber()
   @Min(1)
   volumeLiters?: number;
+
+  @IsOptional()
+  @IsNumber()
+  loadDensity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  loadTemperature?: number;
+
+  @IsOptional()
+  loadWaterDetected?: boolean;
 }
 
 @Controller('demo')
 export class DemoController {
-  constructor(
-    private readonly custodyQr: CustodyQrService,
-    private readonly stations: StationsService,
-  ) {}
+  constructor(private readonly custodyQr: CustodyQrService) {}
 
   /**
-   * DEMO orchestrator for chofer/depósito/admin: issue + accept.
-   * Station staff only receives via /custody-qr/accept at their EESS.
+   * Atajo DEMO del chofer: solo emite el bastón (viaje).
+   * La recepción la confirma la estación en /q/[token] o accept.
    */
   @Post('simulate-cbba-delivery')
   @RequireRoles(...RolesAllowed.demoSimulate)
@@ -67,33 +74,30 @@ export class DemoController {
         volumeLiters,
         cisternCode,
         stationCode,
+        loadDensity: dto.loadDensity,
+        loadTemperature: dto.loadTemperature,
+        loadWaterDetected: dto.loadWaterDetected,
       },
       user,
     );
 
-    const tokenId = (issued as { data: { tokenId: string } }).data.tokenId;
-    const accepted = await this.custodyQr.accept(
-      {
-        tokenId,
-        stationCode,
-        receivedVolumeLiters: volumeLiters - 40,
-      },
-      user,
-    );
-
-    const map = await this.stations.listPublic('Cochabamba');
+    const tokenId = (issued as { data: { tokenId: string; deepLinkPath?: string } })
+      .data.tokenId;
+    const deepLinkPath =
+      (issued as { data: { deepLinkPath?: string } }).data.deepLinkPath ??
+      `/q/${tokenId}`;
 
     return {
       label: 'DEMO',
-      note: 'Simulación completa CBBA: QR emitido + recepción + mapa actualizado.',
+      note: 'Viaje simulado: QR emitido. La estación debe aceptar el bastón (dos actores).',
       steps: [
         'Chofer genera bastón (payload en teléfono)',
-        'Encargado escanea / acepta (cola offline → sync)',
-        'Tanque estación actualiza semáforo público',
+        'Encargado de estación escanea / acepta en su EESS',
+        'Tanque de estación y mapa se actualizan al recibir',
       ],
       issued,
-      accepted,
-      map,
+      deepLinkPath,
+      tokenId,
     };
   }
 }

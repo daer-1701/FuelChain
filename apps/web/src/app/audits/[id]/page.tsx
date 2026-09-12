@@ -30,7 +30,7 @@ export default async function AuditDetailPage({
   try {
     detail = await apiGet<AuditDetail>(`/audits/${id}`);
   } catch (e) {
-    error = e instanceof Error ? e.message : 'Not found';
+    error = e instanceof Error ? e.message : 'No encontrado';
   }
 
   if (!detail) {

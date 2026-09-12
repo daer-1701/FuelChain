@@ -82,7 +82,7 @@ export class BlockchainService {
 
     return serialize({
       label: 'DEMO',
-      note: 'Índice de evidencia tamper-evident. El hash anclado no prueba litros físicos.',
+      note: 'Índice de evidencia a prueba de manipulación. El hash anclado no prueba litros físicos.',
       data: rows.map((r) => ({
         ...r,
         explorerUrl:
@@ -154,7 +154,7 @@ export class BlockchainService {
     const payload = {
       batchCode: batch.batchCode,
       eventKind,
-      note: dto.note ?? 'Live DEMO anchor',
+      note: dto.note ?? 'Ancla DEMO en vivo',
       label: 'DEMO',
     };
     const dataHash = keccak256(stringToHex(canonicalJson(payload)));
@@ -168,7 +168,7 @@ export class BlockchainService {
     return serialize({
       label: 'DEMO',
       live: true,
-      note: 'Evidencia anclada on-chain. Hash verificable; no prueba litros físicos.',
+      note: 'Evidencia anclada en la cadena. Hash verificable; no prueba litros físicos.',
       data: {
         ...written,
         status: deriveAnchorStatus(written),
@@ -543,12 +543,12 @@ export class BlockchainService {
     const hsk = chainId === 133 || Number(process.env.CHAIN_ID) === 133;
     if (rpcReachable) {
       return hsk
-        ? 'RPC HSK Testnet listo. La recepción ancla sola. Hash verificable; no prueba litros físicos.'
-        : 'Nodo local listo. La recepción ancla sola; POST /blockchain/anchor sigue disponible.';
+        ? 'Nodo HSK Testnet listo. La recepción ancla sola. Hash verificable; no prueba litros físicos.'
+        : 'Nodo local listo. La recepción ancla sola; también podés anclar desde Evidencia.';
     }
     return hsk
-      ? 'No se alcanzó el RPC HSK. Revisa CHAIN_RPC_URL (docs/demo.md).'
-      : 'Arranca Hardhat node + deploy (ver docs/demo.md sección blockchain en vivo).';
+      ? 'No se alcanzó el nodo HSK. Revisá la URL del nodo (docs/demo.md).'
+      : 'Arrancá Hardhat y desplegá el contrato (ver docs/demo.md, evidencia en vivo).';
   }
 
   private rpcUrl() {

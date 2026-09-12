@@ -58,7 +58,7 @@ export class BatchesService {
           declaredVolume: new Prisma.Decimal(dto.declaredVolumeLiters),
           metadata: {
             label: 'DEMO',
-            note: 'FuelBatch created — FUELCHAIN ABSTRACTION',
+            note: 'Lote creado — FuelChain',
           },
           isDemo: dto.isDemo ?? true,
         },

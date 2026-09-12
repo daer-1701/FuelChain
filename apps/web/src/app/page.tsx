@@ -47,7 +47,7 @@ export default function DashboardPage() {
         if (!cancelled) setData(json);
       } catch (e) {
         if (!cancelled) {
-          setError(friendlyError(e, 'API no disponible'));
+          setError(friendlyError(e, 'Servicio no disponible'));
         }
       }
     })();
@@ -86,8 +86,8 @@ export default function DashboardPage() {
           role="alert"
           className="border border-[var(--alarm)] bg-[var(--alarm-soft)] px-4 py-3 text-sm"
         >
-          No se pudo cargar el resumen ({error}). Arranca la API en el puerto
-          3001 e intenta de nuevo.
+          No se pudo cargar el resumen ({error}). Arrancá el servicio en el puerto
+          3001 e intentá de nuevo.
         </div>
       )}
       {data && (

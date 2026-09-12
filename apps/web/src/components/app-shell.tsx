@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/auth-provider';
 import { AuthGate } from '@/components/auth-gate';
 import { useAuth } from '@/components/auth-provider';
 import { navForRole, homeForRole, roleBlurb } from '@/lib/role-access';
+import { roleLabel } from '@/lib/es-labels';
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -47,7 +48,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
               <div className="flex flex-col items-start gap-1 sm:items-end">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <span className="text-[var(--mute)]">
-                    {user.name} · {user.role}
+                    {user.name} · {roleLabel(user.role)}
                   </span>
                   <button
                     type="button"
@@ -121,7 +122,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
               href="/login"
               className="relative whitespace-nowrap px-4 py-3 text-sm font-medium text-[var(--mute)] hover:text-[var(--ink)]"
             >
-              Login operadores
+              Acceso operadores
             </Link>
           </nav>
         )}

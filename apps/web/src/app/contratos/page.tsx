@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { friendlyError } from '@/lib/api-error';
 import { canManageContracts, homeForRole } from '@/lib/role-access';
+import { labelEs } from '@/lib/es-labels';
 
 type ContractRow = {
   id: string;
@@ -23,6 +24,8 @@ type ContractRow = {
   loadedAt: string;
   deliveredAt: string | null;
   batonTokenId: string | null;
+  stationAckAt: string | null;
+  driverAckAt: string | null;
   parties: { station: string; driver: string; carrier: string };
 };
 
@@ -31,26 +34,29 @@ export default function ContratosPage() {
   const [rows, setRows] = useState<ContractRow[]>([]);
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [ackMsg, setAckMsg] = useState<string | null>(null);
   const allowed = canManageContracts(user?.role);
+
+  async function loadContracts() {
+    const res = await fetch(`${API_URL}/stations/contracts`, {
+      headers: authHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const json = (await res.json()) as {
+      note?: string;
+      data: ContractRow[];
+    };
+    setRows(json.data);
+    setNote(json.note ?? '');
+  }
 
   useEffect(() => {
     if (!ready || !user || !allowed) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/stations/contracts`, {
-          headers: authHeaders(),
-          cache: 'no-store',
-        });
-        if (!res.ok) throw new Error(`API ${res.status}`);
-        const json = (await res.json()) as {
-          note?: string;
-          data: ContractRow[];
-        };
-        if (!cancelled) {
-          setRows(json.data);
-          setNote(json.note ?? '');
-        }
+        await loadContracts();
       } catch (e) {
         if (!cancelled) {
           setError(friendlyError(e, 'No se pudieron cargar los contratos'));
@@ -60,7 +66,24 @@ export default function ContratosPage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, user, allowed, authHeaders]);
+
+  async function ack(id: string) {
+    setAckMsg(null);
+    try {
+      const res = await fetch(`${API_URL}/stations/contracts/${id}/ack`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const json = (await res.json()) as { note?: string };
+      setAckMsg(json.note ?? 'Contrato acusado.');
+      await loadContracts();
+    } catch (e) {
+      setAckMsg(friendlyError(e, 'No se pudo acusar el contrato'));
+    }
+  }
 
   if (!ready) {
     return <p className="text-[var(--mute)]">Cargando…</p>;
@@ -104,6 +127,7 @@ export default function ContratosPage() {
           {error}
         </p>
       )}
+      {ackMsg && <p className="text-sm text-[var(--seal)]">{ackMsg}</p>}
 
       {!error && rows.length === 0 && (
         <p className="text-[var(--mute)]">
@@ -112,7 +136,9 @@ export default function ContratosPage() {
       )}
 
       <ul className="divide-y divide-[var(--rail)]/40 border-y-2 border-[var(--ink)]">
-        {rows.map((c) => (
+        {rows.map((c) => {
+          const myAck = isStation ? c.stationAckAt : c.driverAckAt;
+          return (
           <li key={c.id} className="space-y-3 py-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -121,7 +147,7 @@ export default function ContratosPage() {
                   {c.parties.driver} · {c.parties.carrier} ↔ {c.parties.station}
                 </p>
               </div>
-              <span className="fc-stamp">{c.status}</span>
+              <span className="fc-stamp">{labelEs(c.status)}</span>
             </div>
             <dl className="grid gap-2 text-sm sm:grid-cols-2 md:grid-cols-4">
               <div>
@@ -149,19 +175,35 @@ export default function ContratosPage() {
               </div>
               <div>
                 <dt className="text-[var(--mute)]">Calidad viaje</dt>
-                <dd>{c.qualityOk ? 'OK DEMO' : 'Alerta DEMO'}</dd>
+                <dd>{c.qualityOk ? 'Calidad bien' : 'Alerta de calidad'}</dd>
               </div>
             </dl>
-            {c.batonTokenId && c.status !== 'DELIVERED' && (
-              <Link
-                href={`/q/${c.batonTokenId}`}
-                className="inline-block text-sm font-semibold text-[var(--diesel)] underline"
-              >
-                Abrir bastón QR
-              </Link>
-            )}
+            <p className="text-sm text-[var(--mute)]">
+              Acuse estación: {c.stationAckAt ? 'Sí' : 'Pendiente'} · Acuse
+              chofer: {c.driverAckAt ? 'Sí' : 'Pendiente'}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {!myAck && (
+                <button
+                  type="button"
+                  onClick={() => void ack(c.id)}
+                  className="border-2 border-[var(--ink)] px-3 py-1.5 text-sm font-semibold"
+                >
+                  {isStation ? 'Acusar como estación' : 'Acusar como chofer'}
+                </button>
+              )}
+              {c.batonTokenId && c.status !== 'DELIVERED' && (
+                <Link
+                  href={`/q/${c.batonTokenId}`}
+                  className="inline-block text-sm font-semibold text-[var(--diesel)] underline"
+                >
+                  Abrir bastón QR
+                </Link>
+              )}
+            </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );

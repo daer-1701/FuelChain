@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AnomalyStatusControl } from '@/components/anomaly-status-control';
 import { apiGet } from '@/lib/api';
+import { riskLabel } from '@/lib/es-labels';
 import { formatStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,7 @@ export default async function AnomaliesPage() {
     const res = await apiGet<AnomaliesResponse>('/anomalies');
     data = res.data;
   } catch (e) {
-    error = e instanceof Error ? e.message : 'API error';
+    error = e instanceof Error ? e.message : 'Error de API';
   }
 
   return (
@@ -71,7 +72,7 @@ export default async function AnomaliesPage() {
                 <tr key={a.id}>
                   <td>
                     <span className="fc-stamp text-[var(--alarm)]">
-                      {a.severity.toLowerCase()}
+                      {riskLabel(a.severity)}
                     </span>
                   </td>
                   <td>
@@ -87,7 +88,7 @@ export default async function AnomaliesPage() {
                   <td className="text-[var(--mute)]">{a.actual ?? '—'}</td>
                   <td>{a.difference ?? '—'}</td>
                   <td>
-                    {a.batch.riskLevel.toLowerCase()} · {a.batch.riskScore}
+                    {riskLabel(a.batch.riskLevel)} · {a.batch.riskScore}
                   </td>
                   <td>
                     <AnomalyStatusControl

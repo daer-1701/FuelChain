@@ -25,6 +25,7 @@ import { serialize } from '../common/serialize';
 import { applyStockDelta, applyStockWithdraw } from '../common/tank-inventory';
 import { ReceivedFollowUpService } from '../custody/received-follow-up.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { settlementCreateData } from '../settlements/settlement-math';
 
 const BATON_TTL_SEC = 72 * 60 * 60;
 
@@ -35,6 +36,9 @@ type IssueBatonInput = {
   cisternCode?: string;
   stationCode?: string;
   previousHash?: string;
+  loadDensity?: number;
+  loadTemperature?: number;
+  loadWaterDetected?: boolean;
 };
 
 type AcceptBatonInput = {
@@ -43,6 +47,9 @@ type AcceptBatonInput = {
   stationCode?: string;
   receivedVolumeLiters?: number;
   clientEventId?: string;
+  receivedDensity?: number;
+  receivedTemperature?: number;
+  receivedWaterDetected?: boolean;
 };
 
 type OfflineSyncItem = {
@@ -127,6 +134,11 @@ export class CustodyQrService {
         'volumeLiters debe ser el volumen de este movimiento, no se toma del lote',
       );
     }
+    if (!input.stationCode?.trim()) {
+      throw new BadRequestException(
+        'Debés indicar la estación destino del despacho',
+      );
+    }
 
     const transport = await this.prisma.transport.findFirst({
       where: { batchId: batch.id },
@@ -146,31 +158,41 @@ export class CustodyQrService {
       vehicleId = vehicle?.id;
     }
 
+    const reservedAgg = await this.prisma.delivery.aggregate({
+      where: {
+        batchId: batch.id,
+        status: { in: ['LOADED', 'IN_TRANSIT'] },
+      },
+      _sum: { loadedLiters: true },
+    });
     const loteLiters = Number(batch.declaredVolumeLiters?.toString?.() ?? NaN);
     const alreadyDelivered = Number(batch.deliveredLiters?.toString?.() ?? 0);
+    const reservedLiters = Number(
+      reservedAgg._sum.loadedLiters?.toString?.() ?? 0,
+    );
     const remaining = remainingBatchLiters({
       declaredLiters: loteLiters,
       deliveredLiters: alreadyDelivered,
+      reservedLiters,
     });
     const volumeLooksLikeLote =
       Number.isFinite(loteLiters) &&
       loteLiters > 0 &&
       Math.abs(input.volumeLiters - loteLiters) < 0.001 &&
       loteLiters > 40000;
-    if (remaining > 0 && input.volumeLiters - remaining > 0.001) {
+    if (input.volumeLiters - remaining > 0.001) {
       throw new BadRequestException(
-        `El lote solo tiene ${remaining} L pendientes de despacho`,
+        remaining <= 0
+          ? 'El lote no tiene litros pendientes de despacho'
+          : `El lote solo tiene ${remaining} L pendientes de despacho`,
       );
     }
 
-    let stationId: string | undefined;
-    if (input.stationCode) {
-      const st = await this.prisma.station.findUnique({
-        where: { code: input.stationCode },
-      });
-      if (!st) throw new NotFoundException('Station not found');
-      stationId = st.id;
-    }
+    const st = await this.prisma.station.findUnique({
+      where: { code: input.stationCode.trim() },
+    });
+    if (!st) throw new NotFoundException('Estación no encontrada');
+    const stationId = st.id;
 
     const cistern = input.cisternCode
       ? await this.prisma.cistern.findUnique({
@@ -182,7 +204,13 @@ export class CustodyQrService {
           })
         : null;
 
-    if (actor.role === ActorRole.TRANSPORTER && cistern) {
+    if (!cistern) {
+      throw new BadRequestException(
+        'Debés indicar una cisterna válida para el despacho',
+      );
+    }
+
+    if (actor.role === ActorRole.TRANSPORTER) {
       if (cistern.driverId && cistern.driverId !== actor.id) {
         throw new BadRequestException(
           'Esta cisterna está asignada a otro chofer',
@@ -190,13 +218,21 @@ export class CustodyQrService {
       }
     }
 
-    if (cistern) {
-      assertCisternCanLoad({
-        capacityLiters: cistern.capacityLiters,
-        currentLoadLiters: cistern.currentLoadLiters,
-        loadLiters: input.volumeLiters,
-      });
-    }
+    assertCisternCanLoad({
+      capacityLiters: cistern.capacityLiters,
+      currentLoadLiters: cistern.currentLoadLiters,
+      loadLiters: input.volumeLiters,
+    });
+
+    const loadDensity =
+      input.loadDensity != null && Number.isFinite(input.loadDensity)
+        ? input.loadDensity
+        : 0.745;
+    const loadTemperature =
+      input.loadTemperature != null && Number.isFinite(input.loadTemperature)
+        ? input.loadTemperature
+        : 22;
+    const loadWaterDetected = Boolean(input.loadWaterDetected);
 
     const tokenId = `BT-${randomBytes(4).toString('hex').toUpperCase()}`;
     const issuedAt = new Date();
@@ -206,9 +242,12 @@ export class CustodyQrService {
       t: 'baton',
       id: tokenId,
       batch: batch.batchCode,
-      cistern: input.cisternCode ?? null,
-      station: input.stationCode ?? null,
+      cistern: cistern.code,
+      station: input.stationCode,
       vol: input.volumeLiters,
+      dens: loadDensity,
+      temp: loadTemperature,
+      water: loadWaterDetected,
       ev: input.eventType,
       ts: Math.floor(issuedAt.getTime() / 1000),
       exp,
@@ -224,55 +263,55 @@ export class CustodyQrService {
     const payloadJson = { ...core, h: payloadHash, s: signature };
 
     const row = await this.prisma.$transaction(async (tx) => {
-      let deliveryId: string | undefined;
-      if (cistern && stationId) {
-        const cert = await tx.qualityCertificate.findFirst({
-          where: { batchId: batch.id },
-          orderBy: { issueDate: 'desc' },
-        });
-        const delivery = await tx.delivery.create({
-          data: {
-            batchId: batch.id,
-            cisternId: cistern.id,
-            destinationStationId: stationId,
-            status: 'IN_TRANSIT',
-            loadedLiters: new Prisma.Decimal(input.volumeLiters),
-            loadDensity: new Prisma.Decimal(0.745),
-            loadTemperature: new Prisma.Decimal(22),
-            loadWaterDetected: false,
-            loadCertificateStatus: cert?.status ?? batch.qualityStatus,
-            isDemo: true,
-          },
-        });
-        deliveryId = delivery.id;
-        const nextLoad = nextCisternLoad({
-          currentLoadLiters: cistern.currentLoadLiters,
-          deltaLiters: input.volumeLiters,
-        });
-        await tx.cistern.update({
-          where: { id: cistern.id },
-          data: {
-            currentLoadLiters: nextLoad,
-            status: 'IN_TRANSIT',
-            currentBatchId: batch.id,
-            driverId: cistern.driverId ?? actor.id,
-          },
-        });
-        const depot = await tx.storageTank.findFirst({
-          where: { stationId: null, cisternCode: null, name: 'TANK-001' },
-        });
-        if (depot) {
-          const depotStock = applyStockWithdraw({
-            previousStock: depot.currentStockLiters,
-            withdrawLiters: input.volumeLiters,
-            capacityLiters: depot.capacityLiters,
-          });
-          await tx.storageTank.update({
-            where: { id: depot.id },
-            data: { currentStockLiters: depotStock.nextStock },
-          });
-        }
+      const cert = await tx.qualityCertificate.findFirst({
+        where: { batchId: batch.id },
+        orderBy: { issueDate: 'desc' },
+      });
+      const delivery = await tx.delivery.create({
+        data: {
+          batchId: batch.id,
+          cisternId: cistern.id,
+          destinationStationId: stationId,
+          status: 'IN_TRANSIT',
+          loadedLiters: new Prisma.Decimal(input.volumeLiters),
+          loadDensity: new Prisma.Decimal(loadDensity),
+          loadTemperature: new Prisma.Decimal(loadTemperature),
+          loadWaterDetected,
+          loadCertificateStatus: cert?.status ?? batch.qualityStatus,
+          isDemo: true,
+        },
+      });
+      const nextLoad = nextCisternLoad({
+        currentLoadLiters: cistern.currentLoadLiters,
+        deltaLiters: input.volumeLiters,
+      });
+      await tx.cistern.update({
+        where: { id: cistern.id },
+        data: {
+          currentLoadLiters: nextLoad,
+          status: 'IN_TRANSIT',
+          currentBatchId: batch.id,
+          driverId: cistern.driverId ?? actor.id,
+        },
+      });
+      const depot = await tx.storageTank.findFirst({
+        where: { stationId: null, cisternCode: null },
+        orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+      });
+      if (!depot) {
+        throw new BadRequestException(
+          'No hay tanque de depósito para retirar el stock. Revisá el seed (TANK-001).',
+        );
       }
+      const depotStock = applyStockWithdraw({
+        previousStock: depot.currentStockLiters,
+        withdrawLiters: input.volumeLiters,
+        capacityLiters: depot.capacityLiters,
+      });
+      await tx.storageTank.update({
+        where: { id: depot.id },
+        data: { currentStockLiters: depotStock.nextStock },
+      });
 
       const created = await tx.custodyBaton.create({
         data: {
@@ -280,9 +319,9 @@ export class CustodyQrService {
           batchId: batch.id,
           vehicleId,
           stationId,
-          cisternId: cistern?.id,
-          deliveryId,
-          cisternCode: cistern?.code ?? input.cisternCode,
+          cisternId: cistern.id,
+          deliveryId: delivery.id,
+          cisternCode: cistern.code,
           eventType: input.eventType,
           volumeLiters: new Prisma.Decimal(input.volumeLiters),
           payloadJson,
@@ -294,12 +333,10 @@ export class CustodyQrService {
           isDemo: true,
         },
       });
-      if (deliveryId) {
-        await tx.delivery.update({
-          where: { id: deliveryId },
-          data: { batonTokenId: tokenId },
-        });
-      }
+      await tx.delivery.update({
+        where: { id: delivery.id },
+        data: { batonTokenId: tokenId },
+      });
 
       if (batch.status === BatchStatus.AUTHORIZED) {
         assertCanTransition(batch.status, BatchStatus.IN_TRANSIT);
@@ -307,15 +344,13 @@ export class CustodyQrService {
           where: { id: batch.id },
           data: {
             status: BatchStatus.IN_TRANSIT,
-            currentLocation: input.cisternCode
-              ? `Cisterna ${input.cisternCode}`
-              : batch.currentLocation,
+            currentLocation: `Cisterna ${cistern.code}`,
           },
         });
-      } else if (batch.status === BatchStatus.IN_TRANSIT && input.cisternCode) {
+      } else if (batch.status === BatchStatus.IN_TRANSIT) {
         await tx.fuelBatch.update({
           where: { id: batch.id },
-          data: { currentLocation: `Cisterna ${input.cisternCode}` },
+          data: { currentLocation: `Cisterna ${cistern.code}` },
         });
       }
 
@@ -325,7 +360,7 @@ export class CustodyQrService {
     const deepLinkPath = `/q/${tokenId}`;
     return serialize({
       label: 'DEMO',
-      note: 'Bastón QR firmado (HMAC). El payload viaja en ?p= para uso offline. El volumen es del movimiento, no del lote.',
+      note: 'Bastón QR firmado. Los datos viajan en ?p= para uso sin señal. El volumen es del movimiento, no del lote.',
       volumeLooksLikeLote,
       transport: transport
         ? {
@@ -375,6 +410,15 @@ export class CustodyQrService {
   }
 
   async accept(input: AcceptBatonInput, actor: AuthUser) {
+    if (
+      actor.role !== ActorRole.STATION_STAFF &&
+      actor.role !== ActorRole.ADMIN
+    ) {
+      throw new BadRequestException(
+        'Solo la estación (o admin) puede aceptar el bastón',
+      );
+    }
+
     let tokenId = input.tokenId;
     const embedded = input.embedded;
 
@@ -559,10 +603,31 @@ export class CustodyQrService {
       const delivery = baton!.deliveryId
         ? await tx.delivery.findUnique({ where: { id: baton!.deliveryId } })
         : null;
+
+      if (
+        actor.role === ActorRole.STATION_STAFF &&
+        (input.receivedDensity == null ||
+          input.receivedTemperature == null ||
+          input.receivedWaterDetected == null)
+      ) {
+        throw new BadRequestException(
+          'La estación debe registrar densidad, temperatura y agua al recibir',
+        );
+      }
+
       const qualityTemp =
-        delivery?.loadTemperature ?? new Prisma.Decimal(22);
-      const qualityDensity = delivery?.loadDensity ?? new Prisma.Decimal(0.745);
-      const qualityWater = delivery?.loadWaterDetected ?? false;
+        input.receivedTemperature != null &&
+        Number.isFinite(input.receivedTemperature)
+          ? new Prisma.Decimal(input.receivedTemperature)
+          : (delivery?.loadTemperature ?? new Prisma.Decimal(22));
+      const qualityDensity =
+        input.receivedDensity != null && Number.isFinite(input.receivedDensity)
+          ? new Prisma.Decimal(input.receivedDensity)
+          : (delivery?.loadDensity ?? new Prisma.Decimal(0.745));
+      const qualityWater =
+        input.receivedWaterDetected != null
+          ? Boolean(input.receivedWaterDetected)
+          : (delivery?.loadWaterDetected ?? false);
 
       if (delivery) {
         await tx.delivery.update({
@@ -575,6 +640,19 @@ export class CustodyQrService {
             receivedWaterDetected: qualityWater,
             deliveredAt: now,
           },
+        });
+        const liters = received;
+        await tx.driverSettlement.upsert({
+          where: { deliveryId: delivery.id },
+          create: settlementCreateData({
+            deliveryId: delivery.id,
+            driverId: baton!.cistern?.driverId ?? null,
+            cisternId: delivery.cisternId,
+            stationId: delivery.destinationStationId,
+            batchId: delivery.batchId,
+            liters,
+          }),
+          update: {},
         });
       }
 
@@ -660,13 +738,27 @@ export class CustodyQrService {
       });
     }
 
+    const settlement = baton.deliveryId
+      ? await this.prisma.driverSettlement.findUnique({
+          where: { deliveryId: baton.deliveryId },
+        })
+      : null;
+
     return serialize({
       label: 'DEMO',
-      note: 'Bastón consumido. Custodia RECEIVED e inventario actualizados como delta. El ancla blockchain es best-effort.',
+      note: 'Bastón consumido. Custodia recibida, inventario actualizado y liquidación DEMO del chofer creada. El ancla en cadena se intenta si hay nodo.',
       data: updated.baton,
       movement: follow?.reconciliation ?? null,
       anomaly: follow?.anomaly ?? null,
       blockchain: follow?.blockchain ?? null,
+      settlement: settlement
+        ? {
+            id: settlement.id,
+            status: settlement.status,
+            amountBob: Number(settlement.amountBob.toString()),
+            liters: Number(settlement.liters.toString()),
+          }
+        : null,
     });
   }
 
@@ -722,13 +814,36 @@ export class CustodyQrService {
 
       try {
         if (ev.eventType === 'ACCEPT_BATON' && ev.batonTokenId) {
+          const p = ev.payload;
           await this.accept(
             {
               tokenId: ev.batonTokenId,
               embedded: ev.payload,
               stationCode: ev.stationCode,
               receivedVolumeLiters:
-                typeof ev.payload.vol === 'number' ? ev.payload.vol : undefined,
+                typeof p.receivedVolumeLiters === 'number'
+                  ? p.receivedVolumeLiters
+                  : typeof p.vol === 'number'
+                    ? p.vol
+                    : undefined,
+              receivedDensity:
+                typeof p.receivedDensity === 'number'
+                  ? p.receivedDensity
+                  : typeof p.dens === 'number'
+                    ? p.dens
+                    : undefined,
+              receivedTemperature:
+                typeof p.receivedTemperature === 'number'
+                  ? p.receivedTemperature
+                  : typeof p.temp === 'number'
+                    ? p.temp
+                    : undefined,
+              receivedWaterDetected:
+                typeof p.receivedWaterDetected === 'boolean'
+                  ? p.receivedWaterDetected
+                  : typeof p.water === 'boolean'
+                    ? p.water
+                    : undefined,
               clientEventId: ev.clientEventId,
             },
             actor,
@@ -763,7 +878,7 @@ export class CustodyQrService {
 
     return {
       label: 'DEMO',
-      note: 'Sincronización store-and-forward. clientEventId es idempotente.',
+      note: 'Sincronización diferida. El id de evento del cliente evita duplicados.',
       results,
     };
   }

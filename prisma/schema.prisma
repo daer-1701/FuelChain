@@ -205,6 +205,12 @@ enum AuditCaseStatus {
   CLOSED
 }
 
+enum SettlementStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 enum QualityStatus {
   PENDING
   IN_PROGRESS
@@ -236,6 +242,8 @@ model User {
   auditNotes        AuditNote[]
   assignedAudits    AuditCase[]      @relation("AuditAssignee")
   routeCheckpoints  RouteCheckpoint[] @relation("CheckpointActor")
+  driverSettlements DriverSettlement[] @relation("SettlementDriver")
+  settlementsPaid   DriverSettlement[] @relation("SettlementPayer")
 
   @@index([stationId])
   @@map("users")
@@ -278,6 +286,7 @@ model FuelBatch {
   deliveries       Delivery[]
   loadedCisterns   Cistern[]         @relation("CisternCurrentBatch")
   routeCheckpoints RouteCheckpoint[]
+  driverSettlements DriverSettlement[]
 
   @@index([status])
   @@index([riskLevel])
@@ -508,6 +517,7 @@ model Station {
   batons     CustodyBaton[]
   staff      User[]
   deliveries Delivery[]
+  driverSettlements DriverSettlement[]
 
   @@index([city, publicVisible])
   @@index([availability])
@@ -614,6 +624,7 @@ model Cistern {
   deliveries   Delivery[]
   batons       CustodyBaton[]
   checkpoints  RouteCheckpoint[]
+  settlements  DriverSettlement[]
 
   @@index([driverId])
   @@index([status])
@@ -637,6 +648,9 @@ model Delivery {
   receivedWaterDetected Boolean       @default(false)
   loadedAt             DateTime       @default(now())
   deliveredAt          DateTime?
+  /** Acuse DEMO del contrato de entrega (estación / chofer). */
+  stationContractAckAt DateTime?
+  driverContractAckAt  DateTime?
   batonTokenId         String?
   isDemo               Boolean        @default(true)
   createdAt            DateTime       @default(now())
@@ -647,6 +661,7 @@ model Delivery {
   station  Station       @relation(fields: [destinationStationId], references: [id], onDelete: Restrict)
   batons   CustodyBaton[]
   checkpoints RouteCheckpoint[]
+  settlement DriverSettlement?
 
   @@index([batchId, status])
   @@index([cisternId, status])
@@ -796,4 +811,37 @@ model BlockchainAnchor {
   @@index([transactionHash])
   @@index([dataHash])
   @@map("blockchain_anchors")
+}
+
+/// Liquidación DEMO al chofer cuando la entrega queda DELIVERED.
+model DriverSettlement {
+  id           String           @id @default(cuid())
+  deliveryId   String           @unique
+  driverId     String?
+  cisternId    String
+  stationId    String
+  batchId      String
+  liters       Decimal          @db.Decimal(18, 3)
+  ratePerLiter Decimal          @db.Decimal(12, 4)
+  amountBob    Decimal          @db.Decimal(18, 2)
+  currency     String           @default("BOB")
+  status       SettlementStatus @default(PENDING)
+  paidAt       DateTime?
+  paidById     String?
+  evidenceNote String?
+  isDemo       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  driver   User?    @relation("SettlementDriver", fields: [driverId], references: [id], onDelete: SetNull)
+  paidBy   User?    @relation("SettlementPayer", fields: [paidById], references: [id], onDelete: SetNull)
+  cistern  Cistern  @relation(fields: [cisternId], references: [id], onDelete: Restrict)
+  station  Station  @relation(fields: [stationId], references: [id], onDelete: Restrict)
+  batch    FuelBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, status])
+  @@index([stationId, status])
+  @@index([status, createdAt])
+  @@map("driver_settlements")
 }

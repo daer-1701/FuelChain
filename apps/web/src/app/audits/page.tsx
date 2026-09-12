@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import { riskLabel } from '@/lib/es-labels';
 import { formatStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export default async function AuditsPage() {
     const res = await apiGet<AuditsResponse>('/audits');
     data = res.data;
   } catch (e) {
-    error = e instanceof Error ? e.message : 'API error';
+    error = e instanceof Error ? e.message : 'Error de API';
   }
 
   return (
@@ -57,7 +58,7 @@ export default async function AuditsPage() {
               </p>
               <p className="mt-1 text-sm text-[var(--mute)]">
                 {c.anomaly
-                  ? `${c.anomaly.severity.toLowerCase()} · ${formatStatus(c.anomaly.type)}`
+                  ? `${riskLabel(c.anomaly.severity)} · ${formatStatus(c.anomaly.type)}`
                   : 'Sin discrepancia vinculada'}
               </p>
             </div>

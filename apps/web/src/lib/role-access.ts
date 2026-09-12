@@ -31,6 +31,7 @@ const ALL_NAV: NavItem[] = [
   { href: '/tramos', label: 'Viajes GPS' },
   { href: '/simular', label: 'Simular entrega' },
   { href: '/contratos', label: 'Contratos' },
+  { href: '/liquidaciones', label: 'Liquidaciones' },
   { href: '/mapa', label: 'Bolivia' },
   { href: '/', label: 'Resumen' },
   { href: '/batches', label: 'Lotes' },
@@ -41,11 +42,11 @@ const ALL_NAV: NavItem[] = [
 
 const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
-  STATION_STAFF: ['/estacion', '/contratos', '/tramos'],
-  TRANSPORTER: ['/verify', '/tramos', '/simular', '/contratos'],
+  STATION_STAFF: ['/estacion', '/contratos', '/liquidaciones', '/tramos'],
+  TRANSPORTER: ['/verify', '/tramos', '/simular', '/contratos', '/liquidaciones'],
   VERIFIER: ['/supervision', '/tramos'],
   CITIZEN: ['/mapa'],
-  DEPOT_OPERATOR: ['/verify', '/tramos', '/simular', '/contratos'],
+  DEPOT_OPERATOR: ['/verify', '/tramos', '/simular', '/contratos', '/liquidaciones'],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
   LAB: ['/batches'],
   AUDITOR: ['/supervision', '/tramos', '/anomalies', '/audits'],
@@ -65,11 +66,25 @@ export const HOME_BY_ROLE: Record<AppRole, string> = {
 
 const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ['/'],
-  STATION_STAFF: ['/estacion', '/contratos', '/tramos', '/q'],
-  TRANSPORTER: ['/verify', '/simular', '/contratos', '/tramos', '/q'],
-  VERIFIER: ['/supervision', '/tramos'],
+  STATION_STAFF: ['/estacion', '/contratos', '/liquidaciones', '/tramos', '/q'],
+  TRANSPORTER: [
+    '/verify',
+    '/simular',
+    '/contratos',
+    '/liquidaciones',
+    '/tramos',
+    '/q',
+  ],
+  VERIFIER: ['/supervision', '/tramos', '/liquidaciones'],
   CITIZEN: ['/mapa'],
-  DEPOT_OPERATOR: ['/verify', '/simular', '/contratos', '/tramos', '/q'],
+  DEPOT_OPERATOR: [
+    '/verify',
+    '/simular',
+    '/contratos',
+    '/liquidaciones',
+    '/tramos',
+    '/q',
+  ],
   IMPORTER: ['/batches', '/mapa', '/blockchain'],
   LAB: ['/batches'],
   AUDITOR: [

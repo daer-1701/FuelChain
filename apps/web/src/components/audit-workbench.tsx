@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { canWriteAudit } from '@/lib/role-access';
+import { labelEs, roleLabel } from '@/lib/es-labels';
 
 const STATUSES = [
   'OPEN',
@@ -34,7 +35,7 @@ export function AuditWorkbench({
     return (
       <p className="text-sm text-[var(--mute)]">
         Solo auditor (o admin) puede agregar notas o cerrar el caso. Tu rol:{' '}
-        {user?.role ?? 'sin sesión'}.
+        {roleLabel(user?.role) === '—' ? 'sin sesión' : roleLabel(user?.role)}.
       </p>
     );
   }
@@ -49,7 +50,7 @@ export function AuditWorkbench({
           body: JSON.stringify({ status }),
         });
         if (!res.ok) throw await errorFromResponse(res);
-        setLog(`Estado actualizado a ${status}.`);
+        setLog(`Estado actualizado a ${labelEs(status)}.`);
         router.refresh();
       } catch (e) {
         setLog(friendlyError(e, 'No se pudo actualizar'));
@@ -94,7 +95,7 @@ export function AuditWorkbench({
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {labelEs(s)}
               </option>
             ))}
           </select>

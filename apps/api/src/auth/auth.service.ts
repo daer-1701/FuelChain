@@ -110,7 +110,7 @@ export class AuthService {
     };
     return serialize({
       label: 'DEMO',
-      note: 'Login DEMO con scrypt local. No es IdP productivo.',
+      note: 'Login DEMO local. No es un proveedor de identidad productivo.',
       data: {
         token: this.signToken(authUser),
         user: authUser,

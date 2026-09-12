@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ActorRole, Prisma } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.service';
 import { serialize } from '../common/serialize';
@@ -13,6 +13,12 @@ import {
   publicLevelFromAvailability,
 } from './station-quality';
 
+/** Quita sufijo DEMO de textos visibles al ciudadano. */
+function publicLabel(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  return value.replace(/\s*\(DEMO\)\s*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
+}
+
 @Injectable()
 export class StationsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,7 +32,6 @@ export class StationsService {
 
   async listPublic(city?: string) {
     const cityFilter = this.normalizeCityFilter(city);
-    await this.applyIdleConsumption(cityFilter);
     const rows = await this.prisma.station.findMany({
       where: {
         publicVisible: true,
@@ -106,10 +111,10 @@ export class StationsService {
 
         return {
           code: s.code,
-          name: s.name,
+          name: publicLabel(s.name) ?? s.name,
           city: s.city,
           municipality: s.municipality,
-          address: s.address,
+          address: publicLabel(s.address) ?? s.address,
           latitude: s.latitude,
           longitude: s.longitude,
           availability,
@@ -150,7 +155,6 @@ export class StationsService {
     opts?: { stationId?: string; includeFleet?: boolean },
   ) {
     const cityFilter = this.normalizeCityFilter(city);
-    await this.applyIdleConsumption(cityFilter);
     const stationFilter = opts?.stationId
       ? {
           id: opts.stationId,
@@ -252,12 +256,12 @@ export class StationsService {
 
         return {
           code: s.code,
-          name: s.name,
+          name: publicLabel(s.name) ?? s.name,
           city: s.city,
           municipality: s.municipality,
-        address: s.address,
-        latitude: s.latitude,
-        longitude: s.longitude,
+          address: publicLabel(s.address) ?? s.address,
+          latitude: s.latitude,
+          longitude: s.longitude,
         availability,
         products: s.products,
         lastInventoryAt: s.lastInventoryAt,
@@ -388,7 +392,7 @@ export class StationsService {
     return serialize({
       label: 'DEMO',
       note:
-        'Contrato de entrega DEMO entre surtidor y chofer (derivado del despacho). No es un contrato legal oficial.',
+        'Contrato de entrega DEMO entre surtidor y chofer (derivado del despacho). Cada parte puede acusar el acuerdo.',
       data: rows.map((d) => ({
         id: d.id,
         title: `Entrega ${d.cistern.code} → ${d.station.code}`,
@@ -408,6 +412,8 @@ export class StationsService {
         loadedAt: d.loadedAt,
         deliveredAt: d.deliveredAt,
         batonTokenId: d.batonTokenId,
+        stationAckAt: d.stationContractAckAt,
+        driverAckAt: d.driverContractAckAt,
         parties: {
           station: d.station.name,
           driver: d.cistern.driver?.name ?? 'Chofer DEMO',
@@ -417,8 +423,84 @@ export class StationsService {
     });
   }
 
-  /** DEMO: ventas diarias ~2% capacidad para que el stock no solo suba. */
+  async ackContract(deliveryId: string, user: AuthUser) {
+    const delivery = await this.prisma.delivery.findUnique({
+      where: { id: deliveryId },
+      include: {
+        cistern: true,
+        station: true,
+      },
+    });
+    if (!delivery) {
+      throw new BadRequestException('Contrato / entrega no encontrada');
+    }
+
+    const now = new Date();
+    if (user.role === ActorRole.STATION_STAFF) {
+      if (!user.stationId || delivery.destinationStationId !== user.stationId) {
+        throw new BadRequestException(
+          'Solo podés acusar contratos de tu estación',
+        );
+      }
+      const updated = await this.prisma.delivery.update({
+        where: { id: deliveryId },
+        data: { stationContractAckAt: now },
+      });
+      return serialize({
+        label: 'DEMO',
+        note: 'Estación acusó el contrato de entrega.',
+        data: { id: updated.id, stationAckAt: updated.stationContractAckAt },
+      });
+    }
+
+    if (
+      user.role === ActorRole.TRANSPORTER ||
+      user.role === ActorRole.DEPOT_OPERATOR
+    ) {
+      const owns =
+        delivery.cistern.driverId === user.id ||
+        (user.cisternCode && delivery.cistern.code === user.cisternCode);
+      if (!owns) {
+        throw new BadRequestException(
+          'Solo podés acusar contratos de tu cisterna',
+        );
+      }
+      const updated = await this.prisma.delivery.update({
+        where: { id: deliveryId },
+        data: { driverContractAckAt: now },
+      });
+      return serialize({
+        label: 'DEMO',
+        note: 'Chofer acusó el contrato de entrega.',
+        data: { id: updated.id, driverAckAt: updated.driverContractAckAt },
+      });
+    }
+
+    if (user.role === ActorRole.ADMIN) {
+      const updated = await this.prisma.delivery.update({
+        where: { id: deliveryId },
+        data: {
+          stationContractAckAt: delivery.stationContractAckAt ?? now,
+          driverContractAckAt: delivery.driverContractAckAt ?? now,
+        },
+      });
+      return serialize({
+        label: 'DEMO',
+        note: 'Admin acusó el contrato.',
+        data: {
+          id: updated.id,
+          stationAckAt: updated.stationContractAckAt,
+          driverAckAt: updated.driverContractAckAt,
+        },
+      });
+    }
+
+    throw new BadRequestException('Tu rol no acusa contratos');
+  }
+
+  /** Opcional: consumo DEMO si DEMO_IDLE_CONSUMPTION=1 (apagado por defecto). */
   private async applyIdleConsumption(city?: string) {
+    if (process.env.DEMO_IDLE_CONSUMPTION !== '1') return;
     const tanks = await this.prisma.storageTank.findMany({
       where: city ? { station: { city } } : { stationId: { not: null } },
       include: { station: { select: { lastInventoryAt: true } } },

@@ -56,7 +56,15 @@ En `.env`: `CHAIN_RPC_URL=http://127.0.0.1:8545`, `CHAIN_ID=31337`, `FUELCHAIN_C
 
 Nunca uses una clave en `NEXT_PUBLIC_*`. Nunca despliegues a HSK Mainnet (177) con estos scripts.
 
-Valores oficiales de red: [HashKey Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart). Detalle en `docs/demo.md`.
+Valores oficiales de red: [HashKey Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart).  
+Guía feria / track HSK: **`docs/hsk-feria.md`**. Detalle demo: `docs/demo.md`.
+
+**HSK Mainnet (solo si el track lo exige):**
+
+```powershell
+# ALLOW_HSK_MAINNET=1 + HSK_MAINNET_RPC_URL + clave con gas
+pnpm contracts:deploy:hsk-mainnet
+```
 
 Secretos **obligatorios** (fail-fast, sin fallback):
 

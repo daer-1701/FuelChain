@@ -5,6 +5,7 @@ import {
   riskClass,
   type BatchesList,
 } from '@/lib/types';
+import { riskLabel } from '@/lib/es-labels';
 
 export function BatchesTable({ list }: { list: BatchesList }) {
   return (
@@ -47,7 +48,7 @@ export function BatchesTable({ list }: { list: BatchesList }) {
                   {formatStatus(b.qualityStatus)}
                 </td>
                 <td className={`font-medium ${riskClass(b.riskLevel)}`}>
-                  {b.riskLevel.toLowerCase()} · {b.riskScore}
+                  {riskLabel(b.riskLevel)} · {b.riskScore}
                 </td>
                 <td className="max-w-[160px] truncate text-[var(--mute)]">
                   {b.currentLocation ?? '—'}

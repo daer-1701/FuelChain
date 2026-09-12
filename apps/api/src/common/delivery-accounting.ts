@@ -1,13 +1,18 @@
 import { BadRequestException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 
+/** Litros aún disponibles para despachar (declarado − recibido − en tránsito). */
 export function remainingBatchLiters(input: {
   declaredLiters: Decimal | string | number;
   deliveredLiters: Decimal | string | number;
+  /** Litros ya cargados en entregas LOADED / IN_TRANSIT (aún no recibidos). */
+  reservedLiters?: Decimal | string | number;
 }): number {
   const declared = Number(input.declaredLiters.toString());
   const delivered = Number(input.deliveredLiters.toString());
-  return Math.max(0, declared - delivered);
+  const reserved = Number((input.reservedLiters ?? 0).toString());
+  if (!Number.isFinite(declared) || declared <= 0) return 0;
+  return Math.max(0, declared - delivered - reserved);
 }
 
 export function assertCisternCanLoad(input: {

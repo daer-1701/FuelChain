@@ -107,6 +107,7 @@ describe('CustodyQrController authz', () => {
         batchCode: 'FC-BO-2026-000182',
         eventType: 'IN_TRANSIT',
         volumeLiters: 1000,
+        stationCode: 'ST-CBB-01',
         issuedByRole: 'ADMIN',
       })
       .expect(201);

@@ -7,6 +7,7 @@ import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { explorerTxUrl } from '@/lib/explorer';
 import { canAnchorEvidence } from '@/lib/role-access';
+import { roleLabel } from '@/lib/es-labels';
 
 type ChainStatus = {
   live: boolean;
@@ -111,8 +112,8 @@ export function LiveAnchorPanel({
       <section className="border-2 border-[var(--ink)] bg-[var(--paper)] p-5">
         <h2 className="font-display text-xl font-bold">Evidencia en cadena</h2>
         <p className="mt-2 text-sm text-[var(--mute)]">
-          Anclar on-chain es trabajo de auditor / importador / admin. Tu rol (
-          {user.role}) solo consulta el historial abajo.
+          Registrar en la cadena es trabajo de auditor / importador / admin. Tu
+          rol ({roleLabel(user.role)}) solo consulta el historial abajo.
         </p>
       </section>
     );
@@ -126,8 +127,8 @@ export function LiveAnchorPanel({
             Anclar evidencia ahora
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--mute)]">
-            Escribe un evento on-chain y guarda el txHash en el índice. Hash
-            verificable. No prueba litros físicos ni que no hubo robo.
+            Escribe un evento en la cadena y guarda el hash de la transacción.
+            Hash verificable. No prueba litros físicos ni que no hubo robo.
           </p>
         </div>
         <span className="fc-stamp text-[var(--diesel)]">Demo en vivo</span>
@@ -138,8 +139,8 @@ export function LiveAnchorPanel({
           ok={Boolean(status?.rpcReachable)}
           label={
             status?.rpcReachable
-              ? `RPC ok · bloque ${status.blockNumber ?? '—'}`
-              : 'RPC offline'
+              ? `Nodo ok · bloque ${status.blockNumber ?? '—'}`
+              : 'Nodo sin conexión'
           }
         />
         <StatusLine
@@ -156,23 +157,30 @@ export function LiveAnchorPanel({
             status?.network
               ? `Red ${status.network}`
               : status?.chainId
-                ? `chain ${status.chainId}`
+                ? `Cadena ${status.chainId}`
                 : 'Red desconocida'
           }
         />
         <StatusLine
           ok={Boolean(status?.hasPrivateKey)}
-          label={status?.hasPrivateKey ? 'Clave de escritura lista' : 'Sin private key'}
+          label={
+            status?.hasPrivateKey
+              ? 'Clave de escritura lista'
+              : 'Sin clave privada'
+          }
         />
         {status?.onChainAnchorCount != null && (
-          <StatusLine ok label={`${status.onChainAnchorCount} anclas on-chain`} />
+          <StatusLine
+            ok
+            label={`${status.onChainAnchorCount} anclas en cadena`}
+          />
         )}
       </ul>
 
       {!ready && (
         <p className="mt-4 text-sm text-[var(--mute)]">
           {status?.note ?? 'Preparando…'} Si usás localhost, arrancá Hardhat y
-          desplegá. Si usás HSK, revisá CHAIN_RPC_URL (guía demo).
+          desplegá. Si usás HSK, revisá la URL del nodo (guía demo).
         </p>
       )}
 
@@ -192,11 +200,17 @@ export function LiveAnchorPanel({
             value={eventKind}
             onChange={(e) => setEventKind(e.target.value)}
           >
-            <option value="AnomalyRegistered">AnomalyRegistered</option>
-            <option value="MeasurementAnchored">MeasurementAnchored</option>
-            <option value="CustodyEventRegistered">CustodyEventRegistered</option>
-            <option value="DocumentHashRegistered">DocumentHashRegistered</option>
-            <option value="BatchCreated">BatchCreated</option>
+            <option value="AnomalyRegistered">
+              Discrepancia registrada
+            </option>
+            <option value="MeasurementAnchored">Medición anclada</option>
+            <option value="CustodyEventRegistered">
+              Custodia registrada
+            </option>
+            <option value="DocumentHashRegistered">
+              Hash de documento
+            </option>
+            <option value="BatchCreated">Lote creado</option>
           </select>
         </label>
         <label className="block text-sm text-[var(--mute)]">
@@ -238,7 +252,7 @@ export function LiveAnchorPanel({
               <dd className="inline">{result.data.blockNumber}</dd>
             </div>
             <div>
-              <dt className="inline text-[var(--mute)]">hash · </dt>
+              <dt className="inline text-[var(--mute)]">huella · </dt>
               <dd className="inline break-all">{result.data.dataHash}</dd>
             </div>
           </dl>

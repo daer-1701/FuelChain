@@ -9,6 +9,7 @@ import type {
   SupervisionResponse,
   SupervisionStation,
 } from '@/components/station-types';
+import { labelEs, checkpointKindLabel } from '@/lib/es-labels';
 
 const qualityClass: Record<SupervisionStation['quality']['tone'], string> = {
   OK: 'text-[var(--seal)]',
@@ -337,7 +338,7 @@ export function SupervisionPanel({
                     <div>
                       <p className="font-semibold">{t.name}</p>
                       <p className="text-[var(--mute)]">
-                        {t.status}
+                        {labelEs(t.status)}
                         {t.cisternCode ? ` · ${t.cisternCode}` : ''}
                       </p>
                       {t.lastMeasurement && (
@@ -381,7 +382,7 @@ export function SupervisionPanel({
                     >
                       <div>
                         <p className="font-semibold">
-                          {c.cisternCode ?? 'Sin código'} · {c.status}
+                          {c.cisternCode ?? 'Sin código'} · {labelEs(c.status)}
                         </p>
                         <p className="text-[var(--mute)]">
                           {c.product} ·{' '}
@@ -391,7 +392,7 @@ export function SupervisionPanel({
                           >
                             {c.batchCode}
                           </Link>{' '}
-                          · calidad lote {c.batchQualityStatus}
+                          · calidad lote {labelEs(c.batchQualityStatus)}
                         </p>
                         <p className="mt-1 text-xs text-[var(--mute)]">
                           {c.consumedAt
@@ -402,7 +403,7 @@ export function SupervisionPanel({
                           <ul className="mt-2 space-y-1 border-l border-[var(--rail)]/50 pl-3 text-xs text-[var(--mute)]">
                             {c.checkpoints.map((cp) => (
                               <li key={cp.id}>
-                                {cp.kind.replaceAll('_', ' ')}
+                                {checkpointKindLabel(cp.kind)}
                                 {cp.label ? ` · ${cp.label}` : ''} ·{' '}
                                 {liters(cp.volumeLiters)} ·{' '}
                                 {cp.latitude.toFixed(3)},{cp.longitude.toFixed(3)}
@@ -440,7 +441,7 @@ export function SupervisionPanel({
                 </div>
                 <p className="tabular-nums">
                   {liters(c.currentStockLiters)} / {liters(c.capacityLiters)} ·{' '}
-                  {c.status}
+                  {labelEs(c.status)}
                 </p>
               </li>
             ))}

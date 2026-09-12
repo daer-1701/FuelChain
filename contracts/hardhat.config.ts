@@ -65,6 +65,14 @@ const config: HardhatUserConfig = {
       chainId: hskChainId,
       accounts: writerKey ? [writerKey] : [],
     },
+    hskMainnet: {
+      url:
+        process.env.HSK_MAINNET_RPC_URL ||
+        process.env.CHAIN_RPC_URL ||
+        '',
+      chainId: 177,
+      accounts: writerKey ? [writerKey] : [],
+    },
   },
 };
 

@@ -45,7 +45,7 @@ const QUALITY_META: Record<
   { label: string; hint: string; className: string }
 > = {
   OK: {
-    label: 'Calidad OK',
+    label: 'Calidad bien',
     hint: 'Sin alertas de calidad',
     className: 'border-[var(--ok,#1a7a3c)] text-[var(--ok,#1a7a3c)]',
   },
@@ -65,6 +65,14 @@ const QUALITY_META: Record<
     className: 'border-[var(--mute)] text-[var(--mute)]',
   },
 };
+
+function stripDemo(text: string | null | undefined): string {
+  if (!text) return '';
+  return text
+    .replace(/\s*\(DEMO\)\s*/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
 function qualityOf(station: PublicStation) {
   const tone = station.qualityTone ?? 'SIN_DATO';
@@ -96,10 +104,10 @@ function StationDetail({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 id={titleId} className="font-display text-2xl font-black leading-tight">
-            {station.name}
+            {stripDemo(station.name)}
           </h2>
           <p className="mt-1 text-sm text-[var(--mute)]">
-            {[station.city, station.municipality, station.address]
+            {[station.city, station.municipality, stripDemo(station.address)]
               .filter(Boolean)
               .join(' · ') || 'Bolivia'}
           </p>
@@ -440,13 +448,13 @@ export function CbbaStationsExplorer({
                       aria-hidden
                     />
                     <span className="font-display text-lg font-bold leading-tight sm:text-xl">
-                      {s.name}
+                      {stripDemo(s.name)}
                     </span>
                   </div>
                   <p className="mt-1 truncate text-sm text-[var(--mute)]">
                     {[s.city, s.municipality].filter(Boolean).join(' · ') ||
                       'Bolivia'}
-                    {s.address ? ` · ${s.address}` : ''}
+                    {s.address ? ` · ${stripDemo(s.address)}` : ''}
                   </p>
                   {(s.stockLiters != null || s.fillPercent != null) && (
                     <p className="mt-1 text-sm font-semibold tabular-nums text-[var(--ink)]">

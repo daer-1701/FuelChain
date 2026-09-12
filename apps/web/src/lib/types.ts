@@ -1,3 +1,5 @@
+import { labelEs } from '@/lib/es-labels';
+
 export type DashboardKpis = {
   label: string;
   kpis: {
@@ -56,12 +58,13 @@ export function formatVolume(v: string | number): string {
 }
 
 export function formatStatus(status: string): string {
-  return status.replaceAll('_', ' ').toLowerCase();
+  return labelEs(status);
 }
 
 export function riskClass(level: string): string {
-  switch (level) {
+  switch (level?.toUpperCase()) {
     case 'HIGH':
+    case 'CRITICAL':
       return 'text-[var(--alarm)]';
     case 'MEDIUM':
       return 'text-[var(--diesel)]';

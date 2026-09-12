@@ -21,6 +21,8 @@ const stationStaff: AuthUser = {
   name: 'Estación',
   role: ActorRole.STATION_STAFF,
   isDemo: true,
+  stationId: 'st1',
+  stationCode: 'ST-CBB-01',
 };
 
 function prismaHarness() {
@@ -55,6 +57,7 @@ function prismaHarness() {
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      aggregate: jest.fn().mockResolvedValue({ _sum: { loadedLiters: null } }),
     },
     qualityCertificate: { findFirst: jest.fn().mockResolvedValue(null) },
     measurement: { create: jest.fn() },
@@ -79,6 +82,32 @@ describe('CustodyQrService', () => {
     process.env.CUSTODY_QR_SECRET = 'test-custody-qr-secret';
     prisma = prismaHarness();
     service = new CustodyQrService(prisma as unknown as PrismaService);
+    prisma.station.findUnique.mockResolvedValue({
+      id: 'st1',
+      code: 'ST-CBB-01',
+    });
+    prisma.cistern.findUnique.mockResolvedValue({
+      id: 'cis1',
+      code: 'CIS-CBB-01',
+      capacityLiters: new Prisma.Decimal(30000),
+      currentLoadLiters: new Prisma.Decimal(0),
+      driverId: transporter.id,
+    });
+    prisma.storageTank.findFirst.mockResolvedValue({
+      id: 'depot1',
+      name: 'TANK-001',
+      capacityLiters: new Prisma.Decimal(500000),
+      currentStockLiters: new Prisma.Decimal(200000),
+    });
+    prisma.fuelBatch.findFirst.mockImplementation(async () => ({
+      id: 'b1',
+      batchCode: 'FC-BO-2026-000182',
+      status: 'AUTHORIZED',
+      currentLocation: 'Arica',
+      declaredVolumeLiters: new Prisma.Decimal(150000),
+      deliveredLiters: new Prisma.Decimal(0),
+      qualityStatus: 'PASSED',
+    }));
   });
 
   it('fails fast without CUSTODY_QR_SECRET', async () => {
@@ -95,6 +124,8 @@ describe('CustodyQrService', () => {
           batchCode: 'FC-BO-2026-000182',
           eventType: 'IN_TRANSIT',
           volumeLiters: 1000,
+          stationCode: 'ST-CBB-01',
+          cisternCode: 'CIS-CBB-01',
         },
         transporter,
       ),
@@ -107,9 +138,13 @@ describe('CustodyQrService', () => {
       batchCode: 'FC-BO-2026-000182',
       status: 'AUTHORIZED',
       currentLocation: 'Arica',
+      declaredVolumeLiters: new Prisma.Decimal(150000),
+      deliveredLiters: new Prisma.Decimal(0),
+      qualityStatus: 'PASSED',
     });
     prisma.custodyBaton.create.mockImplementation(async ({ data }) => data);
     prisma.fuelBatch.update.mockResolvedValue({});
+    prisma.delivery.create.mockResolvedValue({ id: 'del1' });
 
     const result = await service.issue(
       {
@@ -117,6 +152,7 @@ describe('CustodyQrService', () => {
         eventType: 'IN_TRANSIT',
         volumeLiters: 24800,
         cisternCode: 'CIS-CBB-07',
+        stationCode: 'ST-CBB-01',
       },
       transporter,
     );
@@ -146,6 +182,8 @@ describe('CustodyQrService', () => {
           batchCode: 'FC-BO-2026-000182',
           eventType: 'IN_TRANSIT',
           volumeLiters: 24800,
+          stationCode: 'ST-CBB-01',
+          cisternCode: 'CIS-CBB-01',
         },
         transporter,
       ),
@@ -205,6 +243,8 @@ describe('CustodyQrService', () => {
       id: 'b1',
       status: 'IN_TRANSIT',
       currentLocation: 'ruta',
+      declaredVolumeLiters: new Prisma.Decimal(150000),
+      deliveredLiters: new Prisma.Decimal(0),
     });
     prisma.storageTank.findFirst.mockResolvedValue({
       id: 'tk1',
@@ -232,11 +272,25 @@ describe('CustodyQrService', () => {
     });
 
     const first = service.accept(
-      { tokenId: 'BT-RACE', stationCode: 'ST-CBB-01', receivedVolumeLiters: 5000 },
+      {
+        tokenId: 'BT-RACE',
+        stationCode: 'ST-CBB-01',
+        receivedVolumeLiters: 5000,
+        receivedDensity: 0.74,
+        receivedTemperature: 21,
+        receivedWaterDetected: false,
+      },
       stationStaff,
     );
     const second = service.accept(
-      { tokenId: 'BT-RACE', stationCode: 'ST-CBB-01', receivedVolumeLiters: 5000 },
+      {
+        tokenId: 'BT-RACE',
+        stationCode: 'ST-CBB-01',
+        receivedVolumeLiters: 5000,
+        receivedDensity: 0.74,
+        receivedTemperature: 21,
+        receivedWaterDetected: false,
+      },
       stationStaff,
     );
     const results = await Promise.allSettled([first, second]);
@@ -269,6 +323,8 @@ describe('CustodyQrService', () => {
       id: 'b1',
       status: 'IN_TRANSIT',
       currentLocation: 'ruta',
+      declaredVolumeLiters: new Prisma.Decimal(150000),
+      deliveredLiters: new Prisma.Decimal(0),
     });
     prisma.fuelBatch.update.mockResolvedValue({});
     prisma.storageTank.findFirst.mockResolvedValue({
@@ -290,6 +346,9 @@ describe('CustodyQrService', () => {
         tokenId: 'BT-INV',
         stationCode: 'ST-CBB-01',
         receivedVolumeLiters: 5000,
+        receivedDensity: 0.74,
+        receivedTemperature: 21,
+        receivedWaterDetected: false,
       },
       stationStaff,
     );
@@ -347,6 +406,8 @@ describe('CustodyQrService', () => {
     prisma.fuelBatch.findUniqueOrThrow.mockResolvedValue({
       id: 'b1',
       status: 'IN_TRANSIT',
+      declaredVolumeLiters: new Prisma.Decimal(150000),
+      deliveredLiters: new Prisma.Decimal(0),
     });
     prisma.storageTank.findFirst.mockResolvedValue({
       id: 'tk1',
@@ -360,6 +421,9 @@ describe('CustodyQrService', () => {
           tokenId: 'BT-OVR',
           stationCode: 'ST-CBB-01',
           receivedVolumeLiters: 40000,
+          receivedDensity: 0.74,
+          receivedTemperature: 21,
+          receivedWaterDetected: false,
         },
         stationStaff,
       ),
@@ -431,6 +495,8 @@ describe('CustodyQrService', () => {
         batchCode: 'FC-BO-2026-000182',
         eventType: 'IN_TRANSIT',
         volumeLiters: 1000,
+        stationCode: 'ST-CBB-01',
+        cisternCode: 'CIS-CBB-01',
       },
       transporter,
     );

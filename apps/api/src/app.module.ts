@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { QualityModule } from './quality/quality.module';
+import { SettlementsModule } from './settlements/settlements.module';
 import { StationsModule } from './stations/stations.module';
 import { TanksModule } from './tanks/tanks.module';
 import { TransportsModule } from './transports/transports.module';
@@ -53,6 +54,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     AuditsModule,
     BlockchainModule,
     CheckpointsModule,
+    SettlementsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

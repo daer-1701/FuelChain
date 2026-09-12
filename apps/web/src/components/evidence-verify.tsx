@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
+import { labelEs } from '@/lib/es-labels';
 
 type VerifyPayload = {
   note: string;
@@ -67,11 +68,11 @@ export function EvidenceVerify({
                 : 'font-semibold text-[var(--alarm)]'
             }
           >
-            {result.data.verdict}
+            {labelEs(result.data.verdict)}
           </p>
           <p className="text-[var(--mute)]">{result.note}</p>
           <p className="text-[var(--mute)]">
-            Cadena: {result.data.onChainStatus} · {result.data.network}
+            Cadena: {labelEs(result.data.onChainStatus)} · {result.data.network}
           </p>
           <p className="break-all font-mono text-xs text-[var(--mute)]">
             {result.data.recomputedHash}

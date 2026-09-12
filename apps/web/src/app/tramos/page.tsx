@@ -366,11 +366,8 @@ export default function TramosPage() {
         setGeoMsg('Ubicación capturada del celular.');
       },
       () => {
-        setLat(-17.3895);
-        setLng(-66.1568);
-        setAccuracy(null);
         setGeoMsg(
-          'Sin GPS del dispositivo — se usó ubicación DEMO (centro Cochabamba).',
+          'Sin GPS del dispositivo. Capturá de nuevo o ingresá lat/lng manualmente.',
         );
       },
       { enableHighAccuracy: true, timeout: 12000 },
@@ -386,11 +383,10 @@ export default function TramosPage() {
         let longitude = lng;
         let accuracyMeters = accuracy;
         if (latitude == null || longitude == null) {
-          latitude = -17.3895;
-          longitude = -66.1568;
-          setGeoMsg(
-            'Sin GPS — se usó ubicación DEMO (centro Cochabamba).',
+          setLog(
+            'Falta ubicación. Usá «Capturar GPS» o escribí latitud y longitud.',
           );
+          return;
         }
         const clientEventId = `cp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const res = await fetch(`${API_URL}/checkpoints`, {
@@ -597,6 +593,34 @@ export default function TramosPage() {
                     {accuracy != null ? ` · ±${accuracy} m` : ''}
                   </span>
                 )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm">
+                  Latitud (manual)
+                  <input
+                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    value={lat ?? ''}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setLat(Number.isFinite(n) ? n : null);
+                      setGeoMsg('Ubicación manual.');
+                    }}
+                    placeholder="-17.3895"
+                  />
+                </label>
+                <label className="block text-sm">
+                  Longitud (manual)
+                  <input
+                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    value={lng ?? ''}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setLng(Number.isFinite(n) ? n : null);
+                      setGeoMsg('Ubicación manual.');
+                    }}
+                    placeholder="-66.1568"
+                  />
+                </label>
               </div>
               {geoMsg && <p className="text-sm text-[var(--mute)]">{geoMsg}</p>}
               <button

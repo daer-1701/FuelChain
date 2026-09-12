@@ -59,16 +59,16 @@ Lotes seed: `FC-BO-2026-000181` · `000182` · `000184`.
 2. Elegí lote `000182` (en tránsito) → **Generar QR**.
 3. El QR se genera **en el navegador** (sin CDN).
 4. Opcional: **Tramos GPS** (`/tramos`) → registrar waypoint con GPS del celular.
-5. Opcional: **Simular** entrega CBBA si no hay escáner.
+5. Opcional: **Simular** solo emite el viaje (la estación debe aceptar).
 6. Frase: *“El chofer registra el despacho: litros y calidad salen aquí; la estación no inventa calidad al aceptar.”*
 
 ### C — Estación recibe (2 min)
 
 1. Login `estacion@` → **Mi estación**.
 2. Mostrá tanque Cala Cala + cisternas hacia **esta** EESS (no mapa de toda CBBA).
-3. Abrí el deep link del QR (`/q/BT-…`) → **Aceptar** con sesión de estación.
+3. Abrí el deep link del QR (`/q/BT-…`) → registrá litros + densidad/temp/agua → **Aceptar**.
 4. Inventario suma el volumen recibido (delta).
-5. **Contratos** = acuerdos DEMO estación ↔ chofer derivados de entregas.
+5. **Contratos** = acuse estación ↔ chofer. **Liquidaciones** = pago DEMO al chofer.
 6. Frase: *“La estación controla su surtidor; no ve la red completa.”*
 
 ### D — ANH verifica la red (1–2 min)
@@ -77,11 +77,28 @@ Lotes seed: `FC-BO-2026-000181` · `000182` · `000184`.
 2. Mostrá entregas de toda la red + tramos GPS bajo cisternas.
 3. Frase: *“ANH verifica todos los movimientos; discrepancia ≠ robo.”*
 
-### E — Evidencia blockchain (1 min, opcional)
+### E — Evidencia blockchain (1 min)
 
-1. Pasaporte `FC-BO-2026-000184` o panel Evidencia.
-2. Ancla = **evidencia de integridad**, no prueba de litros físicos.
-3. Frase: *“La evidencia almacenada coincide con el hash anclado.”*
+1. Tras aceptar, mostrá estado del ancla / txHash (panel Evidencia o pasaporte).
+2. Abrí el explorador HSK si está configurado (`docs/hsk-feria.md`).
+3. Frase: *“Ancla = evidencia de integridad, no prueba de litros físicos.”*
+
+### F — Liquidación al chofer (30 s, opcional)
+
+1. `/liquidaciones` → aparece fila PENDING tras la recepción.
+2. Estación → **Marcar pagada**.
+3. Frase: *“Ciclo cerrado DEMO: entrega → liquidación. No es un banco.”*
+
+---
+
+## 2b. Guion feria 3 minutos
+
+Ver checklist y HSK en **`docs/hsk-feria.md`**.
+
+1. Problema Bolivia (20 s)  
+2. Chofer QR → estación acepta (90 s)  
+3. Tx HSK + mapa/ANH (50 s)  
+4. Cierre “evidencia, no token del litro” (20 s)
 
 ---
 
@@ -91,9 +108,10 @@ Lotes seed: `FC-BO-2026-000181` · `000182` · `000184`.
 |----------|-------|----------|
 | `/mapa` | Ciudadano / ANH | Cantidad + calidad pública |
 | `/verify` | Chofer | Emitir QR / registrar viaje |
-| `/simular` | Chofer | Simular entrega CBBA |
+| `/simular` | Chofer | Emitir viaje (sin auto-aceptar) |
 | `/tramos` | Chofer, estación, ANH | Checkpoints GPS (salida / tramo / llegada) |
-| `/contratos` | Chofer, estación | Acuerdos DEMO estación ↔ chofer |
+| `/contratos` | Chofer, estación | Acuses DEMO estación ↔ chofer |
+| `/liquidaciones` | Chofer, estación | Pago DEMO al completar ruta |
 | `/estacion` | Estación | Tanque + cisternas de **su** EESS |
 | `/supervision` | ANH | Todos los movimientos |
 | `/q/[token]` | Estación (accept) | Aceptar QR de custodia |

@@ -5,6 +5,7 @@ import {
   riskClass,
   type DashboardKpis,
 } from '@/lib/types';
+import { riskLabel } from '@/lib/es-labels';
 
 /** Visual fill for demo volumes (seed ~350k L). */
 function tankPercent(liters: string | number): number {
@@ -131,7 +132,7 @@ export function RecentBatches({
                   {formatStatus(b.status)}
                 </td>
                 <td className={`font-medium ${riskClass(b.riskLevel)}`}>
-                  {b.riskLevel.toLowerCase()} · {b.riskScore}
+                  {riskLabel(b.riskLevel)} · {b.riskScore}
                 </td>
                 <td className="text-[var(--mute)]">
                   {b.custodyEvents?.[0]?.eventType
@@ -179,7 +180,7 @@ export function RecentAnomalies({
                 {a.batch.batchCode}
               </Link>
               <span className="fc-stamp text-[var(--alarm)]">
-                {a.severity.toLowerCase()}
+                {riskLabel(a.severity)}
               </span>
             </div>
             <p className="mt-2 text-sm text-[var(--mute)]">

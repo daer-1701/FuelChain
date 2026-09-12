@@ -28,7 +28,7 @@ export default async function BatchesPage({
     const qs = params.toString();
     list = await apiGet<BatchesList>(`/batches${qs ? `?${qs}` : ''}`);
   } catch (e) {
-    error = e instanceof Error ? e.message : 'API error';
+    error = e instanceof Error ? e.message : 'Error de API';
   }
 
   return (

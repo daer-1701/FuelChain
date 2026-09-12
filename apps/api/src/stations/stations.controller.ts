@@ -1,4 +1,11 @@
-import { Controller, ForbiddenException, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ActorRole } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -51,6 +58,17 @@ export class StationsController {
   )
   contracts(@CurrentUser() user: AuthUser) {
     return this.stations.listContractsForActor(user);
+  }
+
+  @Post('contracts/:id/ack')
+  @RequireRoles(
+    ActorRole.ADMIN,
+    ActorRole.STATION_STAFF,
+    ActorRole.TRANSPORTER,
+    ActorRole.DEPOT_OPERATOR,
+  )
+  ackContract(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.stations.ackContract(id, user);
   }
 
   @Get()

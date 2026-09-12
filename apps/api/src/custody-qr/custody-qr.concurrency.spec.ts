@@ -99,6 +99,32 @@ describe('CustodyQrService concurrent accept (Postgres)', () => {
         isDemo: true,
       },
     });
+    await prisma.user.update({
+      where: { id: userS.id },
+      data: { stationId: station.id },
+    });
+    await prisma.storageTank.create({
+      data: {
+        name: 'TANK-001',
+        capacityLiters: new Prisma.Decimal(500000),
+        currentStockLiters: new Prisma.Decimal(200000),
+        location: 'DEPOT',
+        stationId: null,
+        isDemo: true,
+      },
+    });
+    const cistern = await prisma.cistern.create({
+      data: {
+        code: `CIS-TEST-${suffix.slice(-6)}`,
+        plate: `TST-${suffix.slice(-4)}`,
+        capacityLiters: new Prisma.Decimal(30000),
+        currentLoadLiters: new Prisma.Decimal(0),
+        carrier: 'TEST',
+        driverId: userT.id,
+        status: 'AVAILABLE',
+        isDemo: true,
+      },
+    });
     await prisma.storageTank.create({
       data: {
         name: `TANK-${suffix}`,
@@ -111,7 +137,12 @@ describe('CustodyQrService concurrent accept (Postgres)', () => {
     });
 
     const actorT = { ...transporter, id: userT.id };
-    const actorS = { ...stationStaff, id: userS.id };
+    const actorS = {
+      ...stationStaff,
+      id: userS.id,
+      stationId: station.id,
+      stationCode,
+    };
 
     const issued = await service.issue(
       {
@@ -119,6 +150,7 @@ describe('CustodyQrService concurrent accept (Postgres)', () => {
         eventType: 'IN_TRANSIT',
         volumeLiters: 5000,
         stationCode,
+        cisternCode: cistern.code,
       },
       actorT,
     );
@@ -126,11 +158,25 @@ describe('CustodyQrService concurrent accept (Postgres)', () => {
 
     const results = await Promise.allSettled([
       service.accept(
-        { tokenId, stationCode, receivedVolumeLiters: 5000 },
+        {
+          tokenId,
+          stationCode,
+          receivedVolumeLiters: 5000,
+          receivedDensity: 0.74,
+          receivedTemperature: 21,
+          receivedWaterDetected: false,
+        },
         actorS,
       ),
       service.accept(
-        { tokenId, stationCode, receivedVolumeLiters: 5000 },
+        {
+          tokenId,
+          stationCode,
+          receivedVolumeLiters: 5000,
+          receivedDensity: 0.74,
+          receivedTemperature: 21,
+          receivedWaterDetected: false,
+        },
         actorS,
       ),
     ]);

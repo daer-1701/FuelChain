@@ -8,6 +8,9 @@ import { API_URL } from '@/lib/api';
 import { errorFromResponse, friendlyError } from '@/lib/api-error';
 import { parseBatonPayloadParam } from '@/lib/baton-qr';
 import { canAcceptCustody, homeForRole } from '@/lib/role-access';
+import { labelEs, roleLabel } from '@/lib/es-labels';
+import { useDispatchOptions } from '@/lib/use-dispatch-options';
+import { QrScanButton } from '@/components/qr-scan-button';
 
 type BatonData = {
   tokenId: string;
@@ -55,10 +58,14 @@ function QrBatonInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, ready, authHeaders } = useAuth();
+  const { stations } = useDispatchOptions(authHeaders);
   const [baton, setBaton] = useState<BatonData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stationCode, setStationCode] = useState('ST-CBB-01');
   const [receivedVol, setReceivedVol] = useState('');
+  const [recvDensity, setRecvDensity] = useState('0.745');
+  const [recvTemp, setRecvTemp] = useState('22');
+  const [recvWater, setRecvWater] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [offlineQueue, setOfflineQueue] = useState(0);
@@ -111,7 +118,7 @@ function QrBatonInner() {
           setReceivedVol(String(cached.vol ?? ''));
           setError(null);
           setMsg(
-            'Vista offline: payload firmado leído del QR. Aceptar requiere sesión y sync.',
+            'Sin señal: leímos el QR firmado. Para aceptar hace falta sesión y sincronizar.',
           );
         } else {
           setError(
@@ -148,6 +155,9 @@ function QrBatonInner() {
             embedded: baton.payloadJson,
             stationCode,
             receivedVolumeLiters: Number(receivedVol) || undefined,
+            receivedDensity: Number(recvDensity),
+            receivedTemperature: Number(recvTemp),
+            receivedWaterDetected: recvWater,
           }),
         });
         if (!res.ok) throw await errorFromResponse(res, 'No se pudo aceptar el bastón.');
@@ -161,18 +171,23 @@ function QrBatonInner() {
           'Bastón aceptado. Inventario de tu estación actualizado.',
         ];
         if (json.movement?.status) {
-          bits.push(`Movimiento: ${json.movement.status}.`);
+          bits.push(`Movimiento: ${labelEs(json.movement.status)}.`);
         }
         if (json.anomaly) {
           bits.push('Señal de discrepancia abierta (revisión humana).');
         }
         if (json.blockchain?.status) {
-          bits.push(`Blockchain: ${json.blockchain.status}.`);
+          bits.push(`Evidencia en cadena: ${labelEs(json.blockchain.status)}.`);
+        }
+        if (json.settlement?.amountBob != null) {
+          bits.push(
+            `Liquidación DEMO: ${Number(json.settlement.amountBob).toLocaleString('es-BO')} Bs (pendiente de pago).`,
+          );
         }
         setMsg(bits.join(' '));
       } catch (e) {
         setMsg(
-          `Falló online — se encola offline: ${friendlyError(e, 'Error de red')}`,
+          `Falló la conexión — se guarda sin señal: ${friendlyError(e, 'Error de red')}`,
         );
         enqueueOffline();
       }
@@ -194,7 +209,13 @@ function QrBatonInner() {
       batchCode: baton.batch.batchCode,
       stationCode,
       eventType: 'ACCEPT_BATON',
-      payload: baton.payloadJson,
+      payload: {
+        ...baton.payloadJson,
+        receivedVolumeLiters: Number(receivedVol) || undefined,
+        receivedDensity: Number(recvDensity),
+        receivedTemperature: Number(recvTemp),
+        receivedWaterDetected: recvWater,
+      },
       capturedAt: new Date().toISOString(),
     };
     const q = JSON.parse(
@@ -208,7 +229,7 @@ function QrBatonInner() {
     );
     setOfflineQueue(q.length);
     setMsg(
-      `Guardado offline (${clientEventId}). Usá «Sync cola» abajo cuando haya señal.`,
+      `Guardado sin señal (${clientEventId}). Usá «Sincronizar cola» abajo cuando haya conexión.`,
     );
   }
 
@@ -232,9 +253,9 @@ function QrBatonInner() {
         await res.json();
         localStorage.setItem('fc-offline-queue', '[]');
         setOfflineQueue(0);
-        setMsg('Sincronización OK.');
+        setMsg('Sincronización lista.');
       } catch (e) {
-        setMsg(friendlyError(e, 'Sync falló'));
+        setMsg(friendlyError(e, 'No se pudo sincronizar'));
       }
     });
   }
@@ -248,8 +269,11 @@ function QrBatonInner() {
         </h1>
         <p className="mt-2 text-sm text-[var(--mute)]">
           Token <code>{token}</code>. Cualquiera puede ver la ficha; solo el
-          encargado de la EESS confirma litros recibidos.
+          encargado de la EESS confirma litros y calidad recibidos.
         </p>
+        <div className="mt-4">
+          <QrScanButton />
+        </div>
       </header>
 
       {error && !baton && (
@@ -268,15 +292,15 @@ function QrBatonInner() {
           </p>
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-[var(--mute)]">Estado</dt>
-            <dd className="font-semibold">{baton.status}</dd>
+            <dd className="font-semibold">{labelEs(baton.status)}</dd>
             <dt className="text-[var(--mute)]">Evento</dt>
-            <dd>{baton.eventType}</dd>
+            <dd>{labelEs(baton.eventType)}</dd>
             <dt className="text-[var(--mute)]">Cisterna</dt>
             <dd>{baton.cisternCode ?? '—'}</dd>
             <dt className="text-[var(--mute)]">Volumen</dt>
             <dd className="tabular-nums">{baton.volumeLiters} L</dd>
             <dt className="text-[var(--mute)]">Emitió</dt>
-            <dd>{baton.issuedByRole}</dd>
+            <dd>{roleLabel(baton.issuedByRole)}</dd>
             {baton.expiresAt && (
               <>
                 <dt className="text-[var(--mute)]">Expira</dt>
@@ -303,7 +327,7 @@ function QrBatonInner() {
           {baton.status === 'ACTIVE' && user && !canAccept && (
             <div className="space-y-2 border-t border-[var(--rail)]/40 pt-4 text-sm">
               <p className="text-[var(--alarm)]">
-                Tu rol ({user.role}) no recibe en estación. Entrá con
+                Tu rol ({roleLabel(user.role)}) no recibe en estación. Entrá con
                 estacion@.
               </p>
               <Link
@@ -325,11 +349,11 @@ function QrBatonInner() {
                   onChange={(e) => setStationCode(e.target.value)}
                   disabled={Boolean(user?.stationCode)}
                 >
-                  <option value="ST-CBB-01">ST-CBB-01 Cala Cala</option>
-                  <option value="ST-CBB-02">ST-CBB-02 Quillacollo</option>
-                  <option value="ST-CBB-03">ST-CBB-03 Sacaba</option>
-                  <option value="ST-CBB-04">ST-CBB-04 Tiquipaya</option>
-                  <option value="ST-CBB-05">ST-CBB-05 Vinto</option>
+                  {stations.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               {user?.stationCode && (
@@ -345,6 +369,32 @@ function QrBatonInner() {
                   onChange={(e) => setReceivedVol(e.target.value)}
                 />
               </label>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="block text-sm">
+                  Densidad medida
+                  <input
+                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    value={recvDensity}
+                    onChange={(e) => setRecvDensity(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  Temp. °C
+                  <input
+                    className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                    value={recvTemp}
+                    onChange={(e) => setRecvTemp(e.target.value)}
+                  />
+                </label>
+                <label className="flex items-end gap-2 pb-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={recvWater}
+                    onChange={(e) => setRecvWater(e.target.checked)}
+                  />
+                  Agua detectada
+                </label>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -352,7 +402,7 @@ function QrBatonInner() {
                   onClick={acceptOnline}
                   className="bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
                 >
-                  Aceptar (online)
+                  Aceptar (con señal)
                 </button>
                 <button
                   type="button"
@@ -369,7 +419,7 @@ function QrBatonInner() {
 
       {msg && <p className="text-sm">{msg}</p>}
       <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--mute)]">
-        <span>Cola offline local: {offlineQueue} evento(s).</span>
+        <span>Cola local sin señal: {offlineQueue} evento(s).</span>
         {user && offlineQueue > 0 && (
           <button
             type="button"
@@ -377,7 +427,7 @@ function QrBatonInner() {
             onClick={syncQueue}
             className="font-semibold text-[var(--diesel)] underline disabled:opacity-50"
           >
-            Sync cola
+            Sincronizar cola
           </button>
         )}
         {user?.role === 'STATION_STAFF' && (
