@@ -267,12 +267,8 @@ export default function VerifyPage() {
             type="button"
             disabled={pending}
             onClick={issue}
-<<<<<<< HEAD
-            className="bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
-=======
             aria-busy={pending}
             className="fc-btn fc-btn-ink"
->>>>>>> 551b0ec (Polish FuelChain UI and UX across web app)
           >
             Generar QR
           </button>

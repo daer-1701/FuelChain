@@ -116,6 +116,8 @@ describe('CustodyQrService concurrent accept (Postgres)', () => {
     const cistern = await prisma.cistern.create({
       data: {
         code: `CIS-TEST-${suffix.slice(-6)}`,
+        qrToken: `qrt-test-${suffix}`,
+        deviceId: `dev-test-${suffix}`,
         plate: `TST-${suffix.slice(-4)}`,
         capacityLiters: new Prisma.Decimal(30000),
         currentLoadLiters: new Prisma.Decimal(0),

@@ -869,6 +869,8 @@ async function seedCbbaCustodyDeliveries(
     prisma.cistern.create({
       data: {
         code,
+        qrToken: `CQ-${code.replace(/^CIS-/, '')}`,
+        deviceId: `GW-${code}`,
         plate,
         carrier: 'Transportes DEMO SRL',
         capacityLiters: 30000,
@@ -893,7 +895,23 @@ async function seedCbbaCustodyDeliveries(
   });
   const cis03 = await mkCistern('CIS-CBB-03', 'CBB-103');
   const cis04 = await mkCistern('CIS-CBB-04', 'CBB-104');
-  const fleet = [cis01, cis02, cis03, cis04];
+
+  // Stickers QR DEMO: CIS-CBB-05 … CIS-CBB-50 (50 en total con 01–04)
+  const extraFleet: Awaited<ReturnType<typeof mkCistern>>[] = [];
+  for (let i = 5; i <= 50; i++) {
+    const num = String(i).padStart(2, '0');
+    const inTransit = i % 3 === 0;
+    extraFleet.push(
+      await mkCistern(`CIS-CBB-${num}`, `CBB-${100 + i}`, {
+        load: inTransit ? 5000 + (i % 7) * 250 : 0,
+        status: inTransit ? CisternStatus.IN_TRANSIT : CisternStatus.AVAILABLE,
+        batchId: inTransit ? (i % 2 === 0 ? diesel.id : gasAudit.id) : undefined,
+        driverId: inTransit && i % 5 === 0 ? driverId : undefined,
+      }),
+    );
+  }
+  const fleet = [cis01, cis02, cis03, cis04, ...extraFleet];
+  console.log(`[DEMO] Flota cisternas con QR sticker: ${fleet.length}`);
 
   type Trip = {
     stationCode: string;
@@ -1158,23 +1176,136 @@ async function seedCbbaCustodyDeliveries(
         cisternId: d.cisternId,
         batchId: d.batchId,
         actorId: driverId,
-        volumeLiters: Number(d.loadedLiters.toString()) - 30,
-        density: d.loadDensity,
+        volumeLiters: Number(d.loadedLiters.toString()) - 1,
+        density: Number(Number(d.loadDensity?.toString() ?? 0.746).toFixed(4)),
         temperature: 22.5,
         waterDetected: false,
-        latitude: baseLat + 0.08,
-        longitude: baseLng + 0.05,
+        latitude: -17.7833 + (baseLat + 17.7833) * 0.4,
+        longitude: -63.1821 + (baseLng + 63.1821) * 0.4,
         accuracyMeters: 40,
-        capturedAt: hoursAgo(4),
-        clientEventId: `seed-wp-${d.id}`,
-        note: 'Checkpoint DEMO',
+        capturedAt: hoursAgo(5),
+        clientEventId: `seed-wp1-${d.id}`,
+        note: 'Control ruta — logger cisterna',
+        isDemo: true,
+      },
+    });
+    const dens0 = Number(d.loadDensity?.toString() ?? 0.746);
+    await prisma.routeCheckpoint.create({
+      data: {
+        kind: 'ROUTE_WAYPOINT',
+        label: 'Aproximación estación DEMO',
+        deliveryId: d.id,
+        cisternId: d.cisternId,
+        batchId: d.batchId,
+        actorId: driverId,
+        volumeLiters: Number(d.loadedLiters.toString()) - 3,
+        density: Number((dens0 - 0.002).toFixed(4)),
+        temperature: 23.6,
+        waterDetected: dens0 > 0.8,
+        latitude: baseLat + 0.02,
+        longitude: baseLng + 0.01,
+        accuracyMeters: 35,
+        capturedAt: hoursAgo(2),
+        clientEventId: `seed-wp2-${d.id}`,
+        note: 'Bajó ~2 L + cambio calidad (dens/temp)',
         isDemo: true,
       },
     });
   }
   console.log(
-    `[DEMO] Checkpoints GPS: ${inTransit.length * 2} tramos para despachos en ruta`,
+    `[DEMO] Checkpoints GPS: ${inTransit.length * 3} tramos para despachos en ruta`,
   );
+
+  // Viajes DEMO para el resto de la flota (stickers 05–50 en tránsito)
+  const stationHome = byCode['ST-CBB-01'];
+  if (stationHome) {
+    let extraTrips = 0;
+    for (const c of fleet) {
+      if (c.code === 'CIS-CBB-01' || c.code === 'CIS-CBB-02') continue;
+      if (c.status !== CisternStatus.IN_TRANSIT || !c.currentBatchId) continue;
+      const existing = await prisma.delivery.findFirst({
+        where: { cisternId: c.id, status: DeliveryStatus.IN_TRANSIT },
+      });
+      if (existing) continue;
+      const vol = Number(c.currentLoadLiters.toString()) || 6000;
+      const dens = 0.745 + (extraTrips % 5) * 0.001;
+      const delivery = await prisma.delivery.create({
+        data: {
+          batchId: c.currentBatchId,
+          cisternId: c.id,
+          destinationStationId: stationHome.id,
+          status: DeliveryStatus.IN_TRANSIT,
+          loadedLiters: vol,
+          loadDensity: dens,
+          loadTemperature: 21.5,
+          loadWaterDetected: false,
+          loadedAt: hoursAgo(6 + (extraTrips % 4)),
+          isDemo: true,
+        },
+      });
+      const t0 = hoursAgo(6 + (extraTrips % 4));
+      await prisma.routeCheckpoint.createMany({
+        data: [
+          {
+            kind: 'LOAD_DEPARTURE',
+            label: `Carga ${c.code}`,
+            deliveryId: delivery.id,
+            cisternId: c.id,
+            batchId: c.currentBatchId,
+            actorId: driverId,
+            volumeLiters: vol,
+            density: dens,
+            temperature: 21.5,
+            waterDetected: false,
+            latitude: -17.7833,
+            longitude: -63.1821,
+            capturedAt: t0,
+            clientEventId: `fleet-load-${c.id}`,
+            note: 'Logger cisterna DEMO',
+            isDemo: true,
+          },
+          {
+            kind: 'ROUTE_WAYPOINT',
+            label: 'Control ruta',
+            deliveryId: delivery.id,
+            cisternId: c.id,
+            batchId: c.currentBatchId,
+            actorId: driverId,
+            volumeLiters: vol - 1,
+            density: dens,
+            temperature: 22.1,
+            waterDetected: false,
+            latitude: -17.55,
+            longitude: -64.8,
+            capturedAt: new Date(t0.getTime() + 2 * 3600_000),
+            clientEventId: `fleet-wp1-${c.id}`,
+            note: 'Muestra en ruta',
+            isDemo: true,
+          },
+          {
+            kind: 'ROUTE_WAYPOINT',
+            label: 'Aproximación CBBA',
+            deliveryId: delivery.id,
+            cisternId: c.id,
+            batchId: c.currentBatchId,
+            actorId: driverId,
+            volumeLiters: vol - 3,
+            density: Number((dens - 0.002).toFixed(4)),
+            temperature: 23.4,
+            waterDetected: extraTrips % 7 === 0,
+            latitude: -17.4,
+            longitude: -66.1,
+            capturedAt: new Date(t0.getTime() + 5 * 3600_000),
+            clientEventId: `fleet-wp2-${c.id}`,
+            note: 'Δ cantidad ~-2 L + Δ calidad',
+            isDemo: true,
+          },
+        ],
+      });
+      extraTrips += 1;
+    }
+    console.log(`[DEMO] Viajes extra flota QR: ${extraTrips}`);
+  }
 }
 
 async function seedHappyPath(

@@ -35,13 +35,32 @@ export default async function BlockchainPage() {
   return (
     <div className="fc-page">
       <header className="fc-page-header">
-        <h1 className="fc-title">
-          Evidencia en cadena
-        </h1>
-        <p className="fc-lede">
-          Registro a prueba de manipulación de eventos y hashes. No sustituye la
-          base operacional ni demuestra existencia física del combustible. {note}
+        <p className="fc-stamp text-[var(--mute)]">
+          ANH · integridad del registro (HSK)
         </p>
+        <h1 className="fc-title">Evidencia en cadena</h1>
+        <p className="fc-lede">
+          Acá no ves litros ni el mapa del viaje. Ves si el{' '}
+          <strong>evento de recepción</strong> (cuando la estación aceptó el
+          QR) quedó anclado en blockchain (HSK): un hash + transacción que
+          cualquiera puede abrir en el explorador.
+        </p>
+        <ul className="mt-4 list-disc space-y-1.5 pl-5 text-sm text-[var(--mute)]">
+          <li>
+            <strong className="text-[var(--ink)]">Movimientos / Tramos</strong> =
+            operación (quién llevó qué, cantidad y calidad en el camino).
+          </li>
+          <li>
+            <strong className="text-[var(--ink)]">Evidencia</strong> = sello
+            digital de que ese registro existió y no se reescribió a escondidas.
+          </li>
+          <li>
+            No prueba el litro físico ni reemplaza la auditoría humana. Si la
+            chain está caída, la entrega igual se completa y el ancla queda
+            pendiente.
+          </li>
+        </ul>
+        {note ? <p className="fc-meta mt-3">{note}</p> : null}
       </header>
 
       <LiveAnchorPanel />

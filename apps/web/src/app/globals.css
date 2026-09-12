@@ -101,6 +101,18 @@ a {
   text-decoration: none;
 }
 
+a.fc-btn {
+  color: #fff;
+}
+
+a.fc-btn-ghost {
+  color: var(--ink);
+}
+
+a.fc-btn-ink {
+  color: var(--paper);
+}
+
 :focus-visible {
   outline: 2px solid var(--diesel);
   outline-offset: 3px;

@@ -1,0 +1,356 @@
+{
+  "origin": "http://localhost:3000",
+  "count": 50,
+  "stickers": [
+    {
+      "code": "CIS-CBB-01",
+      "qrToken": "CQ-CBB-01",
+      "deviceId": "GW-CIS-CBB-01",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-01",
+      "image": "/qr-cisternas/CQ-CBB-01.png"
+    },
+    {
+      "code": "CIS-CBB-02",
+      "qrToken": "CQ-CBB-02",
+      "deviceId": "GW-CIS-CBB-02",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-02",
+      "image": "/qr-cisternas/CQ-CBB-02.png"
+    },
+    {
+      "code": "CIS-CBB-03",
+      "qrToken": "CQ-CBB-03",
+      "deviceId": "GW-CIS-CBB-03",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-03",
+      "image": "/qr-cisternas/CQ-CBB-03.png"
+    },
+    {
+      "code": "CIS-CBB-04",
+      "qrToken": "CQ-CBB-04",
+      "deviceId": "GW-CIS-CBB-04",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-04",
+      "image": "/qr-cisternas/CQ-CBB-04.png"
+    },
+    {
+      "code": "CIS-CBB-05",
+      "qrToken": "CQ-CBB-05",
+      "deviceId": "GW-CIS-CBB-05",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-05",
+      "image": "/qr-cisternas/CQ-CBB-05.png"
+    },
+    {
+      "code": "CIS-CBB-06",
+      "qrToken": "CQ-CBB-06",
+      "deviceId": "GW-CIS-CBB-06",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-06",
+      "image": "/qr-cisternas/CQ-CBB-06.png"
+    },
+    {
+      "code": "CIS-CBB-07",
+      "qrToken": "CQ-CBB-07",
+      "deviceId": "GW-CIS-CBB-07",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-07",
+      "image": "/qr-cisternas/CQ-CBB-07.png"
+    },
+    {
+      "code": "CIS-CBB-08",
+      "qrToken": "CQ-CBB-08",
+      "deviceId": "GW-CIS-CBB-08",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-08",
+      "image": "/qr-cisternas/CQ-CBB-08.png"
+    },
+    {
+      "code": "CIS-CBB-09",
+      "qrToken": "CQ-CBB-09",
+      "deviceId": "GW-CIS-CBB-09",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-09",
+      "image": "/qr-cisternas/CQ-CBB-09.png"
+    },
+    {
+      "code": "CIS-CBB-10",
+      "qrToken": "CQ-CBB-10",
+      "deviceId": "GW-CIS-CBB-10",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-10",
+      "image": "/qr-cisternas/CQ-CBB-10.png"
+    },
+    {
+      "code": "CIS-CBB-11",
+      "qrToken": "CQ-CBB-11",
+      "deviceId": "GW-CIS-CBB-11",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-11",
+      "image": "/qr-cisternas/CQ-CBB-11.png"
+    },
+    {
+      "code": "CIS-CBB-12",
+      "qrToken": "CQ-CBB-12",
+      "deviceId": "GW-CIS-CBB-12",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-12",
+      "image": "/qr-cisternas/CQ-CBB-12.png"
+    },
+    {
+      "code": "CIS-CBB-13",
+      "qrToken": "CQ-CBB-13",
+      "deviceId": "GW-CIS-CBB-13",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-13",
+      "image": "/qr-cisternas/CQ-CBB-13.png"
+    },
+    {
+      "code": "CIS-CBB-14",
+      "qrToken": "CQ-CBB-14",
+      "deviceId": "GW-CIS-CBB-14",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-14",
+      "image": "/qr-cisternas/CQ-CBB-14.png"
+    },
+    {
+      "code": "CIS-CBB-15",
+      "qrToken": "CQ-CBB-15",
+      "deviceId": "GW-CIS-CBB-15",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-15",
+      "image": "/qr-cisternas/CQ-CBB-15.png"
+    },
+    {
+      "code": "CIS-CBB-16",
+      "qrToken": "CQ-CBB-16",
+      "deviceId": "GW-CIS-CBB-16",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-16",
+      "image": "/qr-cisternas/CQ-CBB-16.png"
+    },
+    {
+      "code": "CIS-CBB-17",
+      "qrToken": "CQ-CBB-17",
+      "deviceId": "GW-CIS-CBB-17",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-17",
+      "image": "/qr-cisternas/CQ-CBB-17.png"
+    },
+    {
+      "code": "CIS-CBB-18",
+      "qrToken": "CQ-CBB-18",
+      "deviceId": "GW-CIS-CBB-18",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-18",
+      "image": "/qr-cisternas/CQ-CBB-18.png"
+    },
+    {
+      "code": "CIS-CBB-19",
+      "qrToken": "CQ-CBB-19",
+      "deviceId": "GW-CIS-CBB-19",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-19",
+      "image": "/qr-cisternas/CQ-CBB-19.png"
+    },
+    {
+      "code": "CIS-CBB-20",
+      "qrToken": "CQ-CBB-20",
+      "deviceId": "GW-CIS-CBB-20",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-20",
+      "image": "/qr-cisternas/CQ-CBB-20.png"
+    },
+    {
+      "code": "CIS-CBB-21",
+      "qrToken": "CQ-CBB-21",
+      "deviceId": "GW-CIS-CBB-21",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-21",
+      "image": "/qr-cisternas/CQ-CBB-21.png"
+    },
+    {
+      "code": "CIS-CBB-22",
+      "qrToken": "CQ-CBB-22",
+      "deviceId": "GW-CIS-CBB-22",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-22",
+      "image": "/qr-cisternas/CQ-CBB-22.png"
+    },
+    {
+      "code": "CIS-CBB-23",
+      "qrToken": "CQ-CBB-23",
+      "deviceId": "GW-CIS-CBB-23",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-23",
+      "image": "/qr-cisternas/CQ-CBB-23.png"
+    },
+    {
+      "code": "CIS-CBB-24",
+      "qrToken": "CQ-CBB-24",
+      "deviceId": "GW-CIS-CBB-24",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-24",
+      "image": "/qr-cisternas/CQ-CBB-24.png"
+    },
+    {
+      "code": "CIS-CBB-25",
+      "qrToken": "CQ-CBB-25",
+      "deviceId": "GW-CIS-CBB-25",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-25",
+      "image": "/qr-cisternas/CQ-CBB-25.png"
+    },
+    {
+      "code": "CIS-CBB-26",
+      "qrToken": "CQ-CBB-26",
+      "deviceId": "GW-CIS-CBB-26",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-26",
+      "image": "/qr-cisternas/CQ-CBB-26.png"
+    },
+    {
+      "code": "CIS-CBB-27",
+      "qrToken": "CQ-CBB-27",
+      "deviceId": "GW-CIS-CBB-27",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-27",
+      "image": "/qr-cisternas/CQ-CBB-27.png"
+    },
+    {
+      "code": "CIS-CBB-28",
+      "qrToken": "CQ-CBB-28",
+      "deviceId": "GW-CIS-CBB-28",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-28",
+      "image": "/qr-cisternas/CQ-CBB-28.png"
+    },
+    {
+      "code": "CIS-CBB-29",
+      "qrToken": "CQ-CBB-29",
+      "deviceId": "GW-CIS-CBB-29",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-29",
+      "image": "/qr-cisternas/CQ-CBB-29.png"
+    },
+    {
+      "code": "CIS-CBB-30",
+      "qrToken": "CQ-CBB-30",
+      "deviceId": "GW-CIS-CBB-30",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-30",
+      "image": "/qr-cisternas/CQ-CBB-30.png"
+    },
+    {
+      "code": "CIS-CBB-31",
+      "qrToken": "CQ-CBB-31",
+      "deviceId": "GW-CIS-CBB-31",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-31",
+      "image": "/qr-cisternas/CQ-CBB-31.png"
+    },
+    {
+      "code": "CIS-CBB-32",
+      "qrToken": "CQ-CBB-32",
+      "deviceId": "GW-CIS-CBB-32",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-32",
+      "image": "/qr-cisternas/CQ-CBB-32.png"
+    },
+    {
+      "code": "CIS-CBB-33",
+      "qrToken": "CQ-CBB-33",
+      "deviceId": "GW-CIS-CBB-33",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-33",
+      "image": "/qr-cisternas/CQ-CBB-33.png"
+    },
+    {
+      "code": "CIS-CBB-34",
+      "qrToken": "CQ-CBB-34",
+      "deviceId": "GW-CIS-CBB-34",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-34",
+      "image": "/qr-cisternas/CQ-CBB-34.png"
+    },
+    {
+      "code": "CIS-CBB-35",
+      "qrToken": "CQ-CBB-35",
+      "deviceId": "GW-CIS-CBB-35",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-35",
+      "image": "/qr-cisternas/CQ-CBB-35.png"
+    },
+    {
+      "code": "CIS-CBB-36",
+      "qrToken": "CQ-CBB-36",
+      "deviceId": "GW-CIS-CBB-36",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-36",
+      "image": "/qr-cisternas/CQ-CBB-36.png"
+    },
+    {
+      "code": "CIS-CBB-37",
+      "qrToken": "CQ-CBB-37",
+      "deviceId": "GW-CIS-CBB-37",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-37",
+      "image": "/qr-cisternas/CQ-CBB-37.png"
+    },
+    {
+      "code": "CIS-CBB-38",
+      "qrToken": "CQ-CBB-38",
+      "deviceId": "GW-CIS-CBB-38",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-38",
+      "image": "/qr-cisternas/CQ-CBB-38.png"
+    },
+    {
+      "code": "CIS-CBB-39",
+      "qrToken": "CQ-CBB-39",
+      "deviceId": "GW-CIS-CBB-39",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-39",
+      "image": "/qr-cisternas/CQ-CBB-39.png"
+    },
+    {
+      "code": "CIS-CBB-40",
+      "qrToken": "CQ-CBB-40",
+      "deviceId": "GW-CIS-CBB-40",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-40",
+      "image": "/qr-cisternas/CQ-CBB-40.png"
+    },
+    {
+      "code": "CIS-CBB-41",
+      "qrToken": "CQ-CBB-41",
+      "deviceId": "GW-CIS-CBB-41",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-41",
+      "image": "/qr-cisternas/CQ-CBB-41.png"
+    },
+    {
+      "code": "CIS-CBB-42",
+      "qrToken": "CQ-CBB-42",
+      "deviceId": "GW-CIS-CBB-42",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-42",
+      "image": "/qr-cisternas/CQ-CBB-42.png"
+    },
+    {
+      "code": "CIS-CBB-43",
+      "qrToken": "CQ-CBB-43",
+      "deviceId": "GW-CIS-CBB-43",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-43",
+      "image": "/qr-cisternas/CQ-CBB-43.png"
+    },
+    {
+      "code": "CIS-CBB-44",
+      "qrToken": "CQ-CBB-44",
+      "deviceId": "GW-CIS-CBB-44",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-44",
+      "image": "/qr-cisternas/CQ-CBB-44.png"
+    },
+    {
+      "code": "CIS-CBB-45",
+      "qrToken": "CQ-CBB-45",
+      "deviceId": "GW-CIS-CBB-45",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-45",
+      "image": "/qr-cisternas/CQ-CBB-45.png"
+    },
+    {
+      "code": "CIS-CBB-46",
+      "qrToken": "CQ-CBB-46",
+      "deviceId": "GW-CIS-CBB-46",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-46",
+      "image": "/qr-cisternas/CQ-CBB-46.png"
+    },
+    {
+      "code": "CIS-CBB-47",
+      "qrToken": "CQ-CBB-47",
+      "deviceId": "GW-CIS-CBB-47",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-47",
+      "image": "/qr-cisternas/CQ-CBB-47.png"
+    },
+    {
+      "code": "CIS-CBB-48",
+      "qrToken": "CQ-CBB-48",
+      "deviceId": "GW-CIS-CBB-48",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-48",
+      "image": "/qr-cisternas/CQ-CBB-48.png"
+    },
+    {
+      "code": "CIS-CBB-49",
+      "qrToken": "CQ-CBB-49",
+      "deviceId": "GW-CIS-CBB-49",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-49",
+      "image": "/qr-cisternas/CQ-CBB-49.png"
+    },
+    {
+      "code": "CIS-CBB-50",
+      "qrToken": "CQ-CBB-50",
+      "deviceId": "GW-CIS-CBB-50",
+      "deepLink": "http://localhost:3000/c/CQ-CBB-50",
+      "image": "/qr-cisternas/CQ-CBB-50.png"
+    }
+  ]
+}

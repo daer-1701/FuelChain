@@ -32,6 +32,8 @@ export function SupervisionPanel({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [deptFilter, setDeptFilter] = useState<string>('all');
+  const [allDepartments, setAllDepartments] = useState<string[]>([]);
+  const [nameQuery, setNameQuery] = useState('');
 
   useEffect(() => {
     if (!ready || !user) return;
@@ -50,6 +52,13 @@ export function SupervisionPanel({
         const json = (await res.json()) as SupervisionResponse;
         if (!cancelled) {
           setData(json);
+          if ((json.departments?.length ?? 0) > 0) {
+            setAllDepartments((prev) =>
+              (json.departments?.length ?? 0) >= prev.length
+                ? (json.departments ?? [])
+                : prev,
+            );
+          }
           const preferred =
             mode === 'station' && user.stationCode
               ? json.data.find((s) => s.code === user.stationCode)?.code
@@ -83,8 +92,26 @@ export function SupervisionPanel({
     return <p className="text-[var(--mute)]">Cargando red de surtidores…</p>;
   }
 
+  const q = nameQuery.trim().toLowerCase();
+  const filteredStations = !q
+    ? data.data
+    : data.data.filter((s) => {
+        const hay = [
+          s.name,
+          s.code,
+          s.city,
+          s.municipality ?? '',
+          s.address ?? '',
+        ]
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(q);
+      });
+
   const station =
-    data.data.find((s) => s.code === selected) ?? data.data[0] ?? null;
+    filteredStations.find((s) => s.code === selected) ??
+    filteredStations[0] ??
+    null;
 
   const receivedCount =
     station?.cisterns.filter(
@@ -118,7 +145,7 @@ export function SupervisionPanel({
         <p className="fc-lede">
           {mode === 'anh'
             ? 'Verificás cantidad, calidad y el recorrido de cada cisterna en toda la red. La decisión regulatoria sigue siendo humana.'
-            : 'Controlás el combustible de tu EESS: estado del tanque y el camino de las cisternas que llegan aquí. Al recibir, verificás litros y calidad con el QR del chofer.'}{' '}
+            : 'Controlás el combustible de tu EESS: estado del tanque y el camino de las cisternas que llegan aquí. Al recibir, escaneás el QR pegado en la cisterna: se sube solo el historial del dispositivo (litros, calidad, GPS).'}{' '}
           {data.note}
         </p>
         {mode === 'station' && (
@@ -127,6 +154,12 @@ export function SupervisionPanel({
               Sesión: <strong>{user?.name}</strong>
               {user?.stationCode ? ` · ${user.stationCode}` : ''}.
             </p>
+            <Link
+              href="/c/CQ-CBB-01"
+              className="font-semibold text-[var(--diesel)] underline"
+            >
+              Escanear QR cisterna DEMO (CIS-CBB-01)
+            </Link>
             <Link
               href="/tramos"
               className="font-semibold text-[var(--diesel)] underline"
@@ -142,18 +175,25 @@ export function SupervisionPanel({
           </div>
         )}
         {mode === 'anh' && (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-4">
             <Link
               href="/tramos"
               className="font-semibold text-[var(--diesel)] underline"
             >
               Ver tramos del viaje (cantidad + calidad + GPS)
             </Link>
+            <Link
+              href="/blockchain"
+              className="font-semibold text-[var(--diesel)] underline"
+            >
+              Evidencia HSK
+            </Link>
           </div>
         )}
       </header>
 
-      {mode === 'anh' && (data.departments?.length ?? 0) > 1 && (
+      {mode === 'anh' &&
+        (allDepartments.length > 1 || (data.departments?.length ?? 0) > 1) && (
         <nav className="flex flex-wrap gap-2" aria-label="Departamento">
           <button
             type="button"
@@ -167,7 +207,10 @@ export function SupervisionPanel({
           >
             Toda Bolivia
           </button>
-          {(data.departments ?? []).map((d) => (
+          {(allDepartments.length > 0
+            ? allDepartments
+            : (data.departments ?? [])
+          ).map((d) => (
             <button
               key={d}
               type="button"
@@ -183,6 +226,20 @@ export function SupervisionPanel({
             </button>
           ))}
         </nav>
+      )}
+
+      {mode === 'anh' && (
+        <label className="block max-w-md text-sm">
+          Buscar surtidor
+          <input
+            type="search"
+            value={nameQuery}
+            onChange={(e) => setNameQuery(e.target.value)}
+            placeholder="Nombre, código o municipio…"
+            className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+            autoComplete="off"
+          />
+        </label>
       )}
 
       {mode === 'anh' ? (
@@ -241,10 +298,16 @@ export function SupervisionPanel({
         </div>
       )}
 
-      <div className={`grid gap-6 ${data.data.length > 1 ? 'lg:grid-cols-[minmax(0,14rem)_1fr]' : ''}`}>
-        {data.data.length > 1 && (
+      <div
+        className={`grid gap-6 ${
+          filteredStations.length > 1
+            ? 'lg:grid-cols-[minmax(0,14rem)_1fr]'
+            : ''
+        }`}
+      >
+        {filteredStations.length > 1 && (
         <ul className="space-y-1 border-y-2 border-[var(--ink)] py-2 lg:max-h-[70vh] lg:overflow-y-auto">
-          {data.data.map((s) => {
+          {filteredStations.map((s) => {
             const active = s.code === station?.code;
             return (
               <li key={s.code}>
@@ -273,8 +336,13 @@ export function SupervisionPanel({
         </ul>
         )}
 
-        {station && (
-          <article className="space-y-6 border-2 border-[var(--ink)] p-5 md:p-6">
+        {mode === 'anh' && filteredStations.length === 0 && (
+          <p className="text-[var(--mute)]">
+            Ningún surtidor coincide con «{nameQuery.trim()}».
+          </p>
+        )}
+
+        {station && (          <article className="space-y-6 border-2 border-[var(--ink)] p-5 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="fc-stamp text-[var(--mute)]">{station.code}</p>

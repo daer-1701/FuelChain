@@ -70,22 +70,47 @@ function when(iso: string) {
   });
 }
 
-type StationGroup = {
+type JourneyGroup = {
   key: string;
-  code: string;
-  name: string;
+  deliveryId: string | null;
+  cisternCode: string;
+  cisternPlate: string | null;
+  stationCode: string;
+  stationName: string;
+  batchCode: string;
+  product: string;
+  status: string | null;
   rows: CheckpointRow[];
 };
 
-function groupByStation(rows: CheckpointRow[]): StationGroup[] {
-  const map = new Map<string, StationGroup>();
+/** Un viaje = una cisterna (entrega). No mezclar camiones en el mismo bloque. */
+function groupByJourney(rows: CheckpointRow[]): JourneyGroup[] {
+  const map = new Map<string, JourneyGroup>();
   for (const r of rows) {
-    const code = r.delivery?.station.code ?? 'SIN-DESTINO';
-    const name = r.delivery?.station.name ?? 'Sin estación destino';
-    const key = code;
-    const g = map.get(key) ?? { key, code, name, rows: [] };
+    const deliveryId = r.delivery?.id ?? null;
+    const stationCode = r.delivery?.station.code ?? 'SIN-DESTINO';
+    const stationName =
+      r.delivery?.station.name ?? 'Sin estación destino';
+    const key = deliveryId
+      ? `del:${deliveryId}`
+      : `cis:${r.cistern.code}|st:${stationCode}|b:${r.batch.batchCode}`;
+    let g = map.get(key);
+    if (!g) {
+      g = {
+        key,
+        deliveryId,
+        cisternCode: r.cistern.code,
+        cisternPlate: r.cistern.plate,
+        stationCode,
+        stationName,
+        batchCode: r.batch.batchCode,
+        product: r.batch.product,
+        status: r.delivery?.status ?? null,
+        rows: [],
+      };
+      map.set(key, g);
+    }
     g.rows.push(r);
-    map.set(key, g);
   }
   for (const g of map.values()) {
     g.rows.sort(
@@ -93,7 +118,11 @@ function groupByStation(rows: CheckpointRow[]): StationGroup[] {
         new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime(),
     );
   }
-  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  return [...map.values()].sort((a, b) => {
+    const ta = new Date(a.rows[a.rows.length - 1]?.capturedAt ?? 0).getTime();
+    const tb = new Date(b.rows[b.rows.length - 1]?.capturedAt ?? 0).getTime();
+    return tb - ta;
+  });
 }
 
 function JourneyProgress({ rows }: { rows: CheckpointRow[] }) {
@@ -190,22 +219,33 @@ function VolumeChart({ rows }: { rows: CheckpointRow[] }) {
   );
 }
 
-function StationBlock({ group }: { group: StationGroup }) {
+function JourneyBlock({ group }: { group: JourneyGroup }) {
   const last = group.rows[group.rows.length - 1];
   const waterAlerts = group.rows.filter((r) => r.waterDetected).length;
-  const cisterns = [...new Set(group.rows.map((r) => r.cistern.code))];
+  const stationLabel = group.stationName.replace(/\s*\(DEMO\)\s*/gi, ' ').trim();
 
   return (
     <section className="fc-sheet space-y-5 border-2 border-[var(--ink)]">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="fc-stamp text-[var(--mute)]">{group.code}</p>
+          <p className="fc-stamp text-[var(--mute)]">
+            {group.cisternCode}
+            {group.cisternPlate ? ` · ${group.cisternPlate}` : ''}
+            {group.status ? ` · ${group.status}` : ''}
+          </p>
           <h3 className="mt-1 font-display text-2xl font-black leading-tight">
-            {group.name}
+            {group.cisternCode} → {stationLabel}
           </h3>
           <p className="mt-1 text-sm text-[var(--mute)]">
-            {group.rows.length} tramo{group.rows.length === 1 ? '' : 's'} ·{' '}
-            cisterna{cisterns.length === 1 ? '' : 's'} {cisterns.join(', ')}
+            Un viaje · {group.rows.length} tramo
+            {group.rows.length === 1 ? '' : 's'} · lote{' '}
+            <span className="fc-batch-code text-[var(--diesel)]">
+              {group.batchCode}
+            </span>{' '}
+            · {group.product}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--mute)]">
+            Destino {group.stationCode}
           </p>
         </div>
         {last && (
@@ -262,14 +302,6 @@ function StationBlock({ group }: { group: StationGroup }) {
                 {r.temperature != null ? ` · ${r.temperature} °C` : ''}
                 {r.waterDetected ? ' · agua detectada' : ''}
               </p>
-              <p className="mt-1 text-xs text-[var(--mute)]">
-                {r.cistern.code}
-                {r.cistern.plate ? ` · ${r.cistern.plate}` : ''} · lote{' '}
-                <span className="fc-batch-code text-[var(--diesel)]">
-                  {r.batch.batchCode}
-                </span>{' '}
-                · {r.batch.product}
-              </p>
               <p className="mt-0.5 text-xs text-[var(--mute)]">
                 GPS {r.latitude.toFixed(4)}, {r.longitude.toFixed(4)}
                 {r.accuracyMeters != null ? ` · ±${r.accuracyMeters} m` : ''}
@@ -305,22 +337,36 @@ export default function TramosPage() {
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [geoMsg, setGeoMsg] = useState<string | null>(null);
 
-  const groups = useMemo(() => groupByStation(rows), [rows]);
+  const groups = useMemo(() => groupByJourney(rows), [rows]);
+  const stationOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of groups) {
+      if (!map.has(g.stationCode)) {
+        map.set(
+          g.stationCode,
+          g.stationName.replace(/\s*\(DEMO\)\s*/gi, ' ').trim(),
+        );
+      }
+    }
+    return [...map.entries()]
+      .map(([code, name]) => ({ code, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }, [groups]);
   const visibleGroups = useMemo(() => {
     if (stationFilter === 'all') return groups;
-    return groups.filter((g) => g.key === stationFilter);
+    return groups.filter((g) => g.stationCode === stationFilter);
   }, [groups, stationFilter]);
   const waterTotal = rows.filter((r) => r.waterDetected).length;
 
   useEffect(() => {
     if (
       stationFilter !== 'all' &&
-      groups.length > 0 &&
-      !groups.some((g) => g.key === stationFilter)
+      stationOptions.length > 0 &&
+      !stationOptions.some((s) => s.code === stationFilter)
     ) {
       setStationFilter('all');
     }
-  }, [groups, stationFilter]);
+  }, [stationOptions, stationFilter]);
 
   function loadList() {
     if (!user || !canRead) return;
@@ -448,9 +494,9 @@ export default function TramosPage() {
           Tramos del viaje
         </h1>
         <p className="fc-lede">
-          El núcleo de FuelChain: en cada tramo registrás litros, densidad,
-          temperatura y GPS. Así se verifica el camino completo — salida,
-          control en ruta y llegada — antes de la recepción en estación.
+          Cada bloque es <strong>un viaje de una cisterna</strong> hacia una
+          estación: salida → ruta → llegada, con litros y calidad en cada
+          tramo. No se mezclan camiones distintos en el mismo camino.
         </p>
         {user.cisternCode && (
           <p className="mt-2 text-sm">
@@ -461,8 +507,8 @@ export default function TramosPage() {
 
       <div className="flex flex-wrap gap-3 text-sm">
         <span className="border border-[var(--rail)]/50 px-3 py-1.5">
-          <strong className="tabular-nums">{groups.length}</strong> estación
-          {groups.length === 1 ? '' : 'es'}
+          <strong className="tabular-nums">{groups.length}</strong> viaje
+          {groups.length === 1 ? '' : 's'}
         </span>
         <span className="border border-[var(--rail)]/50 px-3 py-1.5">
           <strong className="tabular-nums">{rows.length}</strong> tramos
@@ -474,10 +520,10 @@ export default function TramosPage() {
         )}
       </div>
 
-      {groups.length > 0 && (
+      {stationOptions.length > 0 && (
         <nav
           className="flex flex-wrap gap-2"
-          aria-label="Seleccionar estación"
+          aria-label="Filtrar por estación destino"
         >
           <button
             type="button"
@@ -489,26 +535,29 @@ export default function TramosPage() {
                 : 'border-[var(--rail)]/60 hover:border-[var(--ink)]'
             }`}
           >
-            Todas
+            Todos los viajes
           </button>
-          {groups.map((g) => (
-            <button
-              key={g.key}
-              type="button"
-              onClick={() => setStationFilter(g.key)}
-              aria-pressed={stationFilter === g.key}
-              className={`border px-3 py-1.5 text-sm ${
-                stationFilter === g.key
-                  ? 'border-[var(--diesel)] bg-[var(--diesel-soft)] font-semibold text-[var(--ink)]'
-                  : 'border-[var(--rail)]/60 hover:border-[var(--ink)]'
-              }`}
-            >
-              <span className="font-semibold">{g.name.replace(/ \(DEMO\)$/, '')}</span>
-              <span className="ml-1.5 text-xs text-[var(--mute)]">
-                {g.rows.length}
-              </span>
-            </button>
-          ))}
+          {stationOptions.map((s) => {
+            const count = groups.filter((g) => g.stationCode === s.code).length;
+            return (
+              <button
+                key={s.code}
+                type="button"
+                onClick={() => setStationFilter(s.code)}
+                aria-pressed={stationFilter === s.code}
+                className={`border px-3 py-1.5 text-sm ${
+                  stationFilter === s.code
+                    ? 'border-[var(--diesel)] bg-[var(--diesel-soft)] font-semibold text-[var(--ink)]'
+                    : 'border-[var(--rail)]/60 hover:border-[var(--ink)]'
+                }`}
+              >
+                <span className="font-semibold">{s.name}</span>
+                <span className="ml-1.5 text-xs text-[var(--mute)]">
+                  {count} viaje{count === 1 ? '' : 's'}
+                </span>
+              </button>
+            );
+          })}
         </nav>
       )}
 
@@ -655,7 +704,7 @@ export default function TramosPage() {
       ) : (
         <div className="space-y-6">
           {visibleGroups.map((g) => (
-            <StationBlock key={g.key} group={g} />
+            <JourneyBlock key={g.key} group={g} />
           ))}
         </div>
       )}

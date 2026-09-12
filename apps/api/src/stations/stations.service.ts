@@ -30,32 +30,41 @@ export class StationsService {
     return city;
   }
 
+  /** Departamentos de toda la red (independiente del filtro activo). */
+  private async listDepartmentCities(): Promise<string[]> {
+    const rows = await this.prisma.station.findMany({
+      select: { city: true },
+      distinct: ['city'],
+      orderBy: { city: 'asc' },
+    });
+    return rows.map((r) => r.city).sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
   async listPublic(city?: string) {
     const cityFilter = this.normalizeCityFilter(city);
-    const rows = await this.prisma.station.findMany({
-      where: {
-        publicVisible: true,
-        ...(cityFilter ? { city: cityFilter } : {}),
-      },
-      orderBy: [{ city: 'asc' }, { name: 'asc' }],
-      include: {
-        tanks: {
-          include: {
-            measurements: { orderBy: { timestamp: 'desc' }, take: 1 },
+    const [rows, departments] = await Promise.all([
+      this.prisma.station.findMany({
+        where: {
+          publicVisible: true,
+          ...(cityFilter ? { city: cityFilter } : {}),
+        },
+        orderBy: [{ city: 'asc' }, { name: 'asc' }],
+        include: {
+          tanks: {
+            include: {
+              measurements: { orderBy: { timestamp: 'desc' }, take: 1 },
+            },
+          },
+          deliveries: {
+            where: { status: 'DELIVERED' },
+            orderBy: { deliveredAt: 'desc' },
+            take: 1,
+            include: { batch: true, cistern: true },
           },
         },
-        deliveries: {
-          where: { status: 'DELIVERED' },
-          orderBy: { deliveredAt: 'desc' },
-          take: 1,
-          include: { batch: true, cistern: true },
-        },
-      },
-    });
-
-    const departments = [...new Set(rows.map((s) => s.city))].sort((a, b) =>
-      a.localeCompare(b, 'es'),
-    );
+      }),
+      this.listDepartmentCities(),
+    ]);
 
     return serialize({
       label: 'DEMO',
@@ -165,7 +174,7 @@ export class StationsService {
         : {};
     const includeFleet = opts?.includeFleet !== false && !opts?.stationId;
 
-    const [stations, fleet] = await Promise.all([
+    const [stations, fleet, departments] = await Promise.all([
       this.prisma.station.findMany({
         where: stationFilter,
         orderBy: [{ city: 'asc' }, { code: 'asc' }],
@@ -194,13 +203,14 @@ export class StationsService {
             orderBy: { code: 'asc' },
           })
         : Promise.resolve([]),
+      this.listDepartmentCities(),
     ]);
 
     if (opts?.stationId && stations.length === 0) {
       return serialize({
         label: 'DEMO',
         city: cityFilter ?? 'Bolivia',
-        departments: [] as string[],
+        departments,
         note: 'Sin estación asignada o no encontrada.',
         summary: {
           stations: 0,
@@ -341,9 +351,7 @@ export class StationsService {
     return serialize({
       label: 'DEMO',
       city: cityFilter ?? 'Bolivia',
-      departments: [...new Set(data.map((d) => d.city))].sort((a, b) =>
-        a.localeCompare(b, 'es'),
-      ),
+      departments,
       note:
         'Panel de supervisión FuelChain Bolivia. ANH ve cantidad, calidad y cisternas por surtidor. No es el sistema oficial ANH.',
       summary: {
@@ -535,5 +543,93 @@ export class StationsService {
         });
       }
     }
+  }
+
+  /**
+   * Informe público para portal Unlock (token-gated en el cliente).
+   * Solo datos DEMO de cantidad/calidad por tramo — sin PII sensible.
+   */
+  async listUnlockReport() {
+    const deliveries = await this.prisma.delivery.findMany({
+      orderBy: [{ deliveredAt: 'desc' }, { loadedAt: 'desc' }],
+      take: 24,
+      include: {
+        batch: true,
+        cistern: true,
+        station: true,
+        checkpoints: { orderBy: { capturedAt: 'asc' }, take: 8 },
+      },
+    });
+    const stationCount = await this.prisma.station.count();
+    const openDeliveries = deliveries.filter((d) =>
+      ['LOADED', 'IN_TRANSIT'].includes(d.status),
+    ).length;
+    let checkpoints = 0;
+    let qualityAlerts = 0;
+
+    const journeys = deliveries.map((d) => {
+      checkpoints += d.checkpoints.length;
+      const water =
+        d.loadWaterDetected ||
+        d.receivedWaterDetected ||
+        d.checkpoints.some((c) => c.waterDetected);
+      if (water) qualityAlerts += 1;
+      return {
+        deliveryId: d.id,
+        status: d.status,
+        cisternCode: d.cistern.code,
+        stationCode: d.station.code,
+        stationName: publicLabel(d.station.name) ?? d.station.name,
+        batchCode: d.batch.batchCode,
+        product: d.batch.product,
+        loadedLiters: Number(d.loadedLiters.toString()),
+        receivedLiters:
+          d.receivedLiters != null
+            ? Number(d.receivedLiters.toString())
+            : null,
+        loadDensity:
+          d.loadDensity != null ? Number(d.loadDensity.toString()) : null,
+        loadTemperature:
+          d.loadTemperature != null
+            ? Number(d.loadTemperature.toString())
+            : null,
+        loadWaterDetected: d.loadWaterDetected,
+        receivedDensity:
+          d.receivedDensity != null
+            ? Number(d.receivedDensity.toString())
+            : null,
+        receivedTemperature:
+          d.receivedTemperature != null
+            ? Number(d.receivedTemperature.toString())
+            : null,
+        receivedWaterDetected: d.receivedWaterDetected,
+        checkpoints: d.checkpoints.map((c) => ({
+          kind: c.kind,
+          volumeLiters: Number(c.volumeLiters.toString()),
+          density: c.density != null ? Number(c.density.toString()) : null,
+          temperature:
+            c.temperature != null ? Number(c.temperature.toString()) : null,
+          waterDetected: c.waterDetected,
+          capturedAt: c.capturedAt,
+          label: c.label,
+        })),
+      };
+    });
+
+    return {
+      label: 'DEMO',
+      note:
+        'Informe DEMO desbloqueado con Key Unlock. Cantidad y calidad por tramo del camino. No es dato oficial ANH.',
+      unlockedBy: 'unlock-protocol',
+      data: {
+        summary: {
+          stations: stationCount,
+          openDeliveries,
+          checkpoints,
+          qualityAlerts,
+        },
+        journeys,
+      },
+    };
   }
 }
