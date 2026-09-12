@@ -265,11 +265,12 @@ export default function VerifyPage() {
           </div>
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || !batchCode || !stationCode}
             onClick={issue}
+            aria-busy={pending}
             className="bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
           >
-            Generar QR
+            {pending ? 'Generando…' : 'Generar QR'}
           </button>
           {issued && (
             <div className="space-y-2 border-t border-[var(--rail)]/40 pt-4">
@@ -343,7 +344,20 @@ export default function VerifyPage() {
         </div>
       </section>
 
-      {log && <p className="text-sm">{log}</p>}
+      {log && (
+        <p
+          role="status"
+          className={`text-sm ${
+            log.startsWith('Bastón emitido') || log.startsWith('Sincronización')
+              ? 'text-[var(--seal)]'
+              : log.includes('Error') || log.includes('No se pudo')
+                ? 'text-[var(--alarm)]'
+                : ''
+          }`}
+        >
+          {log}
+        </p>
+      )}
     </div>
   );
 }

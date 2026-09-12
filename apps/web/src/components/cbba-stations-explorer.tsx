@@ -11,8 +11,8 @@ const AVAIL_META: Record<
   FULL: {
     label: 'Hay combustible',
     hint: 'Stock alto',
-    dot: 'bg-[var(--ok,#1a7a3c)]',
-    text: 'text-[var(--ok,#1a7a3c)]',
+    dot: 'bg-[var(--seal)]',
+    text: 'text-[var(--seal)]',
   },
   MEDIUM: {
     label: 'Queda stock',
@@ -23,8 +23,8 @@ const AVAIL_META: Record<
   LOW: {
     label: 'Poco stock',
     hint: 'Puede agotarse pronto',
-    dot: 'bg-[var(--warn,#c47a00)]',
-    text: 'text-[var(--warn,#c47a00)]',
+    dot: 'bg-[var(--diesel)]',
+    text: 'text-[var(--diesel)]',
   },
   EMPTY: {
     label: 'Sin combustible',
@@ -47,12 +47,12 @@ const QUALITY_META: Record<
   OK: {
     label: 'Calidad bien',
     hint: 'Sin alertas de calidad',
-    className: 'border-[var(--ok,#1a7a3c)] text-[var(--ok,#1a7a3c)]',
+    className: 'border-[var(--seal)] text-[var(--seal)]',
   },
   ALERTA: {
     label: 'Revisar calidad',
     hint: 'Hay una señal para revisar',
-    className: 'border-[var(--warn,#c47a00)] text-[var(--warn,#c47a00)]',
+    className: 'border-[var(--diesel)] text-[var(--diesel)]',
   },
   RECHAZADO: {
     label: 'Calidad no apta',
@@ -144,12 +144,17 @@ function StationDetail({
                   {station.fillPercent}%
                 </span>
               </div>
-              <div className="mt-1.5 h-2.5 w-full border border-[var(--ink)] bg-[var(--haze,#e8ebe6)]">
+              <div className="mt-1.5 h-2.5 w-full border border-[var(--ink)] bg-[var(--haze)]">
                 <div
                   className={`h-full ${AVAIL_META[station.availability].dot}`}
                   style={{
                     width: `${Math.min(100, Math.max(0, station.fillPercent))}%`,
                   }}
+                  role="progressbar"
+                  aria-valuenow={station.fillPercent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`Nivel del tanque ${station.fillPercent}%`}
                 />
               </div>
               {station.capacityLiters != null && (
@@ -166,9 +171,9 @@ function StationDetail({
           <p
             className={`mt-1 font-display text-xl font-black ${
               station.qualityTone === 'OK'
-                ? 'text-[var(--ok,#1a7a3c)]'
+                ? 'text-[var(--seal)]'
                 : station.qualityTone === 'ALERTA'
-                  ? 'text-[var(--warn,#c47a00)]'
+                  ? 'text-[var(--diesel)]'
                   : station.qualityTone === 'RECHAZADO'
                     ? 'text-[var(--alarm)]'
                     : 'text-[var(--mute)]'
@@ -378,8 +383,8 @@ export function CbbaStationsExplorer({
             aria-pressed={stockFilter === 'quality'}
             className={`border px-3 py-1.5 ${
               stockFilter === 'quality'
-                ? 'border-[var(--warn,#c47a00)] bg-[var(--warn,#c47a00)] text-[var(--paper)]'
-                : 'border-[var(--warn,#c47a00)] text-[var(--warn,#c47a00)]'
+                ? 'border-[var(--diesel)] bg-[var(--diesel)] text-[var(--paper)]'
+                : 'border-[var(--diesel)] text-[var(--diesel)]'
             }`}
           >
             Alerta calidad · {counts.qualityWarn}
@@ -410,16 +415,19 @@ export function CbbaStationsExplorer({
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr]">
-        <CbbaLeafletMap
-          stations={filtered.length ? filtered : stations}
-          selectedCode={selectedCode}
-          onSelect={select}
-        />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-2">
+          <p className="fc-stamp text-[var(--mute)]">Mapa · cantidad + calidad</p>
+          <CbbaLeafletMap
+            stations={filtered.length ? filtered : stations}
+            selectedCode={selectedCode}
+            onSelect={select}
+          />
+        </div>
         {selected ? (
           <StationDetail station={selected} onClose={clear} />
         ) : (
-          <aside className="flex items-center border border-dashed border-[var(--rail)] px-5 py-8 text-sm text-[var(--mute)]">
+          <aside className="fc-sheet flex items-center px-5 py-8 text-sm text-[var(--mute)]">
             Elegí un punto del mapa o un surtidor de la lista.
           </aside>
         )}
@@ -437,6 +445,7 @@ export function CbbaStationsExplorer({
                 id={s.code}
                 onClick={() => select(s.code)}
                 aria-pressed={active}
+                aria-current={active ? 'true' : undefined}
                 className={`flex w-full flex-col gap-3 px-1 py-4 text-left transition-colors sm:flex-row sm:items-center sm:justify-between ${
                   active ? 'bg-[var(--diesel-soft)]' : 'hover:bg-[var(--paper)]'
                 }`}

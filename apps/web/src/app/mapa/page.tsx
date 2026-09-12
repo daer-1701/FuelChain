@@ -29,9 +29,10 @@ export default async function MapaBoliviaPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header className="max-w-2xl">
-        <h1 className="font-display text-3xl font-black tracking-tight md:text-4xl">
+        <p className="fc-stamp text-[var(--mute)]">Ciudadano · mapa público DEMO</p>
+        <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
           Surtidores en Bolivia
         </h1>
         <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--mute)]">

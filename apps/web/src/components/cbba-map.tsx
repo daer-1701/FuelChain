@@ -6,11 +6,11 @@ import 'leaflet/dist/leaflet.css';
 import type { PublicStation } from '@/components/station-types';
 
 const COLORS: Record<PublicStation['availability'], string> = {
-  FULL: '#1a7a3c',
-  MEDIUM: '#d35a00',
-  LOW: '#c47a00',
-  EMPTY: '#b83228',
-  UNKNOWN: '#4d5f68',
+  FULL: '#1a6e5f', // --seal
+  MEDIUM: '#d35a00', // --diesel
+  LOW: '#d35a00',
+  EMPTY: '#b83228', // --alarm
+  UNKNOWN: '#4d5f68', // --mute
 };
 
 export function CbbaLeafletMap({
@@ -96,7 +96,7 @@ export function CbbaLeafletMap({
   return (
     <div
       ref={ref}
-      className="h-[420px] w-full cursor-pointer border-2 border-[var(--ink)] bg-[#dce8d4]"
+      className="h-[min(52vh,480px)] min-h-[320px] w-full cursor-pointer border-2 border-[var(--ink)] bg-[var(--paper)]"
       role="application"
       aria-label="Mapa de surtidores. Clic en un punto para ver detalles."
     />

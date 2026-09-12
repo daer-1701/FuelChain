@@ -251,6 +251,8 @@ export function SupervisionPanel({
                 <button
                   type="button"
                   onClick={() => setSelected(s.code)}
+                  aria-pressed={active}
+                  aria-current={active ? 'true' : undefined}
                   className={`flex w-full flex-col items-start gap-0.5 px-3 py-3 text-left ${
                     active
                       ? 'bg-[var(--diesel-soft)]'

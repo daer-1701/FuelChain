@@ -401,9 +401,10 @@ function QrBatonInner() {
                   type="button"
                   disabled={pending}
                   onClick={acceptOnline}
+                  aria-busy={pending}
                   className="bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
                 >
-                  Aceptar (con señal)
+                  {pending ? 'Aceptando…' : 'Aceptar (con señal)'}
                 </button>
                 <button
                   type="button"
@@ -418,7 +419,20 @@ function QrBatonInner() {
         </section>
       )}
 
-      {msg && <p className="text-sm">{msg}</p>}
+      {msg && (
+        <p
+          role="status"
+          className={`text-sm ${
+            msg.includes('Falló') || msg.includes('No se pudo')
+              ? 'text-[var(--alarm)]'
+              : msg.includes('aceptado') || msg.includes('lista')
+                ? 'text-[var(--seal)]'
+                : ''
+          }`}
+        >
+          {msg}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--mute)]">
         <span>Cola local sin señal: {offlineQueue} evento(s).</span>
         {user && offlineQueue > 0 && (
