@@ -100,15 +100,15 @@ export default function LiquidacionesPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">
           {user.role === 'TRANSPORTER' ? 'Chofer' : 'Estación'} · feria Ethereum
         </p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
+        <h1 className="fc-title mt-2">
           Liquidaciones al chofer
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Secundario al foco de trazabilidad: al aceptar el QR se genera una
           liquidación DEMO en bolivianos. No mueve dinero real. El producto se
           concentra en cantidad y calidad a lo largo del camino. {note}

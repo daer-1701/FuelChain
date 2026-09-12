@@ -103,19 +103,19 @@ export function SupervisionPanel({
     ).length ?? 0;
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">
           {mode === 'anh'
             ? 'ANH · trazabilidad de la red DEMO'
             : 'Estación · tu surtidor DEMO'}
         </p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
+        <h1 className="fc-title fc-title-lg mt-2">
           {mode === 'anh'
             ? 'Camino y movimientos'
             : 'Tanque y cisternas'}
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           {mode === 'anh'
             ? 'Verificás cantidad, calidad y el recorrido de cada cisterna en toda la red. La decisión regulatoria sigue siendo humana.'
             : 'Controlás el combustible de tu EESS: estado del tanque y el camino de las cisternas que llegan aquí. Al recibir, verificás litros y calidad con el QR del chofer.'}{' '}
@@ -292,10 +292,10 @@ export function SupervisionPanel({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="border border-[var(--rail)]/50 p-4">
-                <p className="text-xs uppercase tracking-wide text-[var(--mute)]">
+                <p className="fc-meta uppercase tracking-wide">
                   Cantidad actual
                 </p>
-                <p className="mt-2 font-display text-3xl font-black tabular-nums">
+                <p className="mt-2 font-display text-3xl font-black tabular-nums fc-num">
                   {liters(station.quantity.stockLiters)}
                 </p>
                 <p className="mt-1 text-sm text-[var(--mute)]">
@@ -315,7 +315,7 @@ export function SupervisionPanel({
                 )}
               </div>
               <div className="border border-[var(--rail)]/50 p-4">
-                <p className="text-xs uppercase tracking-wide text-[var(--mute)]">
+                <p className="fc-meta uppercase tracking-wide">
                   Calidad actual
                 </p>
                 <p
@@ -472,12 +472,12 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="border border-[var(--rail)]/50 px-4 py-3">
-      <p className="text-xs uppercase tracking-wide text-[var(--mute)]">
+    <div className="border border-[var(--rail)]/45 bg-[var(--paper)] px-4 py-3">
+      <p className="fc-meta uppercase tracking-wide">
         {label}
       </p>
       <p
-        className={`mt-1 font-display text-3xl font-black tabular-nums ${
+        className={`mt-1 font-display text-3xl font-black tabular-nums fc-num ${
           warn ? 'text-[var(--alarm)]' : ''
         }`}
       >

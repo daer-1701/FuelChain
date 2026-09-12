@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  /* Palette — FuelChain identity (do not replace) */
   --haze: #b9c9d1;
   --paper: #f3f5f2;
   --rail: #7e929c;
@@ -24,6 +25,17 @@
 
   --background: var(--haze);
   --foreground: var(--ink);
+
+  /* Rhythm */
+  --fc-space-1: 0.25rem;
+  --fc-space-2: 0.5rem;
+  --fc-space-3: 0.75rem;
+  --fc-space-4: 1rem;
+  --fc-space-5: 1.5rem;
+  --fc-space-6: 2rem;
+  --fc-space-7: 2.75rem;
+  --fc-max: 72rem;
+  --fc-radius: 2px;
 }
 
 @theme inline {
@@ -42,23 +54,46 @@ body {
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
   color: var(--ink);
   font-family: var(--font-plex), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
   background-color: var(--haze);
   background-image:
-    radial-gradient(ellipse 100% 70% at 0% 0%, rgba(243, 245, 242, 0.9), transparent 50%),
-    radial-gradient(ellipse 70% 50% at 100% 10%, rgba(211, 90, 0, 0.1), transparent 42%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"),
+    radial-gradient(
+      ellipse 90% 55% at 0% 0%,
+      rgba(243, 245, 242, 0.88),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 55% 40% at 100% 0%,
+      rgba(211, 90, 0, 0.07),
+      transparent 48%
+    ),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
     repeating-linear-gradient(
       -18deg,
       transparent,
-      transparent 14px,
-      rgba(16, 32, 40, 0.035) 14px,
-      rgba(16, 32, 40, 0.035) 15px
+      transparent 16px,
+      rgba(16, 32, 40, 0.028) 16px,
+      rgba(16, 32, 40, 0.028) 17px
     );
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -73,6 +108,110 @@ a {
 
 .font-display {
   font-family: var(--font-chivo), system-ui, sans-serif;
+}
+
+/* —— Page structure —— */
+.fc-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fc-space-6);
+}
+
+@media (min-width: 768px) {
+  .fc-page {
+    gap: var(--fc-space-7);
+  }
+}
+
+.fc-page-header {
+  max-width: 40rem;
+}
+
+.fc-title {
+  margin: 0;
+  font-family: var(--font-chivo), system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--ink);
+  font-size: clamp(1.85rem, 3.8vw, 2.35rem);
+}
+
+.fc-title-lg {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+}
+
+.fc-lede {
+  margin: var(--fc-space-3) 0 0;
+  max-width: 36rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--mute);
+}
+
+.fc-section-title {
+  margin: 0;
+  font-family: var(--font-chivo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.fc-meta {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--mute);
+}
+
+.fc-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* —— Forms —— */
+.fc-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.fc-label > .fc-field,
+.fc-label > select,
+.fc-label > input:not([type='checkbox']) {
+  margin-top: 0.35rem;
+}
+
+.fc-field {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--ink) 55%, var(--rail));
+  background: color-mix(in srgb, var(--paper) 70%, white);
+  color: var(--ink);
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  border-radius: var(--fc-radius);
+  transition: border-color 120ms ease;
+}
+
+.fc-field:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.fc-field:focus {
+  border-color: var(--diesel);
+  outline: none;
+  background: #fff;
+}
+
+.fc-field:disabled,
+.fc-field[readonly] {
+  opacity: 0.72;
+  cursor: default;
+}
+
+select.fc-field {
+  cursor: pointer;
 }
 
 .fc-surface {
@@ -91,11 +230,14 @@ a {
 .fc-stamp {
   display: inline-block;
   border: 1.5px solid currentColor;
-  padding: 0.2rem 0.45rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transform: rotate(-1.5deg);
+  padding: 0.18rem 0.42rem;
+  font-family: var(--font-chivo), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  transform: rotate(-0.8deg);
 }
 
 .fc-input {
@@ -105,7 +247,7 @@ a {
   color: var(--ink);
   padding: 0.55rem 0.75rem;
   font: inherit;
-  border-radius: 2px;
+  border-radius: var(--fc-radius);
 }
 
 .fc-input:focus {
@@ -117,19 +259,21 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.4rem;
   border: none;
   background: var(--diesel);
   color: #fff;
   font: inherit;
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.6rem 1.1rem;
-  border-radius: 2px;
+  padding: 0.65rem 1.15rem;
+  border-radius: var(--fc-radius);
   cursor: pointer;
+  transition: filter 120ms ease;
 }
 
 .fc-btn:hover:not(:disabled) {
-  filter: brightness(1.05);
+  filter: brightness(1.06);
 }
 
 .fc-btn:disabled {
@@ -137,14 +281,24 @@ a {
   cursor: not-allowed;
 }
 
+.fc-btn-ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .fc-btn-ghost {
   background: transparent;
   color: var(--ink);
-  border: 1px solid color-mix(in srgb, var(--rail) 70%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 75%, var(--rail));
+}
+
+.fc-btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--paper) 80%, white);
+  filter: none;
 }
 
 .fc-reveal {
-  animation: fc-reveal 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fc-reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -160,7 +314,7 @@ a {
 @keyframes fc-reveal {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -220,14 +374,18 @@ a {
 }
 
 .fc-table th {
-  padding: 0.75rem 1rem;
-  font-weight: 600;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-chivo), system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--mute);
-  border-bottom: 1px solid color-mix(in srgb, var(--rail) 55%, transparent);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--ink) 35%, var(--rail));
 }
 
 .fc-table td {
-  padding: 0.85rem 1rem;
+  padding: 0.85rem 0.9rem;
   border-bottom: 1px solid color-mix(in srgb, var(--rail) 35%, transparent);
   vertical-align: top;
 }
@@ -242,33 +400,140 @@ a {
   margin: 0;
 }
 
-/* Shipping-document crop marks */
+/* Shipping-document sheet — structural, not decorative card spam */
 .fc-sheet {
   position: relative;
-  padding: 1.25rem 1.35rem 1.5rem;
-  background: color-mix(in srgb, var(--paper) 92%, white);
-  border: 1px solid color-mix(in srgb, var(--rail) 40%, transparent);
+  padding: 1.2rem 1.3rem 1.4rem;
+  background: color-mix(in srgb, var(--paper) 94%, white);
+  border: 1px solid color-mix(in srgb, var(--rail) 42%, transparent);
 }
 
 .fc-sheet::before,
 .fc-sheet::after {
   content: '';
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-color: var(--ink);
   border-style: solid;
   pointer-events: none;
+  opacity: 0.85;
 }
 
 .fc-sheet::before {
-  top: 6px;
-  left: 6px;
+  top: 5px;
+  left: 5px;
   border-width: 2px 0 0 2px;
 }
 
 .fc-sheet::after {
-  right: 6px;
-  bottom: 6px;
+  right: 5px;
+  bottom: 5px;
   border-width: 0 2px 2px 0;
+}
+
+/* Shell helpers */
+.fc-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 2px solid var(--ink);
+  background: color-mix(in srgb, var(--paper) 92%, white);
+  backdrop-filter: blur(8px);
+}
+
+.fc-shell-brand {
+  font-family: var(--font-chivo), system-ui, sans-serif;
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  font-size: clamp(2rem, 5.5vw, 3.15rem);
+}
+
+.fc-shell-subbrand {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: var(--font-chivo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 2.2vw, 1.25rem);
+  letter-spacing: 0.2em;
+  color: var(--diesel);
+}
+
+.fc-shell-nav {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  border-top: 1px solid color-mix(in srgb, var(--rail) 45%, transparent);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fc-shell-nav a {
+  position: relative;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.85rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--mute);
+  transition: color 120ms ease;
+}
+
+.fc-shell-nav a:hover {
+  color: var(--ink);
+}
+
+.fc-shell-nav a[aria-current='page'] {
+  color: var(--ink);
+}
+
+.fc-shell-nav a[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0;
+  height: 3px;
+  background: var(--diesel);
+}
+
+.fc-shell-main {
+  width: 100%;
+  max-width: var(--fc-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1.75rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .fc-shell-main {
+    padding: 2.25rem 2rem 3.5rem;
+  }
+}
+
+.fc-filter-chip {
+  border: 1px solid color-mix(in srgb, var(--rail) 65%, transparent);
+  background: transparent;
+  color: var(--ink);
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--fc-radius);
+}
+
+.fc-filter-chip[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.fc-filter-chip-accent[aria-pressed='true'] {
+  border-color: var(--diesel);
+  background: var(--diesel-soft);
+  color: var(--ink);
 }

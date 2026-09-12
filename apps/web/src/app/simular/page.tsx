@@ -102,28 +102,28 @@ export default function SimularPage() {
     (tokenId ? `/q/${tokenId}` : null);
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">Chofer · atajo DEMO</p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
+        <h1 className="fc-title fc-title-lg mt-2">
           Simular viaje
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Atajo DEMO: emite el QR con litros y calidad de carga. Después
           registrá{' '}
           <Link href="/tramos" className="text-[var(--diesel)] underline">
             tramos del viaje
           </Link>
           ; la estación verifica al recibir. Cisterna:{' '}
-          <strong>{cisternCode}</strong>.
+          <strong className="text-[var(--ink)]">{cisternCode}</strong>.
         </p>
       </header>
 
       <div className="fc-sheet grid gap-4 md:grid-cols-2">
-        <label className="block text-sm">
+        <label className="fc-label">
           Lote
           <select
-            className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+            className="fc-field"
             value={batchCode}
             onChange={(e) => setBatchCode(e.target.value)}
           >
@@ -134,10 +134,10 @@ export default function SimularPage() {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
+        <label className="fc-label">
           Estación destino
           <select
-            className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+            className="fc-field"
             value={stationCode}
             onChange={(e) => setStationCode(e.target.value)}
           >
@@ -148,18 +148,18 @@ export default function SimularPage() {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
+        <label className="fc-label">
           Densidad
           <input
-            className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+            className="fc-field fc-num"
             value={density}
             onChange={(e) => setDensity(e.target.value)}
           />
         </label>
-        <label className="block text-sm">
+        <label className="fc-label">
           Temp. °C
           <input
-            className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+            className="fc-field fc-num"
             value={temperature}
             onChange={(e) => setTemperature(e.target.value)}
           />
@@ -177,7 +177,7 @@ export default function SimularPage() {
             type="button"
             disabled={pending}
             onClick={run}
-            className="w-full bg-[var(--diesel)] px-4 py-3 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
+            className="fc-btn w-full !py-3"
           >
             {pending ? 'Emitiendo…' : 'Emitir viaje (QR)'}
           </button>

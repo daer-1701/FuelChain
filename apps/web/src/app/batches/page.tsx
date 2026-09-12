@@ -32,10 +32,10 @@ export default async function BatchesPage({
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-xl">
-        <h1 className="font-display text-3xl font-black tracking-tight">Lotes</h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+    <div className="fc-page">
+      <header className="fc-page-header">
+        <h1 className="fc-title">Lotes</h1>
+        <p className="fc-lede">
           El lote es la unidad central. Importador declara; chofer despacha;
           estación recibe; ANH y auditor revisan el pasaporte.
         </p>

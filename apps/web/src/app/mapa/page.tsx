@@ -29,12 +29,13 @@ export default async function MapaBoliviaPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl">
-        <h1 className="font-display text-3xl font-black tracking-tight md:text-4xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
+        <p className="fc-stamp text-[var(--mute)]">Ciudadano · mapa público DEMO</p>
+        <h1 className="fc-title fc-title-lg mt-2">
           Surtidores en Bolivia
         </h1>
-        <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Resultado del camino trazable: tocá un surtidor y mirá cantidad y
           calidad disponibles. Información orientativa DEMO — no es la app
           oficial ANH.

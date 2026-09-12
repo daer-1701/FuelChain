@@ -172,13 +172,13 @@ export default function VerifyPage() {
   }
 
   return (
-    <div className="space-y-10">
-      <header className="max-w-xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">Chofer · registro de viaje</p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
+        <h1 className="fc-title mt-2">
           Registrar viaje
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Emite el QR del despacho: lote, cisterna, litros y calidad de carga.
           Eso abre el camino trazable. Después registrá{' '}
           <Link href="/tramos" className="text-[var(--diesel)] underline">
@@ -191,11 +191,11 @@ export default function VerifyPage() {
 
       <section className="grid gap-8 lg:grid-cols-2">
         <div className="fc-sheet space-y-4">
-          <h2 className="font-display text-xl font-bold">Emitir bastón</h2>
-          <label className="block text-sm">
+          <h2 className="fc-section-title">Emitir bastón</h2>
+          <label className="fc-label">
             Lote
             <select
-              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+              className="fc-field"
               value={batchCode}
               onChange={(e) => setBatchCode(e.target.value)}
             >
@@ -206,19 +206,19 @@ export default function VerifyPage() {
               ))}
             </select>
           </label>
-          <label className="block text-sm">
+          <label className="fc-label">
             Cisterna
             <input
-              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+              className="fc-field"
               value={cistern}
               onChange={(e) => setCistern(e.target.value)}
               readOnly={Boolean(user?.cisternCode)}
             />
           </label>
-          <label className="block text-sm">
+          <label className="fc-label">
             Estación destino
             <select
-              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+              className="fc-field"
               value={stationCode}
               onChange={(e) => setStationCode(e.target.value)}
             >
@@ -229,27 +229,27 @@ export default function VerifyPage() {
               ))}
             </select>
           </label>
-          <label className="block text-sm">
+          <label className="fc-label">
             Litros del viaje
             <input
-              className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+              className="fc-field fc-num"
               value={volume}
               onChange={(e) => setVolume(e.target.value)}
             />
           </label>
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block text-sm">
+            <label className="fc-label">
               Densidad
               <input
-                className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                className="fc-field fc-num"
                 value={density}
                 onChange={(e) => setDensity(e.target.value)}
               />
             </label>
-            <label className="block text-sm">
+            <label className="fc-label">
               Temp. °C
               <input
-                className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2 tabular-nums"
+                className="fc-field fc-num"
                 value={temperature}
                 onChange={(e) => setTemperature(e.target.value)}
               />
@@ -267,7 +267,12 @@ export default function VerifyPage() {
             type="button"
             disabled={pending}
             onClick={issue}
+<<<<<<< HEAD
             className="bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-[var(--paper)] disabled:opacity-50"
+=======
+            aria-busy={pending}
+            className="fc-btn fc-btn-ink"
+>>>>>>> 551b0ec (Polish FuelChain UI and UX across web app)
           >
             Generar QR
           </button>
@@ -301,26 +306,26 @@ export default function VerifyPage() {
 
         <div className="space-y-6">
           <div className="fc-sheet space-y-3">
-            <h2 className="font-display text-xl font-bold">Cola sin señal</h2>
-            <p className="text-sm text-[var(--mute)]">
-              Eventos en este teléfono: <strong>{queueLen}</strong>
+            <h2 className="fc-section-title">Cola sin señal</h2>
+            <p className="fc-meta">
+              Eventos en este teléfono: <strong className="text-[var(--ink)]">{queueLen}</strong>
             </p>
             <button
               type="button"
               disabled={pending}
               onClick={syncQueue}
-              className="border-2 border-[var(--ink)] px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              className="fc-btn fc-btn-ghost"
             >
               Sincronizar ahora
             </button>
           </div>
 
           <div className="fc-sheet space-y-3">
-            <h2 className="font-display text-xl font-bold">Verificar lote</h2>
-            <label className="block text-sm">
+            <h2 className="fc-section-title">Verificar lote</h2>
+            <label className="fc-label">
               Código de lote
               <input
-                className="mt-1 w-full border border-[var(--ink)] bg-transparent px-3 py-2"
+                className="fc-field"
                 value={lookup}
                 onChange={(e) => setLookup(e.target.value)}
                 placeholder="FC-BO-2026-000184"
@@ -328,11 +333,11 @@ export default function VerifyPage() {
             </label>
             <Link
               href={lookup ? `/batches/${lookup}` : '/batches'}
-              className="inline-block bg-[var(--diesel)] px-4 py-2 text-sm font-semibold text-[var(--paper)]"
+              className="fc-btn inline-flex"
             >
               Abrir pasaporte
             </Link>
-            <p className="text-xs text-[var(--mute)]">
+            <p className="fc-meta">
               Para comprobar un hash de recepción, abrí el pasaporte del lote y
               usá «Recalcular hash» en el movimiento. Mapa ciudadano:{' '}
               <Link href="/mapa" className="underline">

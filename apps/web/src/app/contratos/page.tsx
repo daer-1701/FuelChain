@@ -108,15 +108,15 @@ export default function ContratosPage() {
   const isStation = user.role === 'STATION_STAFF';
 
   return (
-    <div className="space-y-8">
-      <header className="max-w-2xl">
+    <div className="fc-page">
+      <header className="fc-page-header">
         <p className="fc-stamp text-[var(--mute)]">
           {isStation ? 'Estación' : 'Chofer'} · contratos DEMO
         </p>
-        <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
+        <h1 className="fc-title mt-2">
           Contratos de entrega
         </h1>
-        <p className="mt-3 leading-relaxed text-[var(--mute)]">
+        <p className="fc-lede">
           Acuerdo operativo entre el surtidor y el chofer por cada despacho
           (litros, cisterna, destino). {note}
         </p>
