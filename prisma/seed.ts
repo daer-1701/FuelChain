@@ -246,10 +246,17 @@ async function seedCochabambaStations() {
       },
     });
 
+    if (d.fillLiters != null && d.fillLiters > d.capacity) {
+      throw new Error(
+        `Seed inventory overflow ${d.code}: ${d.fillLiters} > ${d.capacity}`,
+      );
+    }
+
     const tank = await prisma.storageTank.create({
       data: {
         name: d.tankName,
         capacityLiters: d.capacity,
+        currentStockLiters: d.fillLiters ?? 0,
         location: `${d.name} — Cochabamba (DEMO)`,
         stationId: station.id,
         status:

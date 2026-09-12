@@ -216,3 +216,86 @@ Esto ataca el dolor real de **filas por incertidumbre**: la gente va a donde hay
 No dependas de que la cisterna tenga 4G permanente.  
 No metas el cerebro del sistema solo en la nube.  
 El celular de cada actor es el **nodo de custodia** cuando no hay red; el QR es el **cable humano**.
+
+---
+
+## 11. Implementación FASE 1 (código actual)
+
+Esto es lo que el backend **sí** hace hoy. Lo anterior (ed25519, NFC, QR de acuse) sigue siendo visión.
+
+### Quién puede emitir / aceptar
+
+| Acción | Endpoint | Roles |
+|--------|----------|--------|
+| Emitir | `POST /custody-qr/issue` | ADMIN, TRANSPORTER, DEPOT_OPERATOR, IMPORTER |
+| Aceptar | `POST /custody-qr/accept` | ADMIN, STATION_STAFF, DEPOT_OPERATOR |
+| Sync | `POST /custody-qr/sync` | ADMIN, STATION_STAFF, DEPOT_OPERATOR, TRANSPORTER |
+| Ver ficha | `GET /custody-qr/:tokenId` | público (sin aceptar) |
+
+El rol **nunca** se toma del body (`issuedByRole` / `consumedByRole` se ignoran). Sale de la sesión (`AUTH_SECRET` HMAC → `request.user`).
+
+### Payload firmado del QR
+
+El QR de la UI es una URL:
+
+```text
+https://host/q/BT-XXXX?p=<base64url(json)>
+```
+
+El JSON firmado (HMAC-SHA256 con `CUSTODY_QR_SECRET`) incluye:
+
+```text
+v, t, id, batch, cistern, station, vol, ev, ts, exp, n, iss, role, ph, city, label, h, s
+```
+
+- `iss` = user id del emisor autenticado
+- `exp` = unix de expiración (72 h, validado en el **servidor**)
+- `n` = nonce
+- `h` / `s` = hash canónico + HMAC (no es el secreto)
+
+`/q/[token]` es **público para ver**. Aceptar exige login de estación/depósito y vuelve al mismo `next` (incluye `?p=`).
+
+### Expiración, consumo, idempotencia
+
+- Si `now > expiresAt` → rechazo y status `EXPIRED`.
+- Consumo con `updateMany({ status: ACTIVE, expiresAt > now })` → solo una request gana.
+- `clientEventId` es único: reintentar sync no duplica.
+
+### Inventario
+
+Recepción = **delta**:
+
+```text
+newStock = currentStockLiters + receivedVolume
+fillRatio = newStock / capacity
+```
+
+Si `newStock > capacity` → error (no se silencia).
+
+### Estado del lote (mínimo)
+
+Emitir puede pasar el lote a `IN_TRANSIT`. Aceptar pasa a `RECEIVED` si la transición es hacia adelante. **No** se permite `RECEIVED → IN_TRANSIT`.
+
+---
+
+## 12. Pendiente FASE 2 — lote vs viaje
+
+Hoy `FuelBatch.declaredVolumeLiters` se usa a la vez como:
+
+- consignación de importación (p. ej. 100 000 L), y
+- volumen del QR de una cisterna (p. ej. 24 800 L).
+
+Consecuencias actuales:
+
+- reconciliar “declarado vs recibido” compara escalas distintas;
+- no hay split (1 lote → N cisternas) ni merge (N cisternas → 1 tanque);
+- no existe planta/depósito como nodo operativo (el piloto salta a EESS).
+
+Recomendación FASE 2 (sin implementar ahora):
+
+```text
+FuelBatch (consignment)
+  → Dispatch / ShipmentLeg (viaje de cisterna + volumen allocated)
+  → CustodyBaton apunta al Dispatch, no al lote entero
+  → recepción y reconciliación por tramo
+```

@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { CreateMeasurementDto, CreateTankDto } from './dto/tanks.dto';
 import { TanksService } from './tanks.service';
 
@@ -12,6 +14,7 @@ export class TanksController {
   }
 
   @Post('tanks')
+  @RequireRoles(...RolesAllowed.tanksWrite)
   createTank(@Body() dto: CreateTankDto) {
     return this.service.createTank(dto);
   }
@@ -25,6 +28,7 @@ export class TanksController {
   }
 
   @Post('measurements')
+  @RequireRoles(...RolesAllowed.measurementsWrite)
   createMeasurement(@Body() dto: CreateMeasurementDto) {
     return this.service.createMeasurement(dto);
   }

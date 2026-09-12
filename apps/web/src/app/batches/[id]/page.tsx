@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { EvidenceVerify } from '@/components/evidence-verify';
 import { LiveAnchorPanel } from '@/components/live-anchor-panel';
 import { apiGet } from '@/lib/api';
 import { formatStatus, formatVolume, riskClass } from '@/lib/types';
@@ -40,7 +41,25 @@ type Passport = {
     note: string;
     steps: Array<{ key: string; label: string; liters: number | null }>;
     deltas: Array<{ from: string; to: string; differenceLiters: number }>;
+    movements: Array<{
+      custodyEventId: string | null;
+      expectedLiters: number | null;
+      receivedLiters: number | null;
+      differenceLiters: number | null;
+      status: string;
+      note: string;
+      label: string;
+    }>;
   };
+  transports: Array<{
+    id: string;
+    carrier: string;
+    origin: string;
+    destination: string;
+    status: string;
+    vehicleRef: string | null;
+    vehicle?: { identifier: string; plate: string | null } | null;
+  }>;
   documents: Array<{
     id: string;
     name: string;
@@ -61,10 +80,15 @@ type Passport = {
   blockchain: Array<{
     id: string;
     eventKind: string;
+    eventId: string | null;
     dataHash: string;
     transactionHash: string | null;
     blockNumber: string | null;
     timestamp: string;
+    status: string;
+    network: string;
+    contractAddress: string | null;
+    chainId: number | null;
   }>;
 };
 
@@ -112,7 +136,9 @@ export default async function BatchDetailPage({
         </Link>
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--ink)] pb-5">
           <div>
-            <p className="text-sm text-[var(--mute)]">Pasaporte del lote</p>
+            <p className="text-sm text-[var(--mute)]">
+              Pasaporte DEMO · consignación del lote, no de un viaje
+            </p>
             <h1 className="fc-batch-code mt-2 text-3xl text-[var(--diesel)] md:text-5xl">
               {idn.batchCode}
             </h1>
@@ -120,7 +146,7 @@ export default async function BatchDetailPage({
               {idn.product}
               <span className="text-[var(--mute)]">
                 {' '}
-                · {formatVolume(idn.declaredVolumeLiters)}
+                · {formatVolume(idn.declaredVolumeLiters)} consignados
               </span>
             </p>
           </div>
@@ -153,14 +179,43 @@ export default async function BatchDetailPage({
         ))}
       </section>
 
+      {(passport.transports ?? []).length > 0 && (
+        <section className="fc-sheet space-y-3">
+          <h2 className="font-display text-xl font-bold">Transporte del movimiento</h2>
+          <p className="text-sm text-[var(--mute)]">
+            Entidad Transport/Vehicle existente. No es el volumen total del lote.
+          </p>
+          <ul className="space-y-3">
+            {passport.transports.map((t) => (
+              <li
+                key={t.id}
+                className="border-l-2 border-[var(--diesel)] bg-white/40 px-4 py-3 text-sm"
+              >
+                <p className="font-medium">
+                  {t.carrier} · {formatStatus(t.status)}
+                </p>
+                <p className="mt-1 text-[var(--mute)]">
+                  {t.origin} → {t.destination}
+                </p>
+                <p className="mt-1 text-[var(--mute)]">
+                  Vehículo {t.vehicle?.identifier ?? t.vehicleRef ?? '—'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="fc-sheet space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-xl font-bold">Reconciliación de volumen</h2>
+            <h2 className="font-display text-xl font-bold">
+              Reconciliación por movimiento
+            </h2>
             <p className="mt-2 max-w-2xl text-sm text-[var(--mute)]">{q.note}</p>
           </div>
           <p className="text-right text-sm">
-            <span className="text-[var(--mute)]">Brecha total</span>
+            <span className="text-[var(--mute)]">Suma de diferencias</span>
             <span
               className={`mt-1 block font-display text-2xl font-black tabular-nums ${
                 q.totalGapLiters === 0 ? 'text-[var(--seal)]' : 'text-[var(--alarm)]'
@@ -171,6 +226,60 @@ export default async function BatchDetailPage({
             </span>
           </p>
         </div>
+
+        {(q.movements ?? []).length > 0 ? (
+          <div className="fc-surface overflow-x-auto">
+            <table className="fc-table min-w-[720px]">
+              <thead>
+                <tr>
+                  <th>Esperado</th>
+                  <th>Recibido</th>
+                  <th>Diferencia</th>
+                  <th>Estado</th>
+                  <th>Evidencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(q.movements ?? []).map((m, idx) => (
+                  <tr key={m.custodyEventId ?? idx}>
+                    <td className="tabular-nums">
+                      {m.expectedLiters === null
+                        ? '—'
+                        : formatVolume(m.expectedLiters)}
+                    </td>
+                    <td className="tabular-nums">
+                      {m.receivedLiters === null
+                        ? '—'
+                        : formatVolume(m.receivedLiters)}
+                    </td>
+                    <td className="tabular-nums">
+                      {m.differenceLiters === null
+                        ? '—'
+                        : `${m.differenceLiters > 0 ? '+' : ''}${m.differenceLiters.toLocaleString('es-BO')} L`}
+                    </td>
+                    <td>{m.status}</td>
+                    <td>
+                      {m.custodyEventId ? (
+                        <EvidenceVerify custodyEventId={m.custodyEventId} />
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--mute)]">
+            Todavía no hay una recepción RECEIVED para reconciliar.
+          </p>
+        )}
+
+        <p className="text-sm text-[var(--mute)]">
+          Instantánea DEMO de etapas del lote. El volumen declarado del lote no
+          es el esperado de una cisterna.
+        </p>
 
         <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {q.steps.map((step, i) => (
@@ -239,6 +348,9 @@ export default async function BatchDetailPage({
           <h2 className="font-display text-xl font-bold text-[var(--alarm)]">
             Discrepancias
           </h2>
+          <p className="mt-2 text-sm text-[var(--mute)]">
+            Señal para revisión humana. Discrepancia ≠ robo.
+          </p>
           <ul className="mt-3 space-y-2">
             {passport.anomalies.map((a, idx) => (
               <li key={idx} className="text-sm text-[var(--mute)]">
@@ -330,23 +442,45 @@ export default async function BatchDetailPage({
         </section>
       )}
 
-      {passport.blockchain.length > 0 && (
-        <section>
-          <h2 className="font-display mb-3 text-xl font-bold">Anclas indexadas</h2>
+      <section>
+        <h2 className="font-display mb-3 text-xl font-bold">Blockchain</h2>
+        <p className="mb-4 max-w-2xl text-sm text-[var(--mute)]">
+          Estado del ancla de recepción. No afirma que los litros físicos sean
+          reales; solo si el hash quedó registrado.
+        </p>
+        {passport.blockchain.length === 0 ? (
+          <p className="text-sm text-[var(--mute)]">
+            Sin anclas. Tras una recepción, el estado puede quedar PENDING si
+            Hardhat no está arriba.
+          </p>
+        ) : (
           <div className="fc-surface overflow-x-auto">
-            <table className="fc-table min-w-[640px]">
+            <table className="fc-table min-w-[880px]">
               <thead>
                 <tr>
-                  <th>Evento</th>
+                  <th>Estado</th>
                   <th>Hash</th>
                   <th>Tx</th>
                   <th>Bloque</th>
+                  <th>Contrato</th>
+                  <th>Red</th>
+                  <th>Fecha</th>
                 </tr>
               </thead>
               <tbody>
-                {passport.blockchain.slice(0, 6).map((a) => (
+                {passport.blockchain.slice(0, 8).map((a) => (
                   <tr key={a.id}>
-                    <td>{a.eventKind}</td>
+                    <td
+                      className={
+                        a.status === 'CONFIRMED'
+                          ? 'text-[var(--seal)]'
+                          : a.status === 'FAILED'
+                            ? 'text-[var(--alarm)]'
+                            : 'text-[var(--diesel)]'
+                      }
+                    >
+                      {a.status}
+                    </td>
                     <td className="max-w-[140px] truncate font-mono text-xs text-[var(--mute)]">
                       {a.dataHash}
                     </td>
@@ -354,13 +488,20 @@ export default async function BatchDetailPage({
                       {a.transactionHash ?? '—'}
                     </td>
                     <td className="tabular-nums">{a.blockNumber ?? '—'}</td>
+                    <td className="max-w-[140px] truncate font-mono text-xs text-[var(--mute)]">
+                      {a.contractAddress ?? '—'}
+                    </td>
+                    <td>{a.network}</td>
+                    <td className="text-[var(--mute)]">
+                      {new Date(a.timestamp).toLocaleString('es-BO')}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <LiveAnchorPanel defaultBatchCode={idn.batchCode} />
     </div>

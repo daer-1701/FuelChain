@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { CustomsService } from './customs.service';
 import { CreateCustomsEventDto } from './dto/create-customs-event.dto';
 
@@ -12,6 +14,7 @@ export class CustomsController {
   }
 
   @Post()
+  @RequireRoles(...RolesAllowed.customsWrite)
   create(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Body() dto: CreateCustomsEventDto,

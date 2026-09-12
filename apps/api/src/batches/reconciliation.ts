@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client';
+import {
+  reconcileReceivedEvents,
+  type MovementReconciliation,
+} from './movement-reconciliation';
 
 type CustodyLike = {
+  id?: string;
   eventType: string;
   measuredVolume: Prisma.Decimal | string | number | null;
   declaredVolume: Prisma.Decimal | string | number | null;
@@ -34,8 +39,10 @@ function volumeFromCustody(
 }
 
 /**
- * Build DEMO reconciliation ladder from custody + latest measurement.
- * Does not assert physical truth — compares digital records.
+ * Passport quantities.
+ * Primary gap = sum of per-movement (declared vs measured on RECEIVED).
+ * The lote `declared` figure is a consignment snapshot, not the expected
+ * liters of a single cistern drop.
  */
 export function buildQuantityReconciliation(input: {
   declaredVolumeLiters: Prisma.Decimal | string | number;
@@ -54,9 +61,18 @@ export function buildQuantityReconciliation(input: {
       }
     : { liters: null as number | null, source: null as string | null, at: null };
 
+  const movements: MovementReconciliation[] = reconcileReceivedEvents(
+    input.custodyEvents,
+  );
+  const movementGap = movements.reduce((sum, m) => {
+    if (m.differenceLiters === null) return sum;
+    return sum + m.differenceLiters;
+  }, 0);
+  const latestMovement = movements[movements.length - 1] ?? null;
+
   const steps = [
-    { key: 'declared', label: 'Declarado', liters: declared },
-    { key: 'received', label: 'Recepción', liters: received.liters },
+    { key: 'declared', label: 'Lote (consignación DEMO)', liters: declared },
+    { key: 'received', label: 'Última recepción (movimiento)', liters: received.liters },
     { key: 'stored', label: 'Almacén', liters: stored.liters },
     {
       key: 'sensor',
@@ -84,9 +100,6 @@ export function buildQuantityReconciliation(input: {
     });
   }
 
-  const totalGap =
-    sensor.liters !== null ? sensor.liters - declared : received.liters !== null ? received.liters - declared : 0;
-
   return {
     declared,
     received: received.liters,
@@ -96,8 +109,10 @@ export function buildQuantityReconciliation(input: {
     sensorAt: sensor.at,
     steps,
     deltas,
-    totalGapLiters: totalGap,
+    movements,
+    latestMovement,
+    totalGapLiters: movements.length > 0 ? movementGap : 0,
     note:
-      'Reconciliación DEMO a partir de custodia + medición. No prueba litros físicos; señala diferencias para auditoría.',
+      'DEMO: la brecha principal es esperado vs recibido de cada movimiento (evento RECEIVED). El volumen del lote no se trata como el de una sola cisterna. Discrepancia ≠ robo.',
   };
 }

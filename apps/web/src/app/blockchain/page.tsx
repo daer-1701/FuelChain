@@ -99,7 +99,19 @@ export default async function BlockchainPage() {
                     </span>
                   )}
                 </td>
-                <td className="text-[var(--seal)]">{r.status}</td>
+                <td
+                  className={
+                    r.status === 'CONFIRMED'
+                      ? 'text-[var(--seal)]'
+                      : r.status === 'FAILED'
+                        ? 'text-[var(--alarm)]'
+                        : r.status === 'PENDING'
+                          ? 'text-[var(--diesel)]'
+                          : 'text-[var(--mute)]'
+                  }
+                >
+                  {r.status}
+                </td>
               </tr>
             ))}
           </tbody>

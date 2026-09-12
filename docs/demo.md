@@ -98,8 +98,8 @@ Al hacer clic en un código `FC-BO-…` entras al **pasaporte digital del lote**
 ### Paso C — Pasaporte del lote 184 (2–3 min)
 1. Entra a `FC-BO-2026-000184`.
 2. Explica el **header**: producto, volumen, score de riesgo.
-3. Baja a **Reconciliación de volumen**: escalera Declarado → Recepción → Almacén → Simulador.
-4. Señala la **brecha total** y las discrepancias (señal, no sentencia).
+3. Baja a **Reconciliación por movimiento**: esperado vs recibido de cada RECEIVED (no lote 150k vs una cisterna).
+4. Señala la **diferencia del movimiento** y las discrepancias (señal, no sentencia). Umbral DEMO: 0,5% o 20 L. **Discrepancia ≠ robo.**
 5. Revisa documentos, calidad, mediciones y anclas indexadas.
 6. Frase clave: *“No decimos ‘robo’. Decimos ANOMALY / DISCREPANCY.”*
 
@@ -112,10 +112,18 @@ Al hacer clic en un código `FC-BO-…` entras al **pasaporte digital del lote**
 1. **Evidencia** (o el pasaporte del lote 184).
 2. Confirma chips verdes: RPC ok · Contrato · Clave DEMO.
 3. Pulsa **Anclar ahora** → aparece `txHash` + número de bloque reales.
-4. Señala la nueva fila en la tabla (estado ANCHORED).
-5. Frase: *“Blockchain no prueba que el litro exista. Prueba que este evento y este hash quedaron registrados de forma resistente a modificación.”*
+4. Señala la nueva fila (CONFIRMED / PENDING / FAILED). Una recepción válida también ancla sola (best-effort).
+5. Frase: *“La evidencia almacenada coincide con el hash anclado.”* Nunca: *“Blockchain demuestra que los litros son reales.”*
 
 Si los chips están en rojo, arranca la cadena local (sección 1b abajo) y reinicia la API.
+
+### Paso F — QR Cochabamba (opcional, 1 min)
+
+1. Login `chofer@fuelchain.bo` → **QR custodia** → generar bastón.
+2. El QR apunta a `/q/BT-…?p=` (payload firmado, no solo la URL).
+3. Escaneo: la ficha es pública. **Aceptar** pide `estacion@fuelchain.bo` y vuelve al mismo token.
+4. El inventario del tanque suma el volumen recibido (delta), no lo trata como nivel absoluto.
+5. El rol del body no cuenta: lo decide la sesión.
 
 ---
 
@@ -205,3 +213,36 @@ Evento real
 Guion corto de emergencia (30 s):
 
 > “FuelChain es una plataforma de integridad de la cadena de combustible. El lote es el centro. Comparamos cantidades declaradas vs medidas, generamos una señal de discrepancia —no una sentencia—, calculamos riesgo explicable, asistimos al auditor y anclamos evidencia digital en blockchain.”
+
+---
+
+## 9. FASE 2 / 3 — reglas DEMO (sin cambiar Prisma)
+
+**Lote ≠ viaje.** `FuelBatch.declaredVolumeLiters` es la consignación. El volumen de un QR / `CustodyEvent.declaredVolume` es el movimiento. `Transport` / `Vehicle` describen el viaje si ya existen.
+
+**Reconciliación del movimiento**
+
+```text
+esperado (batón / declaredVolume del RECEIVED)
+- recibido (measuredVolume)
+= diferencia
+→ MATCH | WITHIN_TOLERANCE | ANOMALY
+```
+
+Umbral DEMO (no es norma industrial): `max(0.5% del esperado, 20 L)`.  
+**Discrepancia ≠ robo.** Una ANOMALY abre `Anomaly` `VOLUME_DISCREPANCY` en `OPEN` para revisión humana. Reejecutar la misma recepción no duplica: se busca `expected = movement:<custodyEventId>`.
+
+**Ancla automática (negocio primero)**
+
+```text
+RECEIVED válido → evidencia canónica fuelchain.custody.received.v1
+→ keccak256 → FuelChain.sol#anchorEvidence
+```
+
+Si el RPC/Hardhat falla, la recepción ya quedó grabada. El índice queda `PENDING` (sin contrato/clave) o `FAILED` (`actorWallet = 'FAILED'`). Reintento: `POST /blockchain/anchor-custody/:custodyEventId`.
+
+**Idempotencia:** a nivel aplicación (mismo `eventId` + `dataHash`). No hay unique constraint en Prisma.
+
+**Outbox real:** BLOQUEADO POR RESTRICCIÓN DE PRISMA. No hay tabla de outbox; el best-effort corre in-process después del commit.
+
+**Verificar:** `GET /blockchain/verify-evidence/:custodyEventId` → MATCH / MISMATCH. Copy: *“La evidencia almacenada coincide con el hash anclado.”*

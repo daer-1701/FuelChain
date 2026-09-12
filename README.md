@@ -45,12 +45,24 @@ pnpm --filter @fuelchain/contracts run deploy
 
 Configura `FUELCHAIN_CONTRACT_ADDRESS` y `BLOCKCHAIN_PRIVATE_KEY` (cuenta #0 Hardhat) en `.env`. Ver `.env.example`.
 
+Secretos **obligatorios** (fail-fast, sin fallback):
+
+```env
+AUTH_SECRET=...
+CUSTODY_QR_SECRET=...
+```
+
+No reutilices la private key de blockchain como secreto de QR o de sesión. Copiá las claves desde `.env.example` a tu `.env` local (el `.env` no se commitea).
+
 ## URLs
 
 | Destino | URL |
 |---------|-----|
 | Web | http://localhost:3000 |
 | API health | http://localhost:3001/health |
+| Mapa público | http://localhost:3000/mapa |
+| QR custodia | http://localhost:3000/verify (emite; requiere login) |
+| Aceptar bastón | http://localhost:3000/q/BT-… (ficha pública; aceptar pide estación) |
 | Lote demo | http://localhost:3000/batches/FC-BO-2026-000184 |
 | Evidencia | http://localhost:3000/blockchain |
 

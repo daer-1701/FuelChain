@@ -1,5 +1,9 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import type { AuthUser } from '../auth/auth.service';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { CustodyQrService } from './custody-qr.service';
 
 class IssueBatonDto {
@@ -10,7 +14,7 @@ class IssueBatonDto {
   eventType!: string;
 
   @IsNumber()
-  @Min(0)
+  @Min(0.001)
   volumeLiters!: number;
 
   @IsOptional()
@@ -21,8 +25,10 @@ class IssueBatonDto {
   @IsString()
   stationCode?: string;
 
+  /** @deprecated Ignored — issuer role comes from the session. */
+  @IsOptional()
   @IsString()
-  issuedByRole!: string;
+  issuedByRole?: string;
 
   @IsOptional()
   @IsString()
@@ -35,10 +41,13 @@ class AcceptBatonDto {
   tokenId?: string;
 
   @IsOptional()
+  @IsObject()
   embedded?: Record<string, unknown>;
 
+  /** @deprecated Ignored — consumer role comes from the session. */
+  @IsOptional()
   @IsString()
-  consumedByRole!: string;
+  consumedByRole?: string;
 
   @IsOptional()
   @IsString()
@@ -47,6 +56,10 @@ class AcceptBatonDto {
   @IsOptional()
   @IsNumber()
   receivedVolumeLiters?: number;
+
+  @IsOptional()
+  @IsString()
+  clientEventId?: string;
 }
 
 class SyncOfflineDto {
@@ -55,7 +68,7 @@ class SyncOfflineDto {
     batonTokenId?: string;
     batchCode?: string;
     stationCode?: string;
-    actorRole: string;
+    actorRole?: string;
     eventType: string;
     payload: Record<string, unknown>;
     capturedAt: string;
@@ -67,8 +80,19 @@ export class CustodyQrController {
   constructor(private readonly custodyQr: CustodyQrService) {}
 
   @Post('issue')
-  issue(@Body() dto: IssueBatonDto) {
-    return this.custodyQr.issue(dto);
+  @RequireRoles(...RolesAllowed.qrIssue)
+  issue(@Body() dto: IssueBatonDto, @CurrentUser() user: AuthUser) {
+    return this.custodyQr.issue(
+      {
+        batchCode: dto.batchCode,
+        eventType: dto.eventType,
+        volumeLiters: dto.volumeLiters,
+        cisternCode: dto.cisternCode,
+        stationCode: dto.stationCode,
+        previousHash: dto.previousHash,
+      },
+      user,
+    );
   }
 
   @Get(':tokenId')
@@ -77,12 +101,23 @@ export class CustodyQrController {
   }
 
   @Post('accept')
-  accept(@Body() dto: AcceptBatonDto) {
-    return this.custodyQr.accept(dto);
+  @RequireRoles(...RolesAllowed.qrAccept)
+  accept(@Body() dto: AcceptBatonDto, @CurrentUser() user: AuthUser) {
+    return this.custodyQr.accept(
+      {
+        tokenId: dto.tokenId,
+        embedded: dto.embedded,
+        stationCode: dto.stationCode,
+        receivedVolumeLiters: dto.receivedVolumeLiters,
+        clientEventId: dto.clientEventId,
+      },
+      user,
+    );
   }
 
   @Post('sync')
-  sync(@Body() dto: SyncOfflineDto) {
-    return this.custodyQr.syncOffline(dto.events ?? []);
+  @RequireRoles(...RolesAllowed.qrSync)
+  sync(@Body() dto: SyncOfflineDto, @CurrentUser() user: AuthUser) {
+    return this.custodyQr.syncOffline(dto.events ?? [], user);
   }
 }

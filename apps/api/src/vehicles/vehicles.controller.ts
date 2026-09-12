@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
@@ -12,6 +14,7 @@ export class VehiclesController {
   }
 
   @Post()
+  @RequireRoles(...RolesAllowed.vehiclesWrite)
   create(@Body() dto: CreateVehicleDto) {
     return this.service.create(dto);
   }

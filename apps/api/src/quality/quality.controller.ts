@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import {
   CreateLabAnalysisDto,
   CreateQualityCertificateDto,
@@ -16,6 +18,7 @@ export class QualityController {
   }
 
   @Post('certificates')
+  @RequireRoles(...RolesAllowed.qualityWrite)
   addCertificate(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Body() dto: CreateQualityCertificateDto,
@@ -24,6 +27,7 @@ export class QualityController {
   }
 
   @Post('sampling')
+  @RequireRoles(...RolesAllowed.qualityWrite)
   addSampling(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Body() dto: CreateSamplingDto,
@@ -32,6 +36,7 @@ export class QualityController {
   }
 
   @Post('lab-analyses')
+  @RequireRoles(...RolesAllowed.qualityWrite)
   addLabAnalysis(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Body() dto: CreateLabAnalysisDto,

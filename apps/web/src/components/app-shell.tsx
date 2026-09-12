@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AuthProvider } from '@/components/auth-provider';
@@ -24,8 +25,10 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   const isLogin = pathname === '/login';
   const isPublicMap =
     pathname === '/mapa' || pathname.startsWith('/cochabamba');
+  const isPublicBaton = pathname.startsWith('/q/');
+  const isPublicPreview = isPublicMap || isPublicBaton;
   const showOperatorNav = Boolean(user) && !isLogin;
-  const showPublicNav = !user && isPublicMap;
+  const showPublicNav = !user && isPublicPreview;
 
   function handleLogout() {
     logout();
@@ -36,7 +39,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
       <header className="border-b-2 border-[var(--ink)] bg-[var(--paper)]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-5 py-5 md:px-8 md:py-6">
           <Link
-            href={user ? '/' : isPublicMap ? '/mapa' : '/login'}
+            href={user ? '/' : isPublicPreview ? pathname : '/login'}
             className="group block min-w-0"
           >
             <span className="font-display text-[clamp(2.4rem,6vw,3.75rem)] font-black leading-[0.9] tracking-tight text-[var(--ink)]">
@@ -66,7 +69,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
                 <p className="max-w-[14rem] text-sm leading-snug text-[var(--mute)] sm:text-right">
                   Cada litro. Cada movimiento. Cada evidencia.
                 </p>
-                {isPublicMap && (
+                {isPublicPreview && (
                   <Link
                     href="/login"
                     className="border-2 border-[var(--ink)] px-3 py-1.5 text-xs font-semibold"
@@ -128,7 +131,15 @@ function ShellInner({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="fc-reveal mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10">
-        <AuthGate>{children}</AuthGate>
+        <Suspense
+          fallback={
+            <div className="flex min-h-[40vh] items-center justify-center text-[var(--mute)]">
+              Cargando sesión…
+            </div>
+          }
+        >
+          <AuthGate>{children}</AuthGate>
+        </Suspense>
       </main>
     </div>
   );

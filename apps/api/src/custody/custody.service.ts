@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { BatchStatus, Prisma } from '@prisma/client';
+import type { AuthUser } from '../auth/auth.service';
 import { BatchesService } from '../batches/batches.service';
+import { assertCanTransition, canReceiveBatch } from '../common/batch-status';
 import { serialize } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustodyEventDto } from './dto/create-custody-event.dto';
+import { ReceivedFollowUpService } from './received-follow-up.service';
 
 const EVENT_TO_STATUS: Partial<Record<CreateCustodyEventDto['eventType'], BatchStatus>> = {
   IN_TRANSIT: BatchStatus.IN_TRANSIT,
@@ -23,6 +26,7 @@ export class CustodyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly batches: BatchesService,
+    @Optional() private readonly followUp?: ReceivedFollowUpService,
   ) {}
 
   async list(batchIdOrCode: string) {
@@ -35,15 +39,28 @@ export class CustodyService {
     return serialize(events);
   }
 
-  async create(batchIdOrCode: string, dto: CreateCustodyEventDto) {
+  async create(
+    batchIdOrCode: string,
+    dto: CreateCustodyEventDto,
+    actor: AuthUser,
+  ) {
     const batch = await this.batches.findBatchOrThrow(batchIdOrCode);
+    if (dto.eventType === 'RECEIVED' && !canReceiveBatch(batch.status)) {
+      throw new BadRequestException(
+        `Recepción no permitida desde estado ${batch.status}. El lote debe estar en tránsito.`,
+      );
+    }
+    const nextStatus = EVENT_TO_STATUS[dto.eventType];
+    if (nextStatus) {
+      assertCanTransition(batch.status, nextStatus);
+    }
 
     const event = await this.prisma.$transaction(async (tx) => {
       const created = await tx.custodyEvent.create({
         data: {
           batchId: batch.id,
           eventType: dto.eventType,
-          actorId: dto.actorId,
+          actorId: actor.id,
           location: dto.location,
           declaredVolume:
             dto.declaredVolume !== undefined
@@ -74,6 +91,16 @@ export class CustodyService {
 
       return created;
     });
+
+    if (dto.eventType === 'RECEIVED' && this.followUp) {
+      const follow = await this.followUp.afterReceived(event, batch);
+      return serialize({
+        ...event,
+        movement: follow.reconciliation,
+        anomaly: follow.anomaly,
+        blockchain: follow.blockchain,
+      });
+    }
 
     return serialize(event);
   }

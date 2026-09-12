@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { AuthorizationsService } from './authorizations.service';
 import { CreateAuthorizationDto } from './dto/create-authorization.dto';
 
@@ -12,6 +14,7 @@ export class AuthorizationsController {
   }
 
   @Post()
+  @RequireRoles(...RolesAllowed.authorizationWrite)
   create(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Body() dto: CreateAuthorizationDto,

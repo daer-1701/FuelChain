@@ -1,4 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentsService } from './documents.service';
 
@@ -12,6 +14,7 @@ export class DocumentsController {
   }
 
   @Post()
+  @RequireRoles(...RolesAllowed.documentsWrite)
   create(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Body() dto: CreateDocumentDto,
@@ -20,6 +23,7 @@ export class DocumentsController {
   }
 
   @Post(':documentId/verify')
+  @RequireRoles(...RolesAllowed.documentsWrite)
   verify(
     @Param('batchIdOrCode') batchIdOrCode: string,
     @Param('documentId') documentId: string,

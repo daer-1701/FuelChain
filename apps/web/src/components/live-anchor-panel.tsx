@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
 
 type ChainStatus = {
@@ -36,6 +37,7 @@ export function LiveAnchorPanel({
   defaultBatchCode?: string;
 }) {
   const router = useRouter();
+  const { authHeaders } = useAuth();
   const [status, setStatus] = useState<ChainStatus | null>(null);
   const [batchCode, setBatchCode] = useState(defaultBatchCode);
   const [eventKind, setEventKind] = useState(DEFAULT_EVENT);
@@ -81,7 +83,7 @@ export function LiveAnchorPanel({
       try {
         const res = await fetch(`${API_URL}/blockchain/anchor`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ batchCode, eventKind, note }),
         });
         const json = (await res.json()) as AnchorResult & {

@@ -8,6 +8,8 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { RolesAllowed } from '../auth/permissions';
+import { RequireRoles } from '../auth/require-roles';
 import { BatchesService } from './batches.service';
 import {
   CreateBatchDto,
@@ -20,6 +22,7 @@ export class BatchesController {
   constructor(private readonly batchesService: BatchesService) {}
 
   @Post()
+  @RequireRoles(...RolesAllowed.batchCreate)
   create(@Body() dto: CreateBatchDto) {
     return this.batchesService.create(dto);
   }
@@ -40,11 +43,13 @@ export class BatchesController {
   }
 
   @Patch(':idOrCode')
+  @RequireRoles(...RolesAllowed.batchUpdate)
   update(@Param('idOrCode') idOrCode: string, @Body() dto: UpdateBatchDto) {
     return this.batchesService.update(idOrCode, dto);
   }
 
   @Delete(':idOrCode')
+  @RequireRoles(...RolesAllowed.batchDelete)
   remove(@Param('idOrCode') idOrCode: string) {
     return this.batchesService.remove(idOrCode);
   }

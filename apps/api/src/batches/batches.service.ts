@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { assertCanTransition } from '../common/batch-status';
 import { generateBatchCode } from '../common/batch-code';
 import { serialize } from '../common/serialize';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,6 +13,10 @@ import {
   ListBatchesQueryDto,
   UpdateBatchDto,
 } from './dto/batch.dto';
+import {
+  deriveAnchorStatus,
+  networkLabel,
+} from '../blockchain/anchor-status';
 import { buildQuantityReconciliation } from './reconciliation';
 
 @Injectable()
@@ -148,9 +153,20 @@ export class BatchesService {
       measurements: full.measurements,
     });
 
+    const contractAddress =
+      process.env.FUELCHAIN_CONTRACT_ADDRESS?.trim() || null;
+
+    const blockchain = full.blockchainAnchors.map((a) => ({
+      ...a,
+      status: deriveAnchorStatus(a),
+      network: networkLabel(a.chainId),
+      contractAddress,
+    }));
+
     return serialize({
       label: 'DEMO',
       abstraction: 'FUELCHAIN ABSTRACTION',
+      note: 'Datos DEMO. El volumen del lote (consignación) no es automáticamente el de un viaje o recepción.',
       identification: {
         batchId: full.id,
         batchCode: full.batchCode,
@@ -167,6 +183,14 @@ export class BatchesService {
         currentLocation: full.currentLocation,
         createdAt: full.createdAt,
       },
+      scopes: {
+        batch: {
+          declaredVolumeLiters: full.declaredVolumeLiters,
+          note: 'Consignación / lote. No usar como esperado de una cisterna.',
+        },
+        transports: full.transports,
+        movements: quantity.movements,
+      },
       quality: {
         certificates: full.qualityCertificates,
         sampling: full.samplingEvents,
@@ -179,14 +203,21 @@ export class BatchesService {
       customs: full.customsEvents,
       documents: full.documents,
       iot: full.measurements,
-      anomalies: full.anomalies,
+      anomalies: full.anomalies.map((a) => ({
+        ...a,
+        humanReviewRequired: a.status === 'OPEN' || a.status === 'UNDER_REVIEW',
+        notAFinding: true,
+      })),
       audits: full.auditCases,
-      blockchain: full.blockchainAnchors,
+      blockchain,
     });
   }
 
   async update(idOrCode: string, dto: UpdateBatchDto) {
     const batch = await this.findBatchOrThrow(idOrCode);
+    if (dto.status !== undefined) {
+      assertCanTransition(batch.status, dto.status);
+    }
     const updated = await this.prisma.fuelBatch.update({
       where: { id: batch.id },
       data: {

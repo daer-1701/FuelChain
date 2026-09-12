@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
+import { safeInternalPath } from '@/lib/safe-next';
 
 const PRESETS = [
   {
@@ -56,9 +57,7 @@ export default function LoginPage() {
       setError(null);
       try {
         await login(email, password);
-        const dest =
-          !next || next === '/login' || next.startsWith('/mapa') ? '/' : next;
-        router.replace(dest);
+        router.replace(safeInternalPath(next));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error de login');
       }

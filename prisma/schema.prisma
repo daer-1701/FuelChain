@@ -484,10 +484,11 @@ model Station {
 model StorageTank {
   id             String     @id @default(cuid())
   name           String
-  capacityLiters Decimal    @db.Decimal(18, 3)
-  location       String
-  stationId      String?
-  cisternCode    String?
+  capacityLiters     Decimal @db.Decimal(18, 3)
+  currentStockLiters Decimal @default(0) @db.Decimal(18, 3)
+  location           String
+  stationId          String?
+  cisternCode        String?
   status         TankStatus @default(AVAILABLE)
   isDemo         Boolean    @default(true)
   createdAt      DateTime   @default(now())

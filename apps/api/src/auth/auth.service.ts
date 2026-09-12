@@ -2,7 +2,8 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import {
   Injectable,
   UnauthorizedException,
-  BadRequestException,
+  ForbiddenException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ActorRole } from '@prisma/client';
 import { serialize } from '../common/serialize';
@@ -21,11 +22,11 @@ export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
   private secret() {
-    return (
-      process.env.AUTH_SECRET ||
-      process.env.BATON_HMAC_SECRET ||
-      'fuelchain-demo-auth-secret'
-    );
+    const secret = process.env.AUTH_SECRET;
+    if (!secret) {
+      throw new ServiceUnavailableException('AUTH_SECRET is required');
+    }
+    return secret;
   }
 
   /** DEMO password hashing (scrypt). Not for production identity providers. */
@@ -61,7 +62,14 @@ export class AuthService {
     const expected = createHmac('sha256', this.secret())
       .update(body)
       .digest('base64url');
-    if (sig !== expected) throw new UnauthorizedException('Firma inválida');
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expected);
+    if (
+      sigBuf.length !== expectedBuf.length ||
+      !timingSafeEqual(sigBuf, expectedBuf)
+    ) {
+      throw new UnauthorizedException('Firma inválida');
+    }
     const payload = JSON.parse(
       Buffer.from(body, 'base64url').toString('utf8'),
     ) as { sub: string; role: string; exp: number };
@@ -96,22 +104,27 @@ export class AuthService {
     });
   }
 
-  async me(token?: string) {
+  async resolveUser(token?: string): Promise<AuthUser> {
     if (!token) throw new UnauthorizedException('Sin sesión');
     const payload = this.verifyToken(token);
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isDemo: user.isDemo,
+    };
+  }
+
+  async me(token?: string) {
+    const user = await this.resolveUser(token);
     return serialize({
       label: 'DEMO',
-      data: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        isDemo: user.isDemo,
-      },
+      data: user,
     });
   }
 
@@ -128,12 +141,11 @@ export class AuthService {
     };
   }
 
-  requireRole(token: string | undefined, roles?: ActorRole[]) {
-    if (!token) throw new UnauthorizedException('Login requerido');
-    const payload = this.verifyToken(token);
-    if (roles && !roles.includes(payload.role as ActorRole)) {
-      throw new BadRequestException(`Rol ${payload.role} no autorizado`);
+  async requireRole(token: string | undefined, roles?: ActorRole[]) {
+    const user = await this.resolveUser(token);
+    if (roles && !roles.includes(user.role)) {
+      throw new ForbiddenException(`Rol ${user.role} no autorizado`);
     }
-    return payload;
+    return user;
   }
 }

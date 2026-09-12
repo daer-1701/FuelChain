@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
+import { useAuth } from '@/components/auth-provider';
 import { API_URL } from '@/lib/api';
+import { batonDeepLink } from '@/lib/baton-qr';
 
 type IssueResult = {
   data: {
@@ -15,6 +17,7 @@ type IssueResult = {
 };
 
 export default function VerifyPage() {
+  const { authHeaders } = useAuth();
   const [batchCode, setBatchCode] = useState('FC-BO-2026-000182');
   const [volume, setVolume] = useState('25000');
   const [cistern, setCistern] = useState('CIS-CBB-07');
@@ -41,13 +44,12 @@ export default function VerifyPage() {
       try {
         const res = await fetch(`${API_URL}/custody-qr/issue`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({
             batchCode,
             eventType: 'IN_TRANSIT',
             volumeLiters: Number(volume),
             cisternCode: cistern,
-            issuedByRole: 'TRANSPORTER',
           }),
         });
         if (!res.ok) throw new Error(await res.text());
@@ -77,7 +79,7 @@ export default function VerifyPage() {
         }
         const res = await fetch(`${API_URL}/custody-qr/sync`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ events }),
         });
         if (!res.ok) throw new Error(await res.text());
@@ -91,11 +93,18 @@ export default function VerifyPage() {
     });
   }
 
-  const qrImg = issued
+  const qrTarget = issued
+    ? typeof window !== 'undefined'
+      ? batonDeepLink(
+          window.location.origin,
+          issued.tokenId,
+          issued.qrPayload,
+        )
+      : issued.deepLinkPath
+    : null;
+  const qrImg = qrTarget
     ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-        typeof window !== 'undefined'
-          ? `${window.location.origin}${issued.deepLinkPath}`
-          : issued.deepLinkPath,
+        qrTarget,
       )}`
     : null;
 
@@ -210,7 +219,8 @@ export default function VerifyPage() {
               Abrir pasaporte
             </Link>
             <p className="text-xs text-[var(--mute)]">
-              Mapa ciudadano:{' '}
+              Para comprobar un hash de recepción, abrí el pasaporte del lote y
+              usá «Recalcular hash» en el movimiento. Mapa ciudadano:{' '}
               <Link href="/mapa" className="underline">
                 /mapa
               </Link>

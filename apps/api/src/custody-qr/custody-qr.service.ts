@@ -1,12 +1,27 @@
 import { createHmac, createHash, randomBytes } from 'crypto';
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BatchStatus, Prisma } from '@prisma/client';
+import type { AuthUser } from '../auth/auth.service';
+import {
+  assertCanTransition,
+  canIssueQr,
+  canReceiveBatch,
+  canTransition,
+} from '../common/batch-status';
+import { canonicalJson } from '../common/canonical-json';
 import { serialize } from '../common/serialize';
+import { applyStockDelta } from '../common/tank-inventory';
+import { ReceivedFollowUpService } from '../custody/received-follow-up.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+const BATON_TTL_SEC = 72 * 60 * 60;
 
 type IssueBatonInput = {
   batchCode: string;
@@ -14,17 +29,15 @@ type IssueBatonInput = {
   volumeLiters: number;
   cisternCode?: string;
   stationCode?: string;
-  issuedByRole: string;
   previousHash?: string;
 };
 
 type AcceptBatonInput = {
   tokenId?: string;
-  /** Self-contained offline payload from QR */
   embedded?: Record<string, unknown>;
-  consumedByRole: string;
   stationCode?: string;
   receivedVolumeLiters?: number;
+  clientEventId?: string;
 };
 
 type OfflineSyncItem = {
@@ -32,22 +45,34 @@ type OfflineSyncItem = {
   batonTokenId?: string;
   batchCode?: string;
   stationCode?: string;
-  actorRole: string;
+  actorRole?: string;
   eventType: string;
   payload: Record<string, unknown>;
   capturedAt: string;
 };
 
+function isPrismaUnique(e: unknown): boolean {
+  return (
+    typeof e === 'object' &&
+    e !== null &&
+    'code' in e &&
+    (e as { code: string }).code === 'P2002'
+  );
+}
+
 @Injectable()
 export class CustodyQrService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly followUp?: ReceivedFollowUpService,
+  ) {}
 
   private secret() {
-    return (
-      process.env.BATON_HMAC_SECRET ||
-      process.env.BLOCKCHAIN_PRIVATE_KEY ||
-      'fuelchain-demo-baton-secret'
-    );
+    const secret = process.env.CUSTODY_QR_SECRET;
+    if (!secret) {
+      throw new ServiceUnavailableException('CUSTODY_QR_SECRET is required');
+    }
+    return secret;
   }
 
   private sign(payloadHash: string): string {
@@ -55,17 +80,73 @@ export class CustodyQrService {
   }
 
   private hashPayload(obj: unknown): string {
-    const canonical = JSON.stringify(obj);
-    return createHash('sha256').update(canonical).digest('hex');
+    return createHash('sha256').update(canonicalJson(obj)).digest('hex');
   }
 
-  async issue(input: IssueBatonInput) {
+  private coreFromEmbedded(embedded: Record<string, unknown>) {
+    const core = { ...embedded };
+    delete core.h;
+    delete core.s;
+    return core;
+  }
+
+  private assertEmbeddedSignature(embedded: Record<string, unknown>) {
+    const h = String(embedded.h ?? '');
+    const s = String(embedded.s ?? '');
+    const expected = this.hashPayload(this.coreFromEmbedded(embedded));
+    if (h !== expected || s !== this.sign(h)) {
+      throw new BadRequestException('Embedded baton signature invalid');
+    }
+  }
+
+  private expiresUnix(embedded: Record<string, unknown>): number | null {
+    if (typeof embedded.exp === 'number') return embedded.exp;
+    if (typeof embedded.ts === 'number') return embedded.ts + BATON_TTL_SEC;
+    return null;
+  }
+
+  async issue(input: IssueBatonInput, actor: AuthUser) {
     const batch = await this.prisma.fuelBatch.findFirst({
       where: {
         OR: [{ batchCode: input.batchCode }, { id: input.batchCode }],
       },
     });
     if (!batch) throw new NotFoundException('Batch not found');
+    if (!canIssueQr(batch.status)) {
+      throw new BadRequestException(
+        `No se puede emitir QR desde estado ${batch.status}`,
+      );
+    }
+    if (!(input.volumeLiters > 0)) {
+      throw new BadRequestException(
+        'volumeLiters debe ser el volumen de este movimiento, no se toma del lote',
+      );
+    }
+
+    const transport = await this.prisma.transport.findFirst({
+      where: { batchId: batch.id },
+      orderBy: { createdAt: 'desc' },
+      include: { vehicle: true },
+    });
+    let vehicleId = transport?.vehicleId ?? undefined;
+    if (!vehicleId && input.cisternCode) {
+      const vehicle = await this.prisma.vehicle.findFirst({
+        where: {
+          OR: [
+            { identifier: input.cisternCode },
+            { plate: input.cisternCode },
+          ],
+        },
+      });
+      vehicleId = vehicle?.id;
+    }
+
+    const loteLiters = Number(batch.declaredVolumeLiters?.toString?.() ?? NaN);
+    const volumeLooksLikeLote =
+      Number.isFinite(loteLiters) &&
+      loteLiters > 0 &&
+      Math.abs(input.volumeLiters - loteLiters) < 0.001 &&
+      loteLiters > 40000;
 
     let stationId: string | undefined;
     if (input.stationCode) {
@@ -78,6 +159,7 @@ export class CustodyQrService {
 
     const tokenId = `BT-${randomBytes(4).toString('hex').toUpperCase()}`;
     const issuedAt = new Date();
+    const exp = Math.floor(issuedAt.getTime() / 1000) + BATON_TTL_SEC;
     const core = {
       v: 1,
       t: 'baton',
@@ -88,7 +170,10 @@ export class CustodyQrService {
       vol: input.volumeLiters,
       ev: input.eventType,
       ts: Math.floor(issuedAt.getTime() / 1000),
-      role: input.issuedByRole,
+      exp,
+      n: randomBytes(8).toString('hex'),
+      iss: actor.id,
+      role: actor.role,
       ph: input.previousHash ?? null,
       city: 'Cochabamba',
       label: 'DEMO',
@@ -97,28 +182,62 @@ export class CustodyQrService {
     const signature = this.sign(payloadHash);
     const payloadJson = { ...core, h: payloadHash, s: signature };
 
-    const row = await this.prisma.custodyBaton.create({
-      data: {
-        tokenId,
-        batchId: batch.id,
-        stationId,
-        cisternCode: input.cisternCode,
-        eventType: input.eventType,
-        volumeLiters: new Prisma.Decimal(input.volumeLiters),
-        payloadJson,
-        payloadHash,
-        previousHash: input.previousHash,
-        signature,
-        issuedByRole: input.issuedByRole,
-        expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
-        isDemo: true,
-      },
+    const row = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.custodyBaton.create({
+        data: {
+          tokenId,
+          batchId: batch.id,
+          vehicleId,
+          stationId,
+          cisternCode: input.cisternCode,
+          eventType: input.eventType,
+          volumeLiters: new Prisma.Decimal(input.volumeLiters),
+          payloadJson,
+          payloadHash,
+          previousHash: input.previousHash,
+          signature,
+          issuedByRole: actor.role,
+          expiresAt: new Date(exp * 1000),
+          isDemo: true,
+        },
+      });
+
+      if (batch.status === BatchStatus.AUTHORIZED) {
+        assertCanTransition(batch.status, BatchStatus.IN_TRANSIT);
+        await tx.fuelBatch.update({
+          where: { id: batch.id },
+          data: {
+            status: BatchStatus.IN_TRANSIT,
+            currentLocation: input.cisternCode
+              ? `Cisterna ${input.cisternCode}`
+              : batch.currentLocation,
+          },
+        });
+      } else if (batch.status === BatchStatus.IN_TRANSIT && input.cisternCode) {
+        await tx.fuelBatch.update({
+          where: { id: batch.id },
+          data: { currentLocation: `Cisterna ${input.cisternCode}` },
+        });
+      }
+
+      return created;
     });
 
     const deepLinkPath = `/q/${tokenId}`;
     return serialize({
       label: 'DEMO',
-      note: 'Bastón QR para custodia offline. El celular guarda el payload si no hay señal.',
+      note: 'Bastón QR firmado (HMAC). El payload viaja en ?p= para uso offline. El volumen es del movimiento, no del lote.',
+      volumeLooksLikeLote,
+      transport: transport
+        ? {
+            id: transport.id,
+            carrier: transport.carrier,
+            vehicleRef: transport.vehicleRef,
+            origin: transport.origin,
+            destination: transport.destination,
+            status: transport.status,
+          }
+        : null,
       data: {
         ...row,
         qrPayload: payloadJson,
@@ -137,6 +256,18 @@ export class CustodyQrService {
       },
     });
     if (!row) throw new NotFoundException('Baton not found');
+
+    const now = new Date();
+    if (row.status === 'ACTIVE' && row.expiresAt && row.expiresAt <= now) {
+      const expired = await this.prisma.custodyBaton.updateMany({
+        where: { id: row.id, status: 'ACTIVE' },
+        data: { status: 'EXPIRED' },
+      });
+      if (expired.count === 1) {
+        row.status = 'EXPIRED';
+      }
+    }
+
     return serialize({
       label: 'DEMO',
       data: row,
@@ -144,57 +275,82 @@ export class CustodyQrService {
     });
   }
 
-  async accept(input: AcceptBatonInput) {
+  async accept(input: AcceptBatonInput, actor: AuthUser) {
     let tokenId = input.tokenId;
-    let embedded = input.embedded;
+    const embedded = input.embedded;
 
     if (!tokenId && embedded && typeof embedded.id === 'string') {
       tokenId = embedded.id;
     }
-    if (!tokenId) throw new BadRequestException('tokenId or embedded.id required');
+    if (!tokenId) {
+      throw new BadRequestException('tokenId or embedded.id required');
+    }
+
+    if (embedded) {
+      this.assertEmbeddedSignature(embedded);
+      const exp = this.expiresUnix(embedded);
+      if (exp !== null && Math.floor(Date.now() / 1000) > exp) {
+        throw new BadRequestException('Baton expired');
+      }
+    }
 
     let baton = await this.prisma.custodyBaton.findUnique({
       where: { tokenId },
       include: { batch: true },
     });
 
-    // Offline-first: if server never saw the baton, recreate from embedded payload
     if (!baton && embedded) {
       const h = String(embedded.h ?? '');
       const s = String(embedded.s ?? '');
-      const core = { ...embedded };
-      delete (core as { h?: unknown }).h;
-      delete (core as { s?: unknown }).s;
-      const expected = this.hashPayload(core);
-      if (h !== expected || s !== this.sign(h)) {
-        throw new BadRequestException('Embedded baton signature invalid');
-      }
       const batchCode = String(embedded.batch);
       const batch = await this.prisma.fuelBatch.findFirst({
         where: { batchCode },
       });
       if (!batch) throw new NotFoundException('Batch from baton not found');
-      baton = await this.prisma.custodyBaton.create({
-        data: {
-          tokenId,
-          batchId: batch.id,
-          cisternCode: embedded.cistern ? String(embedded.cistern) : null,
-          eventType: String(embedded.ev ?? 'IN_TRANSIT'),
-          volumeLiters: new Prisma.Decimal(Number(embedded.vol ?? 0)),
-          payloadJson: embedded as Prisma.InputJsonValue,
-          payloadHash: h,
-          previousHash: embedded.ph ? String(embedded.ph) : null,
-          signature: s,
-          issuedByRole: String(embedded.role ?? 'TRANSPORTER'),
-          isDemo: true,
-        },
-        include: { batch: true },
-      });
+      const exp = this.expiresUnix(embedded);
+      const expiresAt = exp !== null ? new Date(exp * 1000) : null;
+      try {
+        baton = await this.prisma.custodyBaton.create({
+          data: {
+            tokenId,
+            batchId: batch.id,
+            cisternCode: embedded.cistern ? String(embedded.cistern) : null,
+            eventType: String(embedded.ev ?? 'IN_TRANSIT'),
+            volumeLiters: new Prisma.Decimal(Number(embedded.vol ?? 0)),
+            payloadJson: embedded as Prisma.InputJsonValue,
+            payloadHash: h,
+            previousHash: embedded.ph ? String(embedded.ph) : null,
+            signature: s,
+            issuedByRole: String(embedded.role ?? 'UNKNOWN'),
+            expiresAt,
+            isDemo: true,
+          },
+          include: { batch: true },
+        });
+      } catch (e) {
+        if (!isPrismaUnique(e)) throw e;
+        baton = await this.prisma.custodyBaton.findUnique({
+          where: { tokenId },
+          include: { batch: true },
+        });
+      }
     }
 
     if (!baton) throw new NotFoundException('Baton not found');
+
+    const now = new Date();
+    if (baton.expiresAt && baton.expiresAt.getTime() <= now.getTime()) {
+      await this.prisma.custodyBaton.updateMany({
+        where: { id: baton.id, status: 'ACTIVE' },
+        data: { status: 'EXPIRED' },
+      });
+      throw new BadRequestException('Baton expired');
+    }
+    if (baton.status === 'EXPIRED') {
+      throw new BadRequestException('Baton expired');
+    }
     if (baton.status !== 'ACTIVE') {
-      throw new BadRequestException(`Baton status is ${baton.status}`);
+      throw new ConflictException(`Baton status is ${baton.status}`);
     }
 
     let stationId = baton.stationId;
@@ -210,20 +366,28 @@ export class CustodyQrService {
       input.receivedVolumeLiters ?? Number(baton.volumeLiters.toString());
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const consumed = await tx.custodyBaton.update({
-        where: { id: baton!.id },
+      const consumed = await tx.custodyBaton.updateMany({
+        where: {
+          id: baton!.id,
+          status: 'ACTIVE',
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
         data: {
           status: 'CONSUMED',
-          consumedAt: new Date(),
-          consumedByRole: input.consumedByRole,
+          consumedAt: now,
+          consumedByRole: actor.role,
           stationId: stationId ?? undefined,
         },
       });
+      if (consumed.count !== 1) {
+        throw new ConflictException('Baton already consumed or expired');
+      }
 
-      await tx.custodyEvent.create({
+      const event = await tx.custodyEvent.create({
         data: {
           batchId: baton!.batchId,
           eventType: 'RECEIVED',
+          actorId: actor.id,
           location: input.stationCode
             ? `Estación ${input.stationCode} (Cochabamba)`
             : 'Recepción DEMO Cochabamba',
@@ -234,10 +398,31 @@ export class CustodyQrService {
             batonTokenId: baton!.tokenId,
             cisternCode: baton!.cisternCode,
             offlineCapable: true,
+            actorRole: actor.role,
           },
           isDemo: true,
         },
       });
+
+      const freshBatch = await tx.fuelBatch.findUniqueOrThrow({
+        where: { id: baton!.batchId },
+      });
+      if (!canReceiveBatch(freshBatch.status)) {
+        throw new BadRequestException(
+          `Recepción no permitida desde estado ${freshBatch.status}`,
+        );
+      }
+      if (canTransition(freshBatch.status, BatchStatus.RECEIVED)) {
+        await tx.fuelBatch.update({
+          where: { id: freshBatch.id },
+          data: {
+            status: BatchStatus.RECEIVED,
+            currentLocation: input.stationCode
+              ? `Estación ${input.stationCode} (Cochabamba)`
+              : freshBatch.currentLocation,
+          },
+        });
+      }
 
       if (stationId) {
         const tank = await tx.storageTank.findFirst({
@@ -245,20 +430,20 @@ export class CustodyQrService {
           orderBy: { createdAt: 'asc' },
         });
         if (tank) {
-          const fillRatio = received / Number(tank.capacityLiters.toString());
-          const availability =
-            fillRatio >= 0.7
-              ? 'FULL'
-              : fillRatio >= 0.35
-                ? 'MEDIUM'
-                : fillRatio > 0.05
-                  ? 'LOW'
-                  : 'EMPTY';
+          const stock = applyStockDelta({
+            previousStock: tank.currentStockLiters,
+            receivedLiters: received,
+            capacityLiters: tank.capacityLiters,
+          });
+          await tx.storageTank.update({
+            where: { id: tank.id },
+            data: { currentStockLiters: stock.nextStock },
+          });
           await tx.station.update({
             where: { id: stationId },
             data: {
-              availability,
-              lastInventoryAt: new Date(),
+              availability: stock.availability,
+              lastInventoryAt: now,
             },
           });
           await tx.measurement.create({
@@ -266,7 +451,7 @@ export class CustodyQrService {
               batchId: baton!.batchId,
               tankId: tank.id,
               deviceId: 'QR-HANDOFF-DEMO',
-              volumeLiters: new Prisma.Decimal(received),
+              volumeLiters: stock.nextStock,
               temperature: new Prisma.Decimal(22),
               waterDetected: false,
               source: 'MANUAL',
@@ -276,81 +461,126 @@ export class CustodyQrService {
         }
       }
 
-      return consumed;
+      const consumedBaton = await tx.custodyBaton.findUniqueOrThrow({
+        where: { id: baton!.id },
+      });
+      return { baton: consumedBaton, event };
     });
+
+    let follow: Awaited<
+      ReturnType<ReceivedFollowUpService['afterReceived']>
+    > | null = null;
+    if (this.followUp) {
+      follow = await this.followUp.afterReceived(updated.event, {
+        id: baton.batch.id,
+        batchCode: baton.batch.batchCode,
+      });
+    }
 
     return serialize({
       label: 'DEMO',
-      note: 'Bastón consumido. Custodia RECEIVED registrada (apto para sync tras offline).',
-      data: updated,
+      note: 'Bastón consumido. Custodia RECEIVED e inventario actualizados como delta. El ancla blockchain es best-effort.',
+      data: updated.baton,
+      movement: follow?.reconciliation ?? null,
+      anomaly: follow?.anomaly ?? null,
+      blockchain: follow?.blockchain ?? null,
     });
   }
 
-  async syncOffline(events: OfflineSyncItem[]) {
-    const results: Array<{ clientEventId: string; status: string; reason?: string }> =
-      [];
+  async syncOffline(events: OfflineSyncItem[], actor: AuthUser) {
+    const results: Array<{
+      clientEventId: string;
+      status: string;
+      reason?: string;
+    }> = [];
 
     for (const ev of events) {
       const existing = await this.prisma.offlineSyncEvent.findUnique({
         where: { clientEventId: ev.clientEventId },
       });
       if (existing) {
-        results.push({ clientEventId: ev.clientEventId, status: existing.status });
+        results.push({
+          clientEventId: ev.clientEventId,
+          status: existing.status,
+        });
         continue;
       }
 
       const payloadHash = this.hashPayload(ev.payload);
       try {
-        if (ev.eventType === 'ACCEPT_BATON' && ev.batonTokenId) {
-          await this.accept({
-            tokenId: ev.batonTokenId,
-            embedded: ev.payload,
-            consumedByRole: ev.actorRole,
-            stationCode: ev.stationCode,
-            receivedVolumeLiters:
-              typeof ev.payload.vol === 'number' ? ev.payload.vol : undefined,
-          });
-        }
-
         await this.prisma.offlineSyncEvent.create({
           data: {
             clientEventId: ev.clientEventId,
             batonTokenId: ev.batonTokenId,
             batchId: null,
             stationId: null,
-            actorRole: ev.actorRole,
+            actorRole: actor.role,
             eventType: ev.eventType,
             payload: ev.payload as Prisma.InputJsonValue,
             payloadHash,
             capturedAt: new Date(ev.capturedAt),
-            status: 'APPLIED',
+            status: 'PENDING',
             isDemo: true,
           },
+        });
+      } catch (e) {
+        if (isPrismaUnique(e)) {
+          const again = await this.prisma.offlineSyncEvent.findUnique({
+            where: { clientEventId: ev.clientEventId },
+          });
+          results.push({
+            clientEventId: ev.clientEventId,
+            status: again?.status ?? 'APPLIED',
+          });
+          continue;
+        }
+        throw e;
+      }
+
+      try {
+        if (ev.eventType === 'ACCEPT_BATON' && ev.batonTokenId) {
+          await this.accept(
+            {
+              tokenId: ev.batonTokenId,
+              embedded: ev.payload,
+              stationCode: ev.stationCode,
+              receivedVolumeLiters:
+                typeof ev.payload.vol === 'number' ? ev.payload.vol : undefined,
+              clientEventId: ev.clientEventId,
+            },
+            actor,
+          );
+        }
+
+        await this.prisma.offlineSyncEvent.update({
+          where: { clientEventId: ev.clientEventId },
+          data: { status: 'APPLIED' },
         });
         results.push({ clientEventId: ev.clientEventId, status: 'APPLIED' });
       } catch (e) {
         const reason = e instanceof Error ? e.message : 'reject';
-        await this.prisma.offlineSyncEvent.create({
+        const alreadyConsumed =
+          e instanceof ConflictException ||
+          reason.includes('already consumed') ||
+          reason.includes('CONSUMED');
+        await this.prisma.offlineSyncEvent.update({
+          where: { clientEventId: ev.clientEventId },
           data: {
-            clientEventId: ev.clientEventId,
-            batonTokenId: ev.batonTokenId,
-            actorRole: ev.actorRole,
-            eventType: ev.eventType,
-            payload: ev.payload as Prisma.InputJsonValue,
-            payloadHash,
-            capturedAt: new Date(ev.capturedAt),
-            status: 'REJECTED',
-            rejectReason: reason,
-            isDemo: true,
+            status: alreadyConsumed ? 'APPLIED' : 'REJECTED',
+            rejectReason: alreadyConsumed ? undefined : reason,
           },
         });
-        results.push({ clientEventId: ev.clientEventId, status: 'REJECTED', reason });
+        results.push({
+          clientEventId: ev.clientEventId,
+          status: alreadyConsumed ? 'APPLIED' : 'REJECTED',
+          reason: alreadyConsumed ? undefined : reason,
+        });
       }
     }
 
     return {
       label: 'DEMO',
-      note: 'Sincronización store-and-forward desde celulares sin señal.',
+      note: 'Sincronización store-and-forward. clientEventId es idempotente.',
       results,
     };
   }
