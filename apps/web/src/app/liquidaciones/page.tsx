@@ -109,9 +109,9 @@ export default function LiquidacionesPage() {
           Liquidaciones al chofer
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Al completar la ruta (estación acepta el QR), se genera una
-          liquidación DEMO en bolivianos. No mueve dinero real; sirve para el
-          pitch de ciclo cerrado. {note}
+          Secundario al foco de trazabilidad: al aceptar el QR se genera una
+          liquidación DEMO en bolivianos. No mueve dinero real. El producto se
+          concentra en cantidad y calidad a lo largo del camino. {note}
         </p>
       </header>
 

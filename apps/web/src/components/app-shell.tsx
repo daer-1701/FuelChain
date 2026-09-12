@@ -8,6 +8,7 @@ import { AuthGate } from '@/components/auth-gate';
 import { useAuth } from '@/components/auth-provider';
 import { navForRole, homeForRole, roleBlurb } from '@/lib/role-access';
 import { roleLabel } from '@/lib/es-labels';
+import { PRODUCT_TAGLINE } from '@/lib/product-copy';
 
 function ShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -64,8 +65,8 @@ function ShellInner({ children }: { children: React.ReactNode }) {
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-3">
-                <p className="max-w-[14rem] text-sm leading-snug text-[var(--mute)] sm:text-right">
-                  Cada litro. Cada movimiento. Cada evidencia.
+                <p className="max-w-[16rem] text-sm leading-snug text-[var(--mute)] sm:text-right">
+                  {PRODUCT_TAGLINE}
                 </p>
                 {isPublicPreview && (
                   <Link

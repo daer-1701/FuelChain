@@ -268,8 +268,9 @@ function QrBatonInner() {
           Recepción en estación
         </h1>
         <p className="mt-2 text-sm text-[var(--mute)]">
-          Token <code>{token}</code>. Cualquiera puede ver la ficha; solo el
-          encargado de la EESS confirma litros y calidad recibidos.
+          Token <code>{token}</code>. Cierre del camino trazable: el encargado
+          de la EESS verifica litros y calidad al recibir (no inventa la
+          calidad de carga).
         </p>
         <div className="mt-4">
           <QrScanButton />

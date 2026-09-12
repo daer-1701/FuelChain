@@ -1,11 +1,11 @@
 # FuelChain
 
-**FuelChain Bolivia** — *Cada litro. Cada movimiento. Cada evidencia.*
+**FuelChain Bolivia** — *Cantidad y calidad en cada tramo del camino.*
 
-Plataforma DEMO de **trazabilidad, reconciliación y auditoría** de combustible importado.
+Plataforma DEMO de **trazabilidad del viaje** de combustible: verificar litros y calidad desde la salida hasta el surtidor.
 
 > Abstracción para hackathon. No es un sistema de YPFB, ANH ni Aduana.  
-> Blockchain = evidencia tamper-evident, **no** prueba de litros físicos.  
+> Blockchain = evidencia tamper-evident del recorrido, **no** prueba de litros físicos.  
 > Anomalías = señales para auditoría humana. La IA explica; no decide fraude.
 
 ## Stack

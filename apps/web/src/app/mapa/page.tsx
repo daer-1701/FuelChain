@@ -35,8 +35,8 @@ export default async function MapaBoliviaPage() {
           Surtidores en Bolivia
         </h1>
         <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--mute)]">
-          Elegí un departamento, tocá un surtidor y mirá si hay combustible y
-          si la calidad está bien. Información orientativa DEMO — no es la app
+          Resultado del camino trazable: tocá un surtidor y mirá cantidad y
+          calidad disponibles. Información orientativa DEMO — no es la app
           oficial ANH.
         </p>
       </header>

@@ -7,23 +7,24 @@ import { useAuth } from '@/components/auth-provider';
 import { safeInternalPath } from '@/lib/safe-next';
 import { canAccessPath, homeForRole } from '@/lib/role-access';
 import { friendlyError } from '@/lib/api-error';
+import { PRODUCT_FOCUS, PATH_STEPS } from '@/lib/product-copy';
 
 /** Operadores DEMO (ciudadano entra por Ver surtidores / mapa). */
 const PRESETS = [
   {
     email: 'chofer@fuelchain.bo',
     role: 'Chofer',
-    blurb: 'Registrá el viaje de la cisterna',
+    blurb: 'Litros, calidad y tramos del camino',
   },
   {
     email: 'estacion@fuelchain.bo',
     role: 'Estación (EESS)',
-    blurb: 'Tanque, cisternas y contratos de tu surtidor',
+    blurb: 'Verificá cantidad y calidad al recibir',
   },
   {
     email: 'anh@fuelchain.bo',
     role: 'ANH',
-    blurb: 'Verificá todos los movimientos',
+    blurb: 'Auditá el recorrido completo de la red',
   },
 ];
 
@@ -71,8 +72,8 @@ export default function LoginPage() {
           BOLIVIA
         </p>
         <p className="mt-4 leading-relaxed text-[var(--mute)]">
-          Cuatro actores: chofer registra el viaje, estación controla su tanque,
-          ANH verifica movimientos, ciudadano consulta el mapa.
+          {PRODUCT_FOCUS} {PATH_STEPS}. Chofer registra, estación verifica al
+          recibir, ANH audita la red, ciudadano consulta el mapa.
         </p>
 
         <Link
@@ -82,7 +83,7 @@ export default function LoginPage() {
           Ver surtidores
         </Link>
         <p className="mt-2 text-sm text-[var(--mute)]">
-          Mapa público · cantidad y calidad DEMO
+          Mapa público · resultado de cantidad y calidad en el surtidor
         </p>
       </header>
 

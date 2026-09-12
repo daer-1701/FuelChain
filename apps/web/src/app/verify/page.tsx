@@ -180,11 +180,12 @@ export default function VerifyPage() {
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
           Emite el QR del despacho: lote, cisterna, litros y calidad de carga.
-          La estación lo acepta al llegar. También podés ver{' '}
-          <Link href="/contratos" className="text-[var(--diesel)] underline">
-            contratos con el surtidor
-          </Link>
-          .
+          Eso abre el camino trazable. Después registrá{' '}
+          <Link href="/tramos" className="text-[var(--diesel)] underline">
+            tramos del viaje
+          </Link>{' '}
+          (salida → ruta → llegada). La estación verifica litros y calidad al
+          recibir.
         </p>
       </header>
 

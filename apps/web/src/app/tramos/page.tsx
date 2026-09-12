@@ -424,9 +424,10 @@ export default function TramosPage() {
   if (!user || !canRead) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display text-3xl font-black">Tramos GPS</h1>
+        <h1 className="font-display text-3xl font-black">Tramos del viaje</h1>
         <p className="text-[var(--mute)]">
-          Solo chofer, estación y ANH ven los checkpoints de ruta.
+          Solo chofer, estación y ANH ven la trazabilidad del camino (cantidad y
+          calidad por tramo).
         </p>
         {user && (
           <Link href={homeForRole(user.role)} className="underline">
@@ -440,13 +441,16 @@ export default function TramosPage() {
   return (
     <div className="space-y-8">
       <header className="max-w-2xl">
-        <h1 className="font-display text-3xl font-black tracking-tight">
-          Viajes por estación
+        <p className="fc-stamp text-[var(--mute)]">
+          Camino del combustible · cantidad y calidad
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-black tracking-tight">
+          Tramos del viaje
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Cada bloque es una estación destino. Ves el avance del viaje (salida →
-          ruta → llegada), los litros en cada tramo y la línea de tiempo con
-          GPS.
+          El núcleo de FuelChain: en cada tramo registrás litros, densidad,
+          temperatura y GPS. Así se verifica el camino completo — salida,
+          control en ruta y llegada — antes de la recepción en estación.
         </p>
         {user.cisternCode && (
           <p className="mt-2 text-sm">

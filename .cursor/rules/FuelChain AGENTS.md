@@ -29,9 +29,9 @@ You behave like a senior Web3 engineer responsible for code that could eventuall
 
 FuelChain Bolivia provides:
 
-> "Cada litro. Cada movimiento. Cada evidencia."
+> "Cantidad y calidad en cada tramo del camino."
 
-FuelChain is a traceability, reconciliation, custody, and audit platform for imported fuel.
+FuelChain is a path-traceability platform: verify quantity and quality from departure through route checkpoints to station reception. Blockchain anchors evidence of the journey — not physical liters.
 
 The current business route is approximately:
 

@@ -107,18 +107,18 @@ export function SupervisionPanel({
       <header className="max-w-2xl">
         <p className="fc-stamp text-[var(--mute)]">
           {mode === 'anh'
-            ? 'ANH · verificación de movimientos DEMO'
+            ? 'ANH · trazabilidad de la red DEMO'
             : 'Estación · tu surtidor DEMO'}
         </p>
         <h1 className="mt-2 font-display text-3xl font-black tracking-tight md:text-4xl">
           {mode === 'anh'
-            ? 'Todos los movimientos'
+            ? 'Camino y movimientos'
             : 'Tanque y cisternas'}
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
           {mode === 'anh'
-            ? 'Verificás cantidad, calidad y cisternas en cada surtidor de la red. La decisión regulatoria sigue siendo humana.'
-            : 'Controlás el combustible de tu EESS: estado del tanque y seguimiento de las cisternas que vienen o ya descargaron aquí. Recibís con el QR del chofer.'}{' '}
+            ? 'Verificás cantidad, calidad y el recorrido de cada cisterna en toda la red. La decisión regulatoria sigue siendo humana.'
+            : 'Controlás el combustible de tu EESS: estado del tanque y el camino de las cisternas que llegan aquí. Al recibir, verificás litros y calidad con el QR del chofer.'}{' '}
           {data.note}
         </p>
         {mode === 'station' && (
@@ -128,16 +128,26 @@ export function SupervisionPanel({
               {user?.stationCode ? ` · ${user.stationCode}` : ''}.
             </p>
             <Link
+              href="/tramos"
+              className="font-semibold text-[var(--diesel)] underline"
+            >
+              Ver tramos del viaje
+            </Link>
+            <Link
               href="/contratos"
               className="font-semibold text-[var(--diesel)] underline"
             >
-              Ver contratos con choferes
+              Contratos con choferes
             </Link>
+          </div>
+        )}
+        {mode === 'anh' && (
+          <div className="mt-4">
             <Link
               href="/tramos"
               className="font-semibold text-[var(--diesel)] underline"
             >
-              Ver tramos GPS
+              Ver tramos del viaje (cantidad + calidad + GPS)
             </Link>
           </div>
         )}

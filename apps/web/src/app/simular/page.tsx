@@ -109,8 +109,13 @@ export default function SimularPage() {
           Simular viaje
         </h1>
         <p className="mt-3 leading-relaxed text-[var(--mute)]">
-          Emite el bastón QR del viaje. La recepción la confirma la estación
-          (dos actores). Cisterna: <strong>{cisternCode}</strong>.
+          Atajo DEMO: emite el QR con litros y calidad de carga. Después
+          registrá{' '}
+          <Link href="/tramos" className="text-[var(--diesel)] underline">
+            tramos del viaje
+          </Link>
+          ; la estación verifica al recibir. Cisterna:{' '}
+          <strong>{cisternCode}</strong>.
         </p>
       </header>
 

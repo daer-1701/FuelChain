@@ -4,7 +4,7 @@
 **Fecha:** 2026-09-11  
 **Estado:** Demo operativa — monorepo, API, web, seed, reconciliación de volumen, anclado Hardhat en vivo. ESP32 diferido.  
 **Gestor de paquetes:** `pnpm` exclusivamente (no `npm` / `npx`)  
-**Tagline:** *Cada litro. Cada movimiento. Cada evidencia.*
+**Tagline:** *Cantidad y calidad en cada tramo del camino.*
 
 ---
 

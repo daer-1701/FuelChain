@@ -4,7 +4,7 @@
  */
 
 export const APP_NAME = 'FuelChain Bolivia';
-export const APP_TAGLINE = 'Cada litro. Cada movimiento. Cada evidencia.';
+export const APP_TAGLINE = 'Cantidad y calidad en cada tramo del camino.';
 export const BATCH_CODE_PREFIX = 'FC-BO';
 export const DEMO_LABEL = 'DEMO' as const;
 

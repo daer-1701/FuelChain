@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Chivo, IBM_Plex_Sans } from 'next/font/google';
 import './globals.css';
 import { AppShell } from '@/components/app-shell';
+import { PRODUCT_TAGLINE } from '@/lib/product-copy';
 
 const chivo = Chivo({
   variable: '--font-chivo',
@@ -17,7 +18,7 @@ const plex = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: 'FuelChain Bolivia',
-  description: 'Cada litro. Cada movimiento. Cada evidencia.',
+  description: PRODUCT_TAGLINE,
 };
 
 export default function RootLayout({

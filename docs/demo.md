@@ -1,10 +1,13 @@
 # Guía FuelChain Bolivia — demo pitch (4 actores)
 
-**Tagline:** Cada litro. Cada movimiento. Cada evidencia.  
+**Foco del producto:** trazabilidad del camino — **cantidad y calidad** verificables en cada tramo (salida → ruta → llegada → recepción).
+
+**Tagline:** Cantidad y calidad en cada tramo del camino.  
 **Importante:** contenido **DEMO / FUELCHAIN ABSTRACTION**. No es un sistema de YPFB, ANH ni Aduana.
 
 Producto confirmado: **Estación · Chofer · ANH · Ciudadano**.  
-Legacy (importador / depósito / lab / auditor) existe en DB pero **no** se promociona en el pitch.
+Legacy (importador / depósito / lab / auditor) existe en DB pero **no** se promociona en el pitch.  
+Contratos y liquidaciones son secundarios: no roban el relato.
 
 ---
 
@@ -45,60 +48,52 @@ Lotes seed: `FC-BO-2026-000181` · `000182` · `000184`.
 
 ---
 
-## 2. Recorrido pitch (6–8 min)
+## 2. Recorrido pitch (6–8 min) — centrado en el camino
 
-### A — Ciudadano / mapa (45 s)
+### A — Problema + mapa ciudadano (45 s)
 
-1. En login → **Ver surtidores** → `/mapa`.
-2. Mostrá cantidad + calidad por EESS (no menús de operador).
-3. Frase: *“El ciudadano ve disponibilidad y calidad; no opera la cadena.”*
+1. Login → **Ver surtidores** → `/mapa`.
+2. Mostrá cantidad + calidad por EESS (resultado del camino).
+3. Frase: *“El ciudadano ve el resultado; la trazabilidad la construyen chofer y estación.”*
 
-### B — Chofer registra el viaje (2 min)
+### B — Chofer: abre el camino (2 min)
 
 1. Login `chofer@` → **Registrar viaje** (`/verify`).
-2. Elegí lote `000182` (en tránsito) → **Generar QR**.
-3. El QR se genera **en el navegador** (sin CDN).
-4. Opcional: **Tramos GPS** (`/tramos`) → registrar waypoint con GPS del celular.
-5. Opcional: **Simular** solo emite el viaje (la estación debe aceptar).
-6. Frase: *“El chofer registra el despacho: litros y calidad salen aquí; la estación no inventa calidad al aceptar.”*
+2. Lote `000182` → litros + densidad/temp/agua de **carga** → **Generar QR**.
+3. **Tramos del viaje** (`/tramos`) → salida / control en ruta / llegada con GPS + litros + calidad.
+4. Frase: *“En cada tramo queda cantidad y calidad. Así se verifica el camino completo.”*
 
-### C — Estación recibe (2 min)
+### C — Estación: verifica al recibir (2 min)
 
 1. Login `estacion@` → **Mi estación**.
-2. Mostrá tanque Cala Cala + cisternas hacia **esta** EESS (no mapa de toda CBBA).
-3. Abrí el deep link del QR (`/q/BT-…`) → registrá litros + densidad/temp/agua → **Aceptar**.
-4. Inventario suma el volumen recibido (delta).
-5. **Contratos** = acuse estación ↔ chofer. **Liquidaciones** = pago DEMO al chofer.
-6. Frase: *“La estación controla su surtidor; no ve la red completa.”*
+2. Deep link QR (`/q/BT-…`) → medí litros + densidad/temp/agua de **recepción** → **Aceptar**.
+3. Opcional: mirá tramos que llegaron a tu EESS.
+4. Frase: *“La estación no inventa la calidad de carga; la confronta con lo que mide al recibir.”*
 
-### D — ANH verifica la red (1–2 min)
+### D — ANH: audita la red (1–2 min)
 
-1. Login `anh@` → **Movimientos** (`/supervision`).
-2. Mostrá entregas de toda la red + tramos GPS bajo cisternas.
-3. Frase: *“ANH verifica todos los movimientos; discrepancia ≠ robo.”*
+1. Login `anh@` → **Camino y movimientos** (`/supervision`) + **Tramos del viaje**.
+2. Mostrá entregas + checkpoints GPS con litros/calidad.
+3. Frase: *“ANH verifica el recorrido; discrepancia ≠ robo.”*
 
 ### E — Evidencia blockchain (1 min)
 
-1. Tras aceptar, mostrá estado del ancla / txHash (panel Evidencia o pasaporte).
-2. Abrí el explorador HSK si está configurado (`docs/hsk-feria.md`).
-3. Frase: *“Ancla = evidencia de integridad, no prueba de litros físicos.”*
+1. Tras aceptar, mostrá ancla / txHash.
+2. Explorador HSK si está configurado (`docs/hsk-feria.md`).
+3. Frase: *“Ancla = evidencia del evento del recorrido, no prueba de litros físicos.”*
 
-### F — Liquidación al chofer (30 s, opcional)
+### F — Liquidación (opcional, 20 s)
 
-1. `/liquidaciones` → aparece fila PENDING tras la recepción.
-2. Estación → **Marcar pagada**.
-3. Frase: *“Ciclo cerrado DEMO: entrega → liquidación. No es un banco.”*
+Solo si preguntan por el ciclo cerrado. No es el foco del pitch.
 
 ---
 
 ## 2b. Guion feria 3 minutos
 
-Ver checklist y HSK en **`docs/hsk-feria.md`**.
-
-1. Problema Bolivia (20 s)  
-2. Chofer QR → estación acepta (90 s)  
-3. Tx HSK + mapa/ANH (50 s)  
-4. Cierre “evidencia, no token del litro” (20 s)
+1. Problema: ¿quién llevó qué, con qué calidad, por qué camino? (20 s)  
+2. Chofer: QR + tramo en ruta (cantidad/calidad) (70 s)  
+3. Estación acepta midiendo · ANH ve el camino · mapa (60 s)  
+4. Cierre HSK: evidencia del recorrido, no token del litro (30 s)
 
 ---
 
@@ -106,35 +101,36 @@ Ver checklist y HSK en **`docs/hsk-feria.md`**.
 
 | Pantalla | Quién | Para qué |
 |----------|-------|----------|
-| `/mapa` | Ciudadano / ANH | Cantidad + calidad pública |
-| `/verify` | Chofer | Emitir QR / registrar viaje |
-| `/simular` | Chofer | Emitir viaje (sin auto-aceptar) |
-| `/tramos` | Chofer, estación, ANH | Checkpoints GPS (salida / tramo / llegada) |
-| `/contratos` | Chofer, estación | Acuses DEMO estación ↔ chofer |
-| `/liquidaciones` | Chofer, estación | Pago DEMO al completar ruta |
+| `/tramos` | Chofer, estación, ANH | **Núcleo:** checkpoints con litros + calidad + GPS |
+| `/verify` | Chofer | Abrir viaje: QR con cantidad/calidad de carga |
+| `/q/[token]` | Estación | Cerrar camino: verificar cantidad/calidad al recibir |
+| `/supervision` | ANH | Todos los movimientos + camino |
+| `/mapa` | Ciudadano | Resultado en surtidor |
 | `/estacion` | Estación | Tanque + cisternas de **su** EESS |
-| `/supervision` | ANH | Todos los movimientos |
-| `/q/[token]` | Estación (accept) | Aceptar QR de custodia |
+| `/simular` | Chofer | Emitir viaje (sin auto-aceptar) |
+| `/contratos` | Chofer, estación | Secundario: acuses DEMO |
+| `/liquidaciones` | Chofer, estación | Secundario: pago DEMO |
 
-SoT menús: `apps/web/src/lib/role-access.ts`.
+SoT menús: `apps/web/src/lib/role-access.ts`.  
+SoT copy: `apps/web/src/lib/product-copy.ts`.
 
 ---
 
 ## 4. Cómo explicar el “por qué”
 
 ### Problema
-Última milla de combustible: quién llevó qué, a qué estación, con qué calidad, y qué midió el tanque — con evidencia compartida.
+Última milla: quién llevó qué, por qué camino, con qué cantidad y calidad en cada tramo — con evidencia compartida.
 
 ### Por qué no solo Excel
-Varios actores (chofer, estación, regulador, ciudadano) necesitan la misma verdad operacional + una capa de evidencia resistente a cambios.
+Varios actores necesitan la misma verdad operacional del **recorrido** + una capa de evidencia resistente a cambios.
 
 ### Por qué blockchain
-> Capa de evidencia compartida: demostrar que un evento y su evidencia digital existían de cierta forma en un momento dado.
+> Capa de evidencia compartida del evento del camino: demostrar que un registro existía de cierta forma en un momento dado.
 
 **No digas:** “Blockchain evita que roben gasolina.”
 
-### Por qué checkpoints GPS
-> El chofer registra tramos (salida, peaje, llegada) con GPS del celular — no tracking continuo. Cantidad/calidad proxy en cada punto.
+### Por qué tramos GPS
+> El chofer registra tramos (salida, peaje, llegada) con GPS + litros + calidad proxy — no tracking continuo. Ahí vive la verificación a lo largo del camino.
 
 ### Discrepancia
 > Señal para auditoría humana. **Discrepancia ≠ robo.**
@@ -143,9 +139,10 @@ Varios actores (chofer, estación, regulador, ciudadano) necesitan la misma verd
 
 ## 5. Frases útiles
 
-- *“Cuatro actores: chofer registra, estación controla su tanque, ANH verifica la red, ciudadano consulta el mapa.”*
-- *“Cada litro. Cada movimiento. Cada evidencia.”*
-- *“La calidad viaja con el despacho; la estación no la inventa al aceptar.”*
+- *“Cantidad y calidad en cada tramo del camino.”*
+- *“Trazabilidad del viaje: salida → ruta → llegada → recepción.”*
+- *“La calidad viaja con el despacho; la estación la confronta al aceptar.”*
+- *“No tokenizamos el diésel. Anclamos la evidencia del recorrido.”*
 - *“Los datos son DEMO; el modelo es abstracción FuelChain.”*
 
 ---
@@ -154,7 +151,8 @@ Varios actores (chofer, estación, regulador, ciudadano) necesitan la misma verd
 
 | Evitar | Preferir |
 |--------|----------|
-| Pitch centrado en importador / lotes / auditor | Arco chofer → estación → ANH → mapa |
+| Pitch centrado en pagos / liquidaciones | Camino + cantidad/calidad por tramo |
+| Pitch centrado en importador / lotes | Arco chofer → tramos → estación → ANH → mapa |
 | “Robo detectado” | “Discrepancia / anomalía para auditoría” |
 | “API oficial ANH/YPFB” | “Abstracción DEMO” |
 | Estación con mapa de toda Cochabamba | Estación scoped a su EESS |
@@ -169,57 +167,13 @@ Varios actores (chofer, estación, regulador, ciudadano) necesitan la misma verd
 | Login | http://localhost:3000/login |
 | Mapa | http://localhost:3000/mapa |
 | Chofer QR | http://localhost:3000/verify |
-| Tramos GPS | http://localhost:3000/tramos |
+| Tramos | http://localhost:3000/tramos |
 | Estación | http://localhost:3000/estacion |
 | ANH | http://localhost:3000/supervision |
-| Lote 184 (evidencia) | http://localhost:3000/batches/FC-BO-2026-000184 |
 | Health | http://localhost:3001/health |
 
 ---
 
-## 8. Si algo falla en vivo
+## 8. Notas técnicas rápidas
 
-1. `http://localhost:3001/health` → DB up?
-2. `docker compose ps` → postgres healthy?
-3. `pnpm db:seed`
-4. Reiniciá API y web.
-5. Blockchain: `blockchain/status` → `"live": true`? Nodo Hardhat + deploy + `.env` + reinicio API.
-
-Guion de emergencia (20 s):
-
-> “FuelChain Bolivia sigue el combustible en la última milla: el chofer registra el viaje, la estación recibe con QR, ANH ve todos los movimientos y el ciudadano consulta cantidad y calidad. La blockchain ancla evidencia; no afirma litros físicos.”
-
----
-
-## 9. Reglas DEMO (custodia + ancla)
-
-**Lote ≠ viaje.** El QR / Delivery es el movimiento; el lote es la consignación.
-
-Reconciliación del movimiento: esperado vs recibido → MATCH | WITHIN_TOLERANCE | ANOMALY.  
-Umbral DEMO: `max(0.5% del esperado, 20 L)`.
-
-Ancla automática (best-effort): RECEIVED → hash canónico → `FuelChain.sol#anchorEvidence`. Si el RPC falla, la recepción ya quedó grabada.
-
----
-
-## 10. Blockchain: localhost vs HSK Testnet
-
-### Localhost
-
-```env
-CHAIN_RPC_URL=http://127.0.0.1:8545
-CHAIN_ID=31337
-BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-```
-
-Private key = cuenta #0 Hardhat (**solo local**).
-
-### HSK Testnet
-
-Fuente: [Developer QuickStart](https://docs.hashkeychain.net/docs/Developer-QuickStart). Chain ID `133`. No uses Mainnet (177).
-
-```powershell
-pnpm contracts:deploy:hsk-testnet
-```
-
-Copiá `FUELCHAIN_CONTRACT_ADDRESS` y RPC a `.env`; reiniciá API/web. Gas: HSK de testnet en el deployer. Nunca pongas la private key en el frontend.
+Ver `README.md`, `docs/hsk-feria.md`, `docs/ENTREGA-FERIA.md`.

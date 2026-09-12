@@ -1,6 +1,6 @@
 # FuelChain × HSK Chain — integración para Ethereum Bolivia 2026
 
-**Pitch en una frase:** no tokenizamos el diésel; anclamos la **evidencia** de cada recepción en HSK para que sea verificable.
+**Pitch en una frase:** no tokenizamos el diésel; anclamos la **evidencia del recorrido** (cantidad/calidad del camino) en HSK para que sea verificable.
 
 ## Qué hace on-chain
 

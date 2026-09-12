@@ -5,7 +5,7 @@ export class AppService {
   getHello(): object {
     return {
       name: 'FuelChain Bolivia API',
-      tagline: 'Cada litro. Cada movimiento. Cada evidencia.',
+      tagline: 'Cantidad y calidad en cada tramo del camino.',
       phase: 6,
       endpoints: {
         health: '/health',

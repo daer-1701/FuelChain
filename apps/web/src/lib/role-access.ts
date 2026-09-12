@@ -17,18 +17,18 @@ export type NavItem = {
 };
 
 /**
- * Menú visible. Producto confirmado:
- * - Estación: tanque + cisternas propias + contratos
- * - Chofer: registra viaje (QR/simular) + contratos
- * - ANH: verifica todos los movimientos
- * - Ciudadano: mapa
- * Roles legacy (importador, depósito, lab, auditor) quedan con acceso mínimo.
+ * Menú visible. Foco: trazabilidad del camino + cantidad/calidad por tramo.
+ * - Estación: tanque + tramos hacia su EESS + recepción QR
+ * - Chofer: emite viaje + registra tramos (litros/calidad/GPS)
+ * - ANH: verifica movimientos y el camino completo
+ * - Ciudadano: mapa (resultado en surtidor)
+ * Contratos/liquidaciones quedan secundarios. Legacy no en login DEMO.
  */
 const ALL_NAV: NavItem[] = [
   { href: '/supervision', label: 'Movimientos' },
   { href: '/estacion', label: 'Mi estación' },
   { href: '/verify', label: 'Registrar viaje' },
-  { href: '/tramos', label: 'Viajes GPS' },
+  { href: '/tramos', label: 'Tramos del viaje' },
   { href: '/simular', label: 'Simular entrega' },
   { href: '/contratos', label: 'Contratos' },
   { href: '/liquidaciones', label: 'Liquidaciones' },
@@ -42,7 +42,7 @@ const ALL_NAV: NavItem[] = [
 
 const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
-  STATION_STAFF: ['/estacion', '/contratos', '/liquidaciones', '/tramos'],
+  STATION_STAFF: ['/estacion', '/tramos', '/contratos', '/liquidaciones'],
   TRANSPORTER: ['/verify', '/tramos', '/simular', '/contratos', '/liquidaciones'],
   VERIFIER: ['/supervision', '/tramos'],
   CITIZEN: ['/mapa'],
@@ -100,10 +100,12 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
 export const ROLE_BLURB: Record<AppRole, string> = {
   ADMIN: 'Acceso completo DEMO.',
   STATION_STAFF:
-    'Tu EESS: tanque, cisternas en camino y contratos con el chofer.',
-  TRANSPORTER: 'Registrás el viaje de la cisterna y acordás con el surtidor.',
-  VERIFIER: 'ANH: verificás todos los movimientos de la red.',
-  CITIZEN: 'Consulta cantidad y calidad en el mapa.',
+    'Recibís y verificás litros y calidad al llegar; seguís los tramos hacia tu EESS.',
+  TRANSPORTER:
+    'Registrás el camino: QR con litros/calidad de carga y tramos GPS hasta la estación.',
+  VERIFIER:
+    'ANH: verificás cantidad, calidad y el recorrido completo de cada cisterna.',
+  CITIZEN: 'Ves en el mapa el resultado: cantidad y calidad en el surtidor.',
   DEPOT_OPERATOR: 'Legacy DEMO — usá el perfil chofer.',
   IMPORTER: 'Legacy DEMO — fuera del núcleo de 4 actores.',
   LAB: 'Legacy DEMO — calidad queda en el pasaporte.',

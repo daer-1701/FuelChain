@@ -7,12 +7,18 @@ alwaysApply: true
 
 Producto confirmado. Detalle: `FuelChain Product AGENTS.md`.
 
+## Foco
+
+**Trazabilidad del camino:** cantidad y calidad verificables en cada tramo
+(salida → ruta → llegada → recepción). Contratos/liquidaciones/pagos son
+secundarios. Blockchain = evidencia del recorrido, no litro físico.
+
 ## Actores
 
-1. **Estación (`STATION_STAFF`)** — Su EESS: estado del tanque, seguimiento de cisternas que le llegan, contratos con chofer. Recibe vía QR. Sin mapa de toda Cochabamba.
-2. **Chofer (`TRANSPORTER`)** — Registra el viaje (QR / simular). Contratos con el surtidor.
-3. **ANH (`VERIFIER`)** — Verifica **todos** los movimientos de la red (`/supervision`).
-4. **Ciudadano (`CITIZEN` / `/mapa`)** — Cantidad + calidad. Sin menús de operador.
+1. **Estación (`STATION_STAFF`)** — Su EESS: tanque, cisternas que le llegan, verificar litros/calidad al recibir (QR). Lee tramos. Sin mapa operador de toda Bolivia.
+2. **Chofer (`TRANSPORTER`)** — Abre el viaje (QR + calidad de carga) y escribe tramos GPS con cantidad/calidad.
+3. **ANH (`VERIFIER`)** — Verifica movimientos y el camino completo (`/supervision` + `/tramos`).
+4. **Ciudadano (`CITIZEN` / `/mapa`)** — Resultado: cantidad + calidad en surtidor. Sin menús de operador.
 
 ## Legacy (no login DEMO)
 
@@ -20,12 +26,14 @@ Importador, depósito, lab, auditor: fuera del núcleo. No promocionar en login.
 
 ## Modelo
 
-- `Cistern` + `Delivery` + contratos derivados del despacho.
-- `RouteCheckpoint` (tramos GPS): salida / waypoint / llegada — chofer escribe.
-- Calidad del viaje en el despacho; estación no inventa calidad al aceptar.
+- `Cistern` + `Delivery` + contratos derivados del despacho (secundario).
+- `RouteCheckpoint` (tramos): salida / waypoint / llegada — **núcleo** de verificación.
+- Calidad del viaje en el despacho; estación mide al aceptar (no inventa calidad de carga).
 - Accept QR: solo estación (+ admin), scoped a su `stationCode`.
 - Issue/simular: chofer (+ depósito legacy / admin).
 
 ## UI
 
-`apps/web/src/lib/role-access.ts` es la fuente de menús (`/tramos` para chofer, estación, ANH). Blockchain = evidencia, no litro físico.
+`apps/web/src/lib/role-access.ts` es la fuente de menús (`/tramos` = Tramos del viaje).
+`apps/web/src/lib/product-copy.ts` es la fuente de tagline/foco.
+Blockchain = evidencia, no litro físico.
