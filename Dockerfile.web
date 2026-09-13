@@ -1,0 +1,40 @@
+# FuelChain Web — Next.js for Railway
+FROM node:22-bookworm-slim AS base
+RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@12.3.4 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+RUN pnpm install --frozen-lockfile --filter @fuelchain/web...
+
+FROM base AS build
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_NAME=FuelChain Bolivia
+ARG NEXT_PUBLIC_CHAIN_ID=133
+ARG NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS
+ARG NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://testnet-explorer.hsk.xyz
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
+ENV NEXT_PUBLIC_CHAIN_ID=$NEXT_PUBLIC_CHAIN_ID
+ENV NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS=$NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS
+ENV NEXT_PUBLIC_BLOCK_EXPLORER_URL=$NEXT_PUBLIC_BLOCK_EXPLORER_URL
+ENV NODE_OPTIONS=--max-old-space-size=4096
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=deps /app/apps/web/package.json ./apps/web/
+COPY apps/web ./apps/web
+RUN pnpm --filter @fuelchain/web run build
+
+FROM base AS runner
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/web ./apps/web
+WORKDIR /app/apps/web
+EXPOSE 3000
+CMD ["pnpm", "start"]
