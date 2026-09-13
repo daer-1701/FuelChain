@@ -1,5 +1,0 @@
-# Config-as-code desactivado a propósito (monorepo).
-# Cada servicio en Railway define su Dockerfile en Settings → Build:
-#   @fuelchain/api  → Dockerfile.api
-#   @fuelchain/web  → Dockerfile.web
-# No pongas dockerfilePath aquí: Railway lo aplicaría a TODOS los servicios.
