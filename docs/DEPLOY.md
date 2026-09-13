@@ -10,6 +10,19 @@ Ciudadano / jurado
   → HSK testnet (evidencia)
 ```
 
+## Si ves OOM / `nest start` / heap out of memory
+
+Railway está usando Railpack y corre `nest start` (compila en el contenedor chico).
+
+En **`@fuelchain/api` → Settings**:
+
+1. **Root Directory:** vacío o `/` (raíz del repo, no `apps/api`)
+2. **Builder:** **Dockerfile**
+3. **Dockerfile path:** `Dockerfile.api`
+4. **Custom Start Command:** dejalo vacío (usa el `CMD` del Dockerfile)
+
+Redeploy. El start correcto es `node apps/api/dist/main.js`, no `nest start`.
+
 ## 1. Railway — API + DB
 
 1. https://railway.app → **New Project** → **Deploy from GitHub** → `daer-1701/FuelChain`
