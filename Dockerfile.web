@@ -11,16 +11,7 @@ COPY apps/web/package.json ./apps/web/
 RUN pnpm install --frozen-lockfile --filter @fuelchain/web...
 
 FROM base AS build
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_APP_NAME=FuelChain Bolivia
-ARG NEXT_PUBLIC_CHAIN_ID=133
-ARG NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS
-ARG NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://testnet-explorer.hsk.xyz
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
-ENV NEXT_PUBLIC_CHAIN_ID=$NEXT_PUBLIC_CHAIN_ID
-ENV NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS=$NEXT_PUBLIC_FUELCHAIN_CONTRACT_ADDRESS
-ENV NEXT_PUBLIC_BLOCK_EXPLORER_URL=$NEXT_PUBLIC_BLOCK_EXPLORER_URL
+# Railway injects NEXT_PUBLIC_* as env during docker build (enable "Build-time" on vars)
 ENV NODE_OPTIONS=--max-old-space-size=4096
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
