@@ -10,6 +10,21 @@ Ciudadano / jurado
   → HSK testnet (evidencia)
 ```
 
+## Web 502 en Railway (monorepo)
+
+Causa frecuente: el `railway.toml` global apuntaba a `Dockerfile.api` y el
+servicio **web** corría la imagen del API (puerto distinto → 502).
+
+En **`@fuelchain/web` → Settings → Build**:
+1. Builder: **Dockerfile**
+2. Dockerfile path: **`Dockerfile.web`** (no `Dockerfile.api`)
+3. Root Directory: vacío
+4. Networking port: **3000**
+5. Variables `NEXT_PUBLIC_*` con **Available at Build Time**
+
+En **`@fuelchain/api` → Settings → Build**:
+- Dockerfile path: **`Dockerfile.api`**
+
 ## Si ves OOM / `nest start` / heap out of memory
 
 Railway está usando Railpack y corre `nest start` (compila en el contenedor chico).

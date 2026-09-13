@@ -1,4 +1,4 @@
-# FuelChain Web — Next.js for Railway
+# FuelChain Web — Next.js standalone for Railway
 FROM node:22-bookworm-slim AS base
 RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -11,8 +11,8 @@ COPY apps/web/package.json ./apps/web/
 RUN pnpm install --frozen-lockfile --filter @fuelchain/web...
 
 FROM base AS build
-# Railway injects NEXT_PUBLIC_* as env during docker build (enable "Build-time" on vars)
 ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=deps /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
@@ -22,10 +22,14 @@ RUN pnpm --filter @fuelchain/web run build
 
 FROM base AS runner
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
-COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/web ./apps/web
+ENV PORT=3000
+WORKDIR /app
+# Next standalone output (monorepo path)
+COPY --from=build /app/apps/web/public ./apps/web/public
+COPY --from=build /app/apps/web/.next/standalone ./
+COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
 WORKDIR /app/apps/web
 EXPOSE 3000
-CMD ["pnpm", "start"]
+CMD ["node", "server.js"]
