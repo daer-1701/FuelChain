@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import {
   BadRequestException,
   Injectable,
@@ -65,9 +66,64 @@ export class BlockchainService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async listAnchors(batchId?: string) {
+  async listAnchors(opts: {
+    batchId?: string;
+    stationId?: string | null;
+    stationCode?: string | null;
+  } = {}) {
+    const where: Prisma.BlockchainAnchorWhereInput = {};
+    if (opts.batchId) where.batchId = opts.batchId;
+
+    let scopedStationCode: string | null = null;
+    if (opts.stationId || opts.stationCode) {
+      const station = opts.stationId
+        ? await this.prisma.station.findUnique({
+            where: { id: opts.stationId },
+            select: { id: true, code: true, name: true },
+          })
+        : await this.prisma.station.findUnique({
+            where: { code: opts.stationCode!.trim() },
+            select: { id: true, code: true, name: true },
+          });
+      if (!station) {
+        return serialize({
+          label: 'DEMO',
+          note: 'Estación no encontrada.',
+          data: [],
+        });
+      }
+      scopedStationCode = station.code;
+
+      const deliveries = await this.prisma.delivery.findMany({
+        where: { destinationStationId: station.id },
+        select: { id: true },
+      });
+      const deliveryIds = new Set(deliveries.map((d) => d.id));
+
+      const received = await this.prisma.custodyEvent.findMany({
+        where: { eventType: 'RECEIVED' },
+        select: { id: true, metadata: true },
+      });
+      const eventIds = received
+        .filter((e) => {
+          const meta =
+            e.metadata && typeof e.metadata === 'object' && !Array.isArray(e.metadata)
+              ? (e.metadata as Record<string, unknown>)
+              : null;
+          if (!meta) return false;
+          if (meta.stationCode === station.code) return true;
+          const deliveryId =
+            typeof meta.deliveryId === 'string' ? meta.deliveryId : null;
+          return deliveryId != null && deliveryIds.has(deliveryId);
+        })
+        .map((e) => e.id);
+
+      where.eventKind = CUSTODY_RECEIVED_EVENT_KIND;
+      where.eventId = { in: eventIds.length > 0 ? eventIds : ['__none__'] };
+    }
+
     const rows = await this.prisma.blockchainAnchor.findMany({
-      where: batchId ? { batchId } : undefined,
+      where,
       orderBy: { timestamp: 'desc' },
       include: {
         batch: { select: { batchCode: true, product: true } },
@@ -82,7 +138,9 @@ export class BlockchainService {
 
     return serialize({
       label: 'DEMO',
-      note: 'Índice de evidencia a prueba de manipulación. El hash anclado no prueba litros físicos.',
+      note: scopedStationCode
+        ? `Evidencia de recepción en ${scopedStationCode}. Solo anclas de tu EESS; el hash no prueba litros físicos.`
+        : 'Índice de evidencia a prueba de manipulación. El hash anclado no prueba litros físicos.',
       data: rows.map((r) => ({
         ...r,
         explorerUrl:
@@ -92,6 +150,7 @@ export class BlockchainService {
         status: deriveAnchorStatus(r),
         network: networkLabel(r.chainId),
         contractAddress,
+        stationCode: scopedStationCode,
       })),
     });
   }

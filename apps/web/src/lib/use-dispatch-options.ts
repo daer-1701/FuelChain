@@ -23,7 +23,10 @@ export function useDispatchOptions(authHeaders?: AuthHeaders) {
             headers: authHeaders?.() ?? {},
             cache: 'no-store',
           }),
-          fetch(`${API_URL}/stations/public?city=all`, { cache: 'no-store' }),
+          // DEMO pitch: destinos CBBA (evita abrir viaje a otra ciudad por error)
+          fetch(`${API_URL}/stations/public?city=Cochabamba`, {
+            cache: 'no-store',
+          }),
         ]);
 
         if (batchRes.ok) {
@@ -45,10 +48,12 @@ export function useDispatchOptions(authHeaders?: AuthHeaders) {
           const json = (await stationRes.json()) as {
             data: Array<{ code: string; name: string; city?: string }>;
           };
-          const opts = json.data.map((s) => ({
-            code: s.code,
-            label: `${s.code} ${s.name}${s.city ? ` · ${s.city}` : ''}`,
-          }));
+          const opts = json.data
+            .filter((s) => s.code.startsWith('ST-CBB-'))
+            .map((s) => ({
+              code: s.code,
+              label: `${s.code} ${s.name}${s.city ? ` · ${s.city}` : ''}`,
+            }));
           if (!cancelled && opts.length) setStations(opts);
         }
       } catch {

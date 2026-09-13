@@ -31,8 +31,10 @@ export function applyStockDelta(input: {
   const nextStock = previous.plus(received);
 
   if (nextStock.gt(capacity)) {
+    const remaining = capacity.minus(previous);
+    const rem = Math.max(0, Number(remaining.toString()));
     throw new BadRequestException(
-      `Tank overflow: stock ${previous.toString()} + received ${received.toString()} exceeds capacity ${capacity.toString()}`,
+      `Tanque sin cupo: hay ${previous.toString()} L, capacidad ${capacity.toString()} L (quedan ${rem} L). No entra la recepción de ${received.toString()} L. Liberá stock DEMO o recibí menos litros.`,
     );
   }
 

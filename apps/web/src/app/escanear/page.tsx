@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { QrScanButton } from '@/components/qr-scan-button';
+import { API_URL } from '@/lib/api';
 import { labelEs } from '@/lib/es-labels';
 import { homeForRole } from '@/lib/role-access';
 import {
@@ -14,6 +15,18 @@ import {
   type StationScanEntry,
 } from '@/lib/station-scan-history';
 
+type InboundTrip = {
+  cisternCode: string;
+  qrToken: string;
+  deviceId: string;
+  batchCode: string;
+  product: string;
+  status: string;
+  loadedLiters: string | number;
+  stationCode: string;
+  deepLinkPath: string;
+};
+
 function when(iso: string) {
   return new Date(iso).toLocaleString('es-BO', {
     dateStyle: 'short',
@@ -22,9 +35,11 @@ function when(iso: string) {
 }
 
 export default function EscanearPage() {
-  const { user, ready } = useAuth();
+  const { user, ready, authHeaders } = useAuth();
   const router = useRouter();
   const [history, setHistory] = useState<StationScanEntry[]>([]);
+  const [inbound, setInbound] = useState<InboundTrip[]>([]);
+  const [inboundNote, setInboundNote] = useState<string | null>(null);
 
   useEffect(() => {
     function refresh() {
@@ -34,6 +49,33 @@ export default function EscanearPage() {
     window.addEventListener('focus', refresh);
     return () => window.removeEventListener('focus', refresh);
   }, []);
+
+  useEffect(() => {
+    if (!user || user.role !== 'STATION_STAFF') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/c/inbound`, {
+          headers: authHeaders(),
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          note?: string;
+          data?: InboundTrip[];
+        };
+        if (!cancelled) {
+          setInbound(json.data ?? []);
+          setInboundNote(json.note ?? null);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authHeaders]);
 
   function onToken(token: string) {
     const path = /^(CQ-|GW-|CIS-)/i.test(token) ? `/c/${token}` : `/q/${token}`;
@@ -71,15 +113,63 @@ export default function EscanearPage() {
         </p>
         <h1 className="fc-title">Escanear cisterna</h1>
         <p className="fc-lede">
-          Solo escaneá o subí la foto del sticker de la cisterna. No hace falta
-          ver un catálogo de QR: al leerlo abrís el detalle y el historial del
-          camino (litros, calidad, GPS).
+          Solo escaneá o subí la foto del sticker de la cisterna. Abajo tenés
+          ejemplos DEMO con destino a tu EESS (no a otras estaciones).
         </p>
       </header>
 
       <section className="fc-sheet space-y-4">
         <h2 className="fc-section-title">Cámara o foto</h2>
         <QrScanButton onToken={onToken} />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="fc-section-title">
+          En ruta hacia {user.stationCode ?? 'tu EESS'}
+        </h2>
+        {inboundNote && (
+          <p className="text-sm text-[var(--mute)]">{inboundNote}</p>
+        )}
+        {inbound.length === 0 ? (
+          <p className="text-[var(--mute)]">
+            No hay cisternas en tránsito hacia tu estación ahora.
+          </p>
+        ) : (
+          <ul className="divide-y divide-[var(--rail)]/40 border-y-2 border-[var(--ink)]">
+            {inbound.map((t) => (
+              <li key={`${t.qrToken}-${t.batchCode}`} className="py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-display text-lg font-bold">
+                      {t.cisternCode}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--mute)]">
+                      QR {t.qrToken} · lote {t.batchCode} · {t.product} ·{' '}
+                      {labelEs(t.status)} · {String(t.loadedLiters)} L
+                    </p>
+                  </div>
+                  <Link
+                    href={t.deepLinkPath}
+                    className="fc-btn fc-btn-ink !py-2"
+                    onClick={() =>
+                      rememberStationScan({
+                        token: t.qrToken,
+                        path: t.deepLinkPath,
+                        cisternCode: t.cisternCode,
+                        batchCode: t.batchCode,
+                        product: t.product,
+                        status: t.status,
+                        deviceId: t.deviceId,
+                      })
+                    }
+                  >
+                    Abrir QR
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="space-y-4">

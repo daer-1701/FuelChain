@@ -44,7 +44,7 @@ const ALL_NAV: NavItem[] = [
 
 const NAV_BY_ROLE: Record<AppRole, string[]> = {
   ADMIN: ALL_NAV.map((n) => n.href),
-  STATION_STAFF: ['/estacion', '/escanear', '/tramos'],
+  STATION_STAFF: ['/estacion', '/escanear', '/tramos', '/blockchain'],
   TRANSPORTER: ['/verify', '/mi-qr', '/tramos', '/simular'],
   VERIFIER: ['/supervision', '/tramos', '/blockchain'],
   CITIZEN: ['/mapa'],
@@ -72,6 +72,7 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
     '/estacion',
     '/escanear',
     '/tramos',
+    '/blockchain',
     '/q',
     '/c',
   ],
@@ -115,7 +116,7 @@ const ROUTES_BY_ROLE: Record<AppRole, string[]> = {
 export const ROLE_BLURB: Record<AppRole, string> = {
   ADMIN: 'Acceso completo DEMO.',
   STATION_STAFF:
-    'Tu EESS: tanque, escanear QR de cisterna y verificar litros/calidad al recibir.',
+    'Tu EESS: tanque, escanear QR, tramos hacia tu surtidor y evidencia HSK de tus recepciones.',
   TRANSPORTER:
     'Registrás el camino: QR con litros/calidad de carga y tramos GPS hasta la estación.',
   VERIFIER:

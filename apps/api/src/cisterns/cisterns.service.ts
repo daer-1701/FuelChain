@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ActorRole, Prisma } from '@prisma/client';
 import type { AuthUser } from '../auth/auth.service';
@@ -15,12 +16,16 @@ import {
 } from '../common/journey-trail';
 import { serialize } from '../common/serialize';
 import { applyStockDelta, applyStockWithdraw } from '../common/tank-inventory';
+import { ReceivedFollowUpService } from '../custody/received-follow-up.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { settlementCreateData } from '../settlements/settlement-math';
 
 @Injectable()
 export class CisternsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly followUp?: ReceivedFollowUpService,
+  ) {}
 
   private async resolveCistern(tokenOrCode: string) {
     const key = tokenOrCode.trim();
@@ -39,27 +44,105 @@ export class CisternsService {
     return cistern;
   }
 
-  private async activeDelivery(cisternId: string) {
+  private deliveryInclude() {
+    return {
+      batch: {
+        select: {
+          id: true,
+          batchCode: true,
+          product: true,
+          status: true,
+          declaredVolumeLiters: true,
+        },
+      },
+      station: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          latitude: true,
+          longitude: true,
+        },
+      },
+      cistern: {
+        select: {
+          code: true,
+          qrToken: true,
+          deviceId: true,
+          plate: true,
+        },
+      },
+    } as const;
+  }
+
+  /** Viaje abierto; si hay preferencia de estación, prioriza ese destino. */
+  private async activeDelivery(
+    cisternId: string,
+    preferStationId?: string | null,
+  ) {
+    const include = this.deliveryInclude();
+    if (preferStationId) {
+      const forStation = await this.prisma.delivery.findFirst({
+        where: {
+          cisternId,
+          destinationStationId: preferStationId,
+          status: { in: ['LOADED', 'IN_TRANSIT'] },
+        },
+        orderBy: { loadedAt: 'desc' },
+        include,
+      });
+      if (forStation) return forStation;
+    }
     return this.prisma.delivery.findFirst({
       where: {
         cisternId,
         status: { in: ['LOADED', 'IN_TRANSIT'] },
       },
       orderBy: { loadedAt: 'desc' },
-      include: {
-        batch: {
-          select: {
-            id: true,
-            batchCode: true,
-            product: true,
-            status: true,
-            declaredVolumeLiters: true,
-          },
-        },
-        station: {
-          select: { id: true, code: true, name: true, latitude: true, longitude: true },
-        },
-      },
+      include,
+    });
+  }
+
+  /** Cisterna en ruta hacia la EESS del actor (ejemplos DEMO para estación). */
+  async listInboundForStation(actor: AuthUser) {
+    if (actor.role !== ActorRole.STATION_STAFF && actor.role !== ActorRole.ADMIN) {
+      throw new BadRequestException('Solo personal de estación');
+    }
+    if (!actor.stationId && actor.role === ActorRole.STATION_STAFF) {
+      throw new BadRequestException('Tu usuario no tiene EESS asignada');
+    }
+
+    const where: Prisma.DeliveryWhereInput = {
+      status: { in: ['LOADED', 'IN_TRANSIT'] },
+      ...(actor.stationId ? { destinationStationId: actor.stationId } : {}),
+    };
+
+    const rows = await this.prisma.delivery.findMany({
+      where,
+      orderBy: { loadedAt: 'desc' },
+      take: 12,
+      include: this.deliveryInclude(),
+    });
+
+    return serialize({
+      label: 'DEMO',
+      note: actor.stationCode
+        ? `Viajes abiertos con destino ${actor.stationCode}. Usá estos QR para la demo de recepción.`
+        : 'Viajes abiertos (admin).',
+      data: rows.map((d) => ({
+        deliveryId: d.id,
+        status: d.status,
+        loadedLiters: d.loadedLiters,
+        batchCode: d.batch.batchCode,
+        product: d.batch.product,
+        stationCode: d.station.code,
+        stationName: d.station.name,
+        cisternCode: d.cistern.code,
+        qrToken: d.cistern.qrToken,
+        deviceId: d.cistern.deviceId,
+        plate: d.cistern.plate,
+        deepLinkPath: `/c/${d.cistern.qrToken}`,
+      })),
     });
   }
 
@@ -170,7 +253,10 @@ export class CisternsService {
     }
 
     const cistern = await this.resolveCistern(tokenOrCode);
-    const delivery = await this.activeDelivery(cistern.id);
+    const delivery = await this.activeDelivery(
+      cistern.id,
+      actor.role === ActorRole.STATION_STAFF ? actor.stationId : null,
+    );
     if (!delivery && !cistern.currentBatchId) {
       throw new BadRequestException(
         'Esta cisterna no tiene viaje activo para subir datos',
@@ -300,7 +386,10 @@ export class CisternsService {
     await this.scanAndIngest(tokenOrCode, actor);
 
     const cistern = await this.resolveCistern(tokenOrCode);
-    const delivery = await this.activeDelivery(cistern.id);
+    const delivery = await this.activeDelivery(
+      cistern.id,
+      actor.role === ActorRole.STATION_STAFF ? actor.stationId : null,
+    );
     if (!delivery) {
       throw new BadRequestException('No hay despacho activo para recibir');
     }
@@ -454,7 +543,7 @@ export class CisternsService {
         },
       });
 
-      await tx.custodyEvent.create({
+      const custodyEvent = await tx.custodyEvent.create({
         data: {
           batchId: delivery.batchId,
           eventType: 'RECEIVED',
@@ -467,6 +556,7 @@ export class CisternsService {
             cisternQrToken: cistern.qrToken,
             deviceId: cistern.deviceId,
             deliveryId: delivery.id,
+            stationCode: delivery.station.code,
             actorRole: actor.role,
           },
           isDemo: true,
@@ -487,8 +577,18 @@ export class CisternsService {
         },
       });
 
-      return updatedDelivery;
+      return { delivery: updatedDelivery, event: custodyEvent };
     });
+
+    let follow: Awaited<
+      ReturnType<ReceivedFollowUpService['afterReceived']>
+    > | null = null;
+    if (this.followUp) {
+      follow = await this.followUp.afterReceived(result.event, {
+        id: delivery.batchId,
+        batchCode: delivery.batch.batchCode,
+      });
+    }
 
     const finalCheckpoints = await this.journeyFor(
       cistern.id,
@@ -496,11 +596,18 @@ export class CisternsService {
       delivery.batchId,
     );
 
+    const chainNote =
+      follow?.blockchain?.transactionHash != null
+        ? ` Evidencia HSK: ${follow.blockchain.transactionHash.slice(0, 12)}…`
+        : follow?.blockchain?.status
+          ? ` Evidencia: ${follow.blockchain.status}.`
+          : '';
+
     return serialize({
       label: 'DEMO',
-      note: 'Recepción confirmada. El historial del camino quedó almacenado con hora y GPS.',
+      note: `Recepción confirmada. El historial del camino quedó almacenado con hora y GPS.${chainNote}`,
       data: {
-        delivery: result,
+        delivery: result.delivery,
         cistern: {
           code: cistern.code,
           qrToken: cistern.qrToken,
@@ -512,6 +619,8 @@ export class CisternsService {
           qualityChanges: computeQualityChanges(finalCheckpoints),
         },
       },
+      blockchain: follow?.blockchain ?? null,
+      movement: follow?.reconciliation ?? null,
     });
   }
 

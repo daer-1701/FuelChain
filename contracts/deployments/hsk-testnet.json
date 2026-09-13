@@ -1,11 +1,11 @@
 {
-  "network": "localhost",
-  "chainId": 31337,
-  "contractAddress": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "deployedAt": "2026-09-13T01:25:57.535Z",
-  "transactionHash": "0x10d7a85840772169c02756832cb52401606c2fce215dcc271c061022e1e59a7a",
+  "network": "hskTestnet",
+  "chainId": 133,
+  "contractAddress": "0x2b5e1090462e2be693F75b5F54d39160b3E99066",
+  "address": "0x2b5e1090462e2be693F75b5F54d39160b3E99066",
+  "deployer": "0xd3Fdfbd61154365a2275794A73B8ee88fC7172DA",
+  "deployedAt": "2026-09-13T01:32:53.797Z",
+  "transactionHash": "0xb72793c3d9319b71fcb9fa936517ca4ab5b8165f438c70e68e5ba95457e32b97",
   "abi": [
     {
       "anonymous": false,

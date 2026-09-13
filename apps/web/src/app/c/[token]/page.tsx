@@ -115,6 +115,11 @@ function CisternQrInner() {
     !payload?.cistern ||
     payload.cistern.code === user.cisternCode ||
     payload.cistern.qrToken === user.cisternCode;
+  const forMyStation =
+    user?.role !== 'STATION_STAFF' ||
+    !user.stationCode ||
+    !payload?.delivery ||
+    payload.delivery.station.code === user.stationCode;
 
   const here = `${pathname}?${searchParams.toString()}`.replace(/\?$/, '');
   const loginHref = `/login?next=${encodeURIComponent(here)}`;
@@ -211,8 +216,22 @@ function CisternQrInner() {
           },
         );
         if (!res.ok) throw await errorFromResponse(res);
-        const json = (await res.json()) as { note?: string };
-        setMsg(json.note ?? 'Recepción confirmada.');
+        const json = (await res.json()) as {
+          note?: string;
+          blockchain?: {
+            status?: string;
+            transactionHash?: string | null;
+            explorerUrl?: string | null;
+          } | null;
+        };
+        const chain = json.blockchain;
+        const chainBit =
+          chain?.transactionHash
+            ? ` Evidencia HSK anclada.`
+            : chain?.status
+              ? ` Evidencia: ${chain.status}.`
+              : '';
+        setMsg((json.note ?? 'Recepción confirmada.') + chainBit);
         await load();
       } catch (e) {
         setError(friendlyError(e));
@@ -318,7 +337,19 @@ function CisternQrInner() {
             </div>
           )}
 
-          {user && (
+          {user && !forMyStation && (
+            <div className="space-y-2 border-t border-[var(--rail)]/40 pt-4">
+              <p className="text-sm text-[var(--alarm)]">
+                Este viaje va a {payload.delivery?.station.code}, no a tu EESS (
+                {user.stationCode}). No podés confirmar recepción aquí.
+              </p>
+              <Link href="/escanear" className="fc-btn fc-btn-ink inline-block">
+                Ver QR destinados a mi estación
+              </Link>
+            </div>
+          )}
+
+          {user && forMyStation && (
             <div className="flex flex-wrap gap-2 border-t border-[var(--rail)]/40 pt-4">
               <button
                 type="button"

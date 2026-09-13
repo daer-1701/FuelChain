@@ -326,6 +326,14 @@ export default function TramosPage() {
   const [showForm, setShowForm] = useState(false);
   const [stationFilter, setStationFilter] = useState<string>('all');
   const [cisternQuery, setCisternQuery] = useState('');
+  const stationLocked =
+    user?.role === 'STATION_STAFF' && Boolean(user.stationCode);
+
+  useEffect(() => {
+    if (stationLocked && user?.stationCode) {
+      setStationFilter(user.stationCode);
+    }
+  }, [stationLocked, user?.stationCode]);
 
   const [kind, setKind] = useState<string>('ROUTE_WAYPOINT');
   const [label, setLabel] = useState('Control ruta DEMO');
@@ -530,7 +538,7 @@ export default function TramosPage() {
         )}
       </div>
 
-      {stationOptions.length > 0 && (
+      {stationOptions.length > 0 && !stationLocked && (
         <nav
           className="flex flex-wrap gap-2"
           aria-label="Filtrar por estación destino"
@@ -569,6 +577,11 @@ export default function TramosPage() {
             );
           })}
         </nav>
+      )}
+      {stationLocked && user?.stationCode && (
+        <p className="text-sm text-[var(--mute)]">
+          Solo viajes con destino <strong>{user.stationCode}</strong> (tu EESS).
+        </p>
       )}
 
       <label className="block max-w-md text-sm">

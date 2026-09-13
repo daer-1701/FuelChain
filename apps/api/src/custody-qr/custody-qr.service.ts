@@ -815,6 +815,8 @@ export class CustodyQrService {
             label: 'DEMO',
             batonTokenId: baton!.tokenId,
             cisternCode: baton!.cisternCode,
+            deliveryId: baton!.deliveryId,
+            stationCode: input.stationCode ?? actor.stationCode ?? undefined,
             offlineCapable: true,
             actorRole: actor.role,
           },

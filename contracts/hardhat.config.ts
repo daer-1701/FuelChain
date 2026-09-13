@@ -38,6 +38,9 @@ function hskRpcUrl(): string {
 const hskRpc = hskRpcUrl();
 const hskChainId = Number(process.env.HSK_TESTNET_CHAIN_ID || '133');
 const writerKey = process.env.BLOCKCHAIN_PRIVATE_KEY?.trim();
+/** Solo claves de 32 bytes (64 hex). Evita HH8 si .env tiene una address por error. */
+const writerAccounts =
+  writerKey && /^0x[0-9a-fA-F]{64}$/.test(writerKey) ? [writerKey] : [];
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -61,17 +64,17 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     hskTestnet: {
-      url: hskRpc,
+      url: hskRpc || 'http://127.0.0.1:8545',
       chainId: hskChainId,
-      accounts: writerKey ? [writerKey] : [],
+      accounts: writerAccounts,
     },
     hskMainnet: {
       url:
         process.env.HSK_MAINNET_RPC_URL ||
         process.env.CHAIN_RPC_URL ||
-        '',
+        'http://127.0.0.1:8545',
       chainId: 177,
-      accounts: writerKey ? [writerKey] : [],
+      accounts: writerAccounts,
     },
   },
 };

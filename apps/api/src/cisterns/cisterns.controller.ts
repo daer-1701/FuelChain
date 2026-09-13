@@ -44,6 +44,13 @@ export class CisternsController {
     return this.cisterns.listStickers(50);
   }
 
+  /** Viajes abiertos hacia la EESS del usuario (ejemplos para estación). */
+  @Get('inbound')
+  @RequireRoles(...RolesAllowed.qrAccept)
+  inbound(@CurrentUser() user: AuthUser) {
+    return this.cisterns.listInboundForStation(user);
+  }
+
   /** Lectura del sticker permanente (sin auth) — ficha + historial ya persistido. */
   @Get(':qrToken')
   get(@Param('qrToken') qrToken: string) {
