@@ -30,5 +30,5 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api ./apps/api
 COPY --from=build /app/prisma ./prisma
 WORKDIR /app
-EXPOSE 3001
+EXPOSE 8080
 CMD ["sh", "-c", "pnpm --filter @fuelchain/api exec prisma migrate deploy --schema=../../prisma/schema.prisma && node apps/api/dist/main.js"]

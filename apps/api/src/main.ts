@@ -34,7 +34,6 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  // Railway inyecta PORT (p.ej. 8080). No dejar que API_PORT del Dockerfile lo tape.
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
   await app.listen(port, '0.0.0.0');
   logger.log(`FuelChain API listening on http://0.0.0.0:${port}`);
