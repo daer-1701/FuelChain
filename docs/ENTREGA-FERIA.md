@@ -11,7 +11,7 @@ URL: https://eag-global-buildathon.devfolio.co/
 - [ ] Repo: https://github.com/daer-1701/FuelChain
 - [ ] Doc técnica: este checklist + **`docs/SUBMISSION-IRL.md`**
 - [ ] README raíz (install + HSK)
-- [ ] Demo URL o indicación “local / tunnel”
+- [ ] Demo URL (Vercel + Railway — `docs/DEPLOY.md`) o “local / tunnel”
 - [ ] Video ≤ 3 min **o** demo en vivo 10:30–14:30
 - [ ] Dirección contrato HSK (testnet OK)
 

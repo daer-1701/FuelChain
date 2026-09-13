@@ -91,11 +91,16 @@ No reutilices la private key de blockchain como secreto de QR o de sesión. Copi
 | Lote demo | http://localhost:3000/batches/FC-BO-2026-000184 |
 | Evidencia | http://localhost:3000/blockchain |
 
+## Deploy (feria)
+
+Railway (API + Postgres) + Vercel (web): **[`docs/DEPLOY.md`](docs/DEPLOY.md)**.
+
 ## Documentación
 
 - [`docs/Informe_FuelChain_Bolivia.docx`](docs/Informe_FuelChain_Bolivia.docx)
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/demo.md`](docs/demo.md)
+- [`docs/DEPLOY.md`](docs/DEPLOY.md)
 - [`docs/bolivia-fuel-process.md`](docs/bolivia-fuel-process.md)
 
 ## Regla

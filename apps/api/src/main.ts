@@ -10,8 +10,21 @@ async function bootstrap() {
   else logger.warn('No .env found — using process env only');
 
   const app = await NestFactory.create(AppModule);
+  const corsRaw = process.env.API_CORS_ORIGIN ?? 'http://localhost:3000';
+  const corsList = corsRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const corsOrigin =
+    corsRaw.trim() === '*'
+      ? true
+      : corsList.length === 0
+        ? 'http://localhost:3000'
+        : corsList.length === 1
+          ? corsList[0]
+          : corsList;
   app.enableCors({
-    origin: process.env.API_CORS_ORIGIN ?? 'http://localhost:3000',
+    origin: corsOrigin,
   });
   app.useGlobalPipes(
     new ValidationPipe({
@@ -22,7 +35,7 @@ async function bootstrap() {
     }),
   );
   const port = Number(process.env.API_PORT ?? process.env.PORT ?? 3001);
-  await app.listen(port);
-  logger.log(`FuelChain API listening on http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`FuelChain API listening on http://0.0.0.0:${port}`);
 }
 bootstrap();
