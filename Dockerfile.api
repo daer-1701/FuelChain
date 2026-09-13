@@ -25,7 +25,6 @@ RUN pnpm --filter @fuelchain/api exec prisma generate --schema=../../prisma/sche
 FROM base AS runner
 ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=512
-ENV API_PORT=3001
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/api ./apps/api
